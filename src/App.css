@@ -1,10 +1,47 @@
-/* write your css here */
+:root {
+  --primaryBackgroundColorForMenu : #161d29ef;
+  /* --primaryBackgroudnColorForMenuLightVersion : ; */
+}
 @import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap');
 
 .active li {
-    text-decoration:underline;
+  text-decoration: underline;
+}
+.tooltip-text {
+  position: absolute;
+  top: -2rem;
+  left: 50%;
+  font-size: 1rem;
+  color: #fff;
+  font-weight: 500;
+  background-color: black;
+
+  /* background-color: #ba33579a; */
+
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  transform: translateX(-50%) translateY(-50%);
+  opacity: 0;
+  transition: transform 0.3s, opacity 0.3s;
 }
 
-.myName {
+.tooltip-text.animate {
+  opacity: 1;
+}
+
+
+.hamburgerAnimation {
+  animation: slidein 0.2s ease-in-out forwards;
+}
+@keyframes slidein {
+  from {
+    transform: translateX(-100vw);
+    background-color: #7d7d7d;
     
+  }
+
+  to {
+    transform: translateX(0);
+    background-color:var(--primaryBackgroundColorForMenu);
+  }
 }
