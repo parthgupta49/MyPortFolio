@@ -37,7 +37,7 @@ const FrontContent = () => {
                     <div className='text-3xl font-bold tracking-wide leading-[2rem] mobile:w-[60%] mobile:h-[5rem]'>
                         <ReactTyped strings={["Front End Developer", "Backend Developer", "Full-Stack Developer"]} typeSpeed={90} backSpeed={80} loop />
                     </div>
-                    <Link to="https://drive.google.com/file/d/1fHiyZLQD6elnRGFwQPLBlv0OO01okAMP/view?usp=sharing" target='_blank' className="w-fit font-semibold relative inline-flex items-center justify-start px-6 py-3 overflow-hidden transition-all bg-yellow-100 rounded-lg hover:bg-yellow-100 group">
+                    <Link to="https://drive.google.com/file/d/1-Sfc_WCSwQSR6pJ0GsbvnvFr2-bHW5Hg/view" target='_blank' className="w-fit font-semibold relative inline-flex items-center justify-start px-6 py-3 overflow-hidden transition-all bg-yellow-100 rounded-lg hover:bg-yellow-100 group">
                         <span className="w-48 h-48 rounded rotate-[-40deg] bg-pink-400 absolute bottom-0 left-0 -translate-x-full ease-out duration-500 transition-all translate-y-full mb-9 ml-9 group-hover:ml-0 group-hover:mb-32 group-hover:translate-x-0"></span>
                         <span className="relative w-full text-left text-black transition-colors duration-300 ease-in-out group-hover:text-white">My Resume</span>
                     </Link>
