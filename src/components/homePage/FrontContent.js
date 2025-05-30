@@ -1,7 +1,8 @@
 import React from 'react'
 import { ReactTyped } from "react-typed";
 // import myImage from '../../assets/2241237.JPG'
-import myImage from '../../assets/ParthGupta_2.jpg'
+// import myImage from '../../assets/ParthGupta_2.jpg'
+import myImage from '../../assets/ParthGupta_1.jpg'
 import Icons from '../../components/Icons';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
