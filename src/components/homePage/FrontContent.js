@@ -1,6 +1,7 @@
 import React from 'react'
 import { ReactTyped } from "react-typed";
-import myImage from '../../assets/2241237.JPG'
+// import myImage from '../../assets/2241237.JPG'
+import myImage from '../../assets/ParthGupta_2.jpg'
 import Icons from '../../components/Icons';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
@@ -21,6 +22,7 @@ const containerVariant = {
         }
     }
 }
+// const MY_IMAGE = "https://drive.google.com/file/d/1WhVVxOVhfy5JAXomuCLGZl21qrxWIkzy/view?usp=sharing"
 const FrontContent = () => {
     return (
         <motion.div
