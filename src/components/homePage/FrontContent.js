@@ -23,7 +23,7 @@ const containerVariant = {
         }
     }
 }
-// const MY_IMAGE = "https://drive.google.com/file/d/1WhVVxOVhfy5JAXomuCLGZl21qrxWIkzy/view?usp=sharing"
+const MY_IMAGE = "https://drive.google.com/thumbnail?id=1WhVVxOVhfy5JAXomuCLGZl21qrxWIkzy&sz=w1200"
 const FrontContent = () => {
     return (
         <motion.div
@@ -59,7 +59,7 @@ const FrontContent = () => {
                         animate={{ scale: [1, 1.12, 1] }}
                         transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
                     ></motion.div>
-                    <img src={myImage} alt='myMainImage' className='relative bg-cover rounded-full object-cover w-full h-full bg-center ' />
+                    <img src={MY_IMAGE} alt='myMainImage' className='relative bg-cover rounded-full object-cover w-full h-full bg-center ' />
                 </div>
 
             </div>
