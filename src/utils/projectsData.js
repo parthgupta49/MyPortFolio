@@ -2,6 +2,7 @@ import passwordGenertorImage from '../assets/projectImages/password-genertor.png
 import weatherImage from '../assets/projectImages/weather-app.png'
 import tictactoeImage from '../assets/projectImages/tic-tac-toe.png'
 import badakarImage from '../assets/projectImages/badakar-website.png';
+import reportGenerator from '../assets/projectImages/event-report-generator.png';
 export const projectArray = [
     {
         title: "Password Generator",
@@ -26,5 +27,11 @@ export const projectArray = [
         description : "A jaw-dropping animation MERN Stack app with Authentication (looks well on Desktop)",
         image : {badakarImage},
         link : "https://badakar-assignment-app.vercel.app/"
+    },
+    {
+        title : "Event Report Generator",
+        description : "AutoReport: College Event Documentation Automation System",
+        image : {reportGenerator},
+        link : "https://csbyc-event-report-generator.vercel.app/"
     },
 ]
