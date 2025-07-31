@@ -6,7 +6,7 @@ import myImage from '../../assets/ParthGupta_2.jpg'
 import Icons from '../../components/Icons';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-const RESUME_DRIVE_LINK = "https://drive.google.com/file/d/1TmWoP7dgS1e-TWvFzbNPvsCTlMvLq2ga/view?usp=drivesdk"
+const RESUME_DRIVE_LINK = "https://drive.google.com/file/d/1RBHW5rJ3h7EEolE7-PW9g2lUgyiv7THD/view?usp=drivesdk"
 const containerVariant = {
     hidden: {
         opacity: 0
