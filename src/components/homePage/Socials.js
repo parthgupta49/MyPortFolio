@@ -48,7 +48,7 @@ const Socials = () => {
             id: 3,
             element: <FaLinkedin size={size} color='#2867B2' />, // LinkedIn's blue color
             title: "LinkedIn",
-            linkTo: "https://www.linkedin.com/in/parth-gupta49/",
+            linkTo: "https://www.linkedin.com/in/parthgupta49/",
         },
         {
             id: 4,
@@ -60,7 +60,7 @@ const Socials = () => {
             id: 5,
             element: <SiLeetcode size={size} color='#FFA07A' />, // LeetCode's orange color
             title: "Leetcode",
-            linkTo: "https://leetcode.com/Parth-gupta49/",
+            linkTo: "https://leetcode.com/Parthgupta49/",
         },
     ];
 
