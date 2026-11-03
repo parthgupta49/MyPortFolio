@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hoisting, TDZ, Scope &amp; Errors — Complete Notes</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Calibri, Arial, sans-serif; color: #1a1a1a; line-height: 1.7; background: #fff; }
+  .sidebar-toggle { position: fixed; top: 12px; left: 12px; z-index: 1001; background: #0078D4; color: #fff; border: none; width: 40px; height: 40px; border-radius: 8px; font-size: 1.4em; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+  .sidebar-toggle:hover { background: #106ebe; }
+  .sidebar { position: fixed; top: 0; left: 0; width: 300px; height: 100vh; background: #f0f4ff; border-right: 2px solid #0078D4; overflow-y: auto; z-index: 1000; transform: translateX(0); transition: transform 0.3s ease; padding: 60px 15px 20px 15px; }
+  .sidebar.collapsed { transform: translateX(-300px); }
+  .sidebar h3 { color: #0078D4; font-size: 1em; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 2px solid #0078D4; }
+  .sidebar a { display: block; padding: 5px 8px; color: #2b579a; text-decoration: none; font-size: 0.85em; border-radius: 4px; margin-bottom: 2px; }
+  .sidebar a:hover { background: #dce6f7; }
+  .sidebar .group-label { color: #555; font-weight: bold; font-size: 0.78em; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 12px; margin-bottom: 4px; padding-left: 8px; }
+  .main { margin-left: 300px; padding: 20px 30px 40px 30px; max-width: 990px; transition: margin-left 0.3s ease; }
+  .main.full { margin-left: 0; }
+  .title-block { text-align: center; padding: 25px 0; border-bottom: 4px solid #0078D4; margin-bottom: 25px; }
+  .title-block h1 { color: #0078D4; font-size: 2em; border: none; margin: 0; padding: 0; }
+  .title-block p { color: #555; font-size: 0.95em; margin: 3px 0; }
+  h1 { color: #0078D4; border-bottom: 3px solid #0078D4; padding-bottom: 8px; margin-top: 35px; font-size: 1.6em; }
+  h2 { color: #2b579a; margin-top: 25px; font-size: 1.3em; }
+  h3 { color: #444; margin-top: 18px; font-size: 1.1em; }
+  p { margin: 8px 0; }
+  ul, ol { padding-left: 24px; margin: 8px 0; }
+  li { margin-bottom: 6px; }
+  .section-header { cursor: pointer; display: flex; align-items: center; justify-content: space-between; padding: 10px 0; user-select: none; }
+  .section-header:hover h1 { color: #106ebe; }
+  .section-header .toggle-icon { font-size: 1.2em; color: #0078D4; transition: transform 0.3s; min-width: 24px; text-align: center; }
+  .section-header .toggle-icon.collapsed { transform: rotate(-90deg); }
+  .section-content { overflow: hidden; transition: max-height 0.4s ease; }
+  .section-content.collapsed { max-height: 0 !important; overflow: hidden; }
+  pre { background: #f5f5f5; border: 1px solid #ddd; border-left: 4px solid #0078D4; padding: 14px 18px; font-family: 'Consolas', 'Courier New', monospace; font-size: 0.9em; overflow-x: auto; border-radius: 4px; white-space: pre-wrap; margin: 12px 0; line-height: 1.55; }
+  code { font-family: 'Consolas', monospace; background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-size: 0.88em; }
+  table { border-collapse: collapse; width: 100%; margin: 14px 0; }
+  th { background: #0078D4; color: #fff; padding: 10px 14px; text-align: left; font-size: 0.92em; }
+  td { border: 1px solid #ccc; padding: 9px 14px; font-size: 0.9em; vertical-align: top; }
+  tr:nth-child(even) { background: #f9f9f9; }
+  .note-box { background: #e8f4e8; border-left: 4px solid #2e7d32; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+  .note-box strong { color: #2e7d32; }
+  .warn-box { background: #fff3e0; border-left: 4px solid #e65100; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+  .warn-box strong { color: #e65100; }
+  .danger-box { background: #fce4ec; border-left: 4px solid #c62828; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+  .danger-box strong { color: #c62828; }
+  .blue-box { background: #e3f2fd; border-left: 4px solid #1565c0; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+  .blue-box strong { color: #1565c0; }
+  .purple-box { background: #f3e5f5; border-left: 4px solid #7b1fa2; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+  .purple-box strong { color: #7b1fa2; }
+  .question-block { background: #fafafa; border: 1px solid #e0e0e0; padding: 16px 20px; margin: 18px 0; border-radius: 6px; }
+  .question-block h2 { margin-top: 0; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.78em; font-weight: bold; margin-left: 5px; }
+  .tag-easy { background: #e8f5e9; color: #2e7d32; }
+  .tag-medium { background: #fff8e1; color: #f57f17; }
+  .tag-hard { background: #fce4ec; color: #c62828; }
+  .tag-expert { background: #4a148c; color: #fff; }
+  .nav-link { display: inline-block; margin-top: 8px; font-size: 0.85em; color: #7b1fa2; text-decoration: none; font-weight: bold; }
+  .nav-link:hover { text-decoration: underline; }
+  .nav-link.back { color: #0078D4; }
+  .page-break { margin-top: 50px; border-top: 3px double #0078D4; padding-top: 20px; }
+  @media (max-width: 768px) { .sidebar { width: 260px; } .main { margin-left: 0; padding: 15px; } .sidebar.collapsed { transform: translateX(-260px); } }
+</style>
+</head>
+<body>
+<button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+<nav class="sidebar" id="sidebar">
+  <h3>📑 Hoisting &amp; Scope — Nav</h3>
+  <div class="group-label">📖 Part A — Global Space</div>
+  <a href="#sec1" onclick="scrollTo(event,'sec1')">1. The Shortest JS Program</a>
+  <a href="#sec2" onclick="scrollTo(event,'sec2')">2. Global Object &amp; window</a>
+  <a href="#sec3" onclick="scrollTo(event,'sec3')">3. The Global Space</a>
+  <a href="#sec4" onclick="scrollTo(event,'sec4')">4. this at Global Level</a>
+  <a href="#sec5" onclick="scrollTo(event,'sec5')">5. undefined Explained</a>
+  <a href="#sec6" onclick="scrollTo(event,'sec6')">6. undefined vs not defined</a>
+  <a href="#sec7" onclick="scrollTo(event,'sec7')">7. Loosely Typed Language</a>
+  <div class="group-label">⚙️ Part B — Hoisting &amp; Scope</div>
+  <a href="#sec8" onclick="scrollTo(event,'sec8')">8. var vs let vs const</a>
+  <a href="#sec9" onclick="scrollTo(event,'sec9')">9. Hoisting — How It Works</a>
+  <a href="#sec10" onclick="scrollTo(event,'sec10')">10. ⭐ The Temporal Dead Zone</a>
+  <a href="#sec11" onclick="scrollTo(event,'sec11')">11. ⚠️ The DevTools TDZ Trap</a>
+  <a href="#sec12" onclick="scrollTo(event,'sec12')">12. Block Scope</a>
+  <a href="#sec13" onclick="scrollTo(event,'sec13')">13. Shadowing &amp; Illegal Shadowing</a>
+  <div class="group-label">💥 Part C — Errors</div>
+  <a href="#sec14" onclick="scrollTo(event,'sec14')">14. The 3 Error Types</a>
+  <a href="#sec15" onclick="scrollTo(event,'sec15')">15. ⚙️ Parsing vs Runtime</a>
+  <a href="#sec16" onclick="scrollTo(event,'sec16')">16. Common Gotchas</a>
+  <div class="group-label">📝 Revision</div>
+  <a href="#sec17" onclick="scrollTo(event,'sec17')">17. Cheat Sheet</a>
+  <a href="#sec18" onclick="scrollTo(event,'sec18')">18. Interview Answers</a>
+  <div class="group-label">🧪 Practice</div>
+  <a href="#sec19" onclick="scrollTo(event,'sec19')">19. Practice (10 Qs)</a>
+  <a href="#sec20" onclick="scrollTo(event,'sec20')">20. Answer Key</a>
+</nav>
+<div class="main" id="mainContent">
+<div class="title-block">
+  <h1>Hoisting, TDZ, Block Scope &amp; Errors</h1>
+  <p><strong>Complete Reference + Practice Sheet</strong></p>
+  <p>Chapter 2 — JavaScript Deep Dive</p>
+  <p><em>Shortest JS program · window &amp; global object · var/let/const · Hoisting · TDZ · Shadowing · The 3 error types</em></p>
+  <p><em>Builds on Chapter 1 — Execution Context &amp; Call Stack</em></p>
+</div>
+
+<!-- ================= PART A ================= -->
+
+<!-- SEC 1 -->
+<div id="sec1">
+  <div class="section-header" onclick="toggleSection('c1')"><h1 style="border:none;margin:0;padding:0;">1. The Shortest JS Program — An Empty File</h1><span class="toggle-icon" id="icon-c1">▼</span></div>
+  <div class="section-content" id="c1">
+    <p><strong>What is the shortest possible JavaScript program?</strong> An empty file. Even with zero lines of code, the JS Engine does a surprising amount of work.</p>
+    <div class="danger-box"><strong>Running a completely empty JS file, the engine automatically does 3 things:</strong>
+    <ol>
+      <li><strong>Creates the Global Execution Context (GEC)</strong> — with its Lexical Environment, Variable Environment, and This Binding — and pushes it onto the Call Stack.</li>
+      <li><strong>Creates the Global Object</strong> — in browsers, this object is called <code>window</code>.</li>
+      <li><strong>Sets up the <code>this</code> keyword</strong> — at the global level, <code>this</code> points directly to the Global Object (<code>this === window</code> → <code>true</code>).</li>
+    </ol></div>
+    <div class="note-box"><strong>🔗 Connects to Chapter 1:</strong> Those three components (Lexical Env, Variable Env, This Binding) are exactly what you learned in the <em>Terminology Decoder</em>. The GEC is created the same way as any other EC — just automatically, with no code needed.</div>
+    <h3>JS Engine vs JS Runtime Environment</h3>
+    <ul>
+      <li>JavaScript doesn't only run in browsers — also servers (Node.js), smartwatches, IoT devices.</li>
+      <li>The <strong>Engine</strong> (like V8) <strong>executes the code</strong>.</li>
+      <li>The <strong>Runtime Environment</strong> provides surrounding superpowers (<code>setTimeout</code>, DOM, <code>fetch</code>, etc.).</li>
+    </ul>
+  </div>
+</div>
+
+<!-- SEC 2 -->
+<div id="sec2">
+  <div class="section-header" onclick="toggleSection('c2')"><h1 style="border:none;margin:0;padding:0;">2. The Global Object &amp; <code>window</code></h1><span class="toggle-icon" id="icon-c2">▼</span></div>
+  <div class="section-content" id="c2">
+    <p>Different runtime environments name their Global Object differently:</p>
+    <table>
+      <tr><th>Environment</th><th>Global Object Name</th></tr>
+      <tr><td>Chrome / Browsers</td><td><code>window</code></td></tr>
+      <tr><td>Node.js</td><td><code>global</code></td></tr>
+      <tr><td>Web Workers</td><td><code>self</code></td></tr>
+      <tr><td>Universal (ES2020+)</td><td><code>globalThis</code> — standard name across ALL environments</td></tr>
+    </table>
+    <div class="note-box"><strong>💡 Modern Tip:</strong> ES2020 introduced <code>globalThis</code> so you don't have to write <code>window</code> (browser) or <code>global</code> (Node). Use <code>globalThis</code> everywhere.</div>
+  </div>
+</div>
+
+<!-- SEC 3 -->
+<div id="sec3">
+  <div class="section-header" onclick="toggleSection('c3')"><h1 style="border:none;margin:0;padding:0;">3. The Global Space — What Lives There?</h1><span class="toggle-icon" id="icon-c3">▼</span></div>
+  <div class="section-content" id="c3">
+    <p><strong>Global Space</strong> = any code (variables or functions) written <strong>outside of a function</strong>.</p>
+    <pre>var a = 10;              // ← Global Space
+function b() {           // ← Global Space
+  console.log("Hello");  // ← NOT global (inside a function)
+}
+
+// All three point to the EXACT same memory space!
+console.log(a);          // 10
+console.log(window.a);   // 10
+console.log(this.a);     // 10</pre>
+    <div class="blue-box"><strong>🔑 Key Rule:</strong> Variables declared with <code>var</code> and function declarations in the global space are <strong>automatically attached to the Global Object (<code>window</code>)</strong>. Accessible by name, via <code>window.name</code>, or via <code>this.name</code> at the global level.</div>
+
+    <h3>⚠️ But <code>let</code> and <code>const</code> are DIFFERENT!</h3>
+    <pre>let x = 10;
+const y = 20;
+
+console.log(window.x);   // undefined — NOT attached to window!
+console.log(window.y);   // undefined — NOT attached to window!</pre>
+    <p><code>let</code> and <code>const</code> do <strong>NOT</strong> attach to <code>window</code>, even globally. They're kept in a <strong>separate memory space</strong> — the <strong>"Script" scope</strong> (visible in Chrome DevTools).</p>
+
+    <div class="purple-box"><strong>🔗 The spec-level reason (from Ch 1 — Terminology Decoder):</strong><br>
+    The global scope has <strong>two environment records</strong>:
+    <ul>
+      <li><strong>Object Environment Record</strong> — its binding object <em>IS</em> <code>window</code>. Holds <code>var</code> + function declarations + all Web APIs.</li>
+      <li><strong>Declarative Environment Record</strong> — the "Script" scope. Holds <code>let</code>/<code>const</code>/<code>class</code>. Separate from <code>window</code>.</li>
+    </ul>
+    That's why <code>window.x</code> is <code>undefined</code> for a global <code>let</code> — it lives in the <em>other</em> record.</div>
+
+    <div class="warn-box"><strong>⚠️ Terminology Precision (DevTools):</strong><br>
+    • <code>var</code> at global level → <strong>Global scope</strong> (attached to <code>window</code>)<br>
+    • <code>let</code>/<code>const</code> at global level → <strong>Script scope</strong> (separate from <code>window</code>)<br>
+    • <code>let</code>/<code>const</code> inside a <code>{ }</code> block → <strong>Block scope</strong> (specific to that block)<br><br>
+    "Script" and "Block" scope are both separate from <code>window</code>, but they are <strong>different scopes</strong>. Don't confuse them.</div>
+
+    <h3>Pitfall — "Polluting the Global Space"</h3>
+    <p>Because <code>var</code> and global functions attach directly to <code>window</code>, too many globals is dangerous. If two scripts both declare <code>var data = []</code>, the second silently overwrites the first.</p>
+    <div class="note-box"><strong>✅ Best Practice:</strong> Keep the global space as empty as possible. Use modules, functions, or <code>let</code>/<code>const</code> (which don't attach to <code>window</code>).</div>
+  </div>
+</div>
+
+<!-- SEC 4 -->
+<div id="sec4">
+  <div class="section-header" onclick="toggleSection('c4')"><h1 style="border:none;margin:0;padding:0;">4. <code>this</code> at the Global Level</h1><span class="toggle-icon" id="icon-c4">▼</span></div>
+  <div class="section-content" id="c4">
+    <pre>// At the global execution level:
+console.log(this === window);   // true</pre>
+    <p>At the global level, <code>this</code> points to the <code>window</code> object (in browsers). This is the starting point for understanding <code>this</code> — which behaves very differently inside functions, arrow functions, and methods.</p>
+    <div class="note-box"><strong>🔗 Full deep dive:</strong> See Chapter 4 — <code>this</code> Keyword.</div>
+  </div>
+</div>
+
+<!-- SEC 5 -->
+<div id="sec5">
+  <div class="section-header" onclick="toggleSection('c5')"><h1 style="border:none;margin:0;padding:0;">5. <code>undefined</code> — The Most Misunderstood Keyword</h1><span class="toggle-icon" id="icon-c5">▼</span></div>
+  <div class="section-content" id="c5">
+    <p><code>undefined</code> means: <strong>"memory has been allocated, but no value has been assigned yet."</strong></p>
+    <h3>Key Facts:</h3>
+    <ul>
+      <li>It's an <strong>actual primitive data type</strong> — not "empty" or "nothing".</li>
+      <li>It <strong>takes up its own memory space</strong>. It's a literal value the engine uses as a default placeholder.</li>
+      <li>Common misconception: that <code>undefined</code> means memory is completely empty. <strong>False.</strong></li>
+      <li>The engine automatically writes <code>undefined</code> during the <strong>Memory Creation Phase</strong>.</li>
+    </ul>
+    <h3>Declaration vs Initialization</h3>
+    <pre>var a;       // Declaration — "this variable exists"
+             // engine automatically sets a = undefined
+a = 7;       // Initialization — giving it an actual value</pre>
+    <h3>The Two Origins of <code>undefined</code></h3>
+    <table>
+      <tr><th>Scenario</th><th>Who Sets It?</th><th>When?</th></tr>
+      <tr><td><code>var x;</code> (no assignment)</td><td>JS Engine automatically</td><td>Memory Creation Phase</td></tr>
+      <tr><td><code>var y = undefined;</code></td><td>Developer explicitly</td><td>Code Execution Phase</td></tr>
+    </table>
+    <div class="danger-box"><strong>❌ The Golden Rule:</strong> <strong>Never explicitly assign <code>undefined</code>.</strong><br><br>
+    Bad: <code>let a = 10; a = undefined;</code><br>
+    Why? <code>undefined</code> semantically means <em>"the system hasn't assigned a value yet."</em> Manually assigning it creates inconsistencies and makes debugging painful.<br>
+    Fix: To intentionally clear a value, use <code>null</code>.</div>
+  </div>
+</div>
+
+<!-- SEC 6 -->
+<div id="sec6">
+  <div class="section-header" onclick="toggleSection('c6')"><h1 style="border:none;margin:0;padding:0;">6. <code>undefined</code> vs <code>not defined</code></h1><span class="toggle-icon" id="icon-c6">▼</span></div>
+  <div class="section-content" id="c6">
+    <table>
+      <tr><th></th><th><code>undefined</code></th><th><code>not defined</code></th></tr>
+      <tr><td><strong>Meaning</strong></td><td>Memory <strong>was allocated</strong> during the Memory Creation Phase</td><td>Variable was <strong>never declared</strong></td></tr>
+      <tr><td><strong>Memory</strong></td><td>Exists in memory space</td><td><strong>Does not exist</strong> in the EC at all</td></tr>
+      <tr><td><strong>What happens?</strong></td><td>Execution hasn't reached the assignment line yet</td><td>Accessing it throws <strong>ReferenceError</strong></td></tr>
+      <tr><td><strong>Example</strong></td><td><code>var a; console.log(a);</code> → <code>undefined</code></td><td><code>console.log(x);</code> → ReferenceError</td></tr>
+    </table>
+
+    <h3><code>null</code> — The Third Concept</h3>
+    <table>
+      <tr><th>Value</th><th>Meaning</th><th><code>typeof</code></th></tr>
+      <tr><td><code>undefined</code></td><td>Memory allocated, no value yet (engine's placeholder)</td><td><code>"undefined"</code></td></tr>
+      <tr><td><code>null</code></td><td>Intentional absence of value (developer sets it)</td><td><code>"object"</code> — a known JS bug since 1995!</td></tr>
+      <tr><td><code>not defined</code></td><td>Doesn't exist in memory → ReferenceError</td><td>N/A (throws)</td></tr>
+    </table>
+
+    <h3>⚡ Sneaky Edge Case — <code>typeof</code> on Undeclared Variables</h3>
+    <pre>console.log(typeof x);    // "undefined" — NO error!
+console.log(x);           // 💥 ReferenceError: x is not defined</pre>
+    <div class="warn-box"><strong>⚠️ <code>typeof</code> is the ONLY operator</strong> that doesn't throw a ReferenceError on undeclared variables. It silently returns <code>"undefined"</code>. Classic interview trap.</div>
+  </div>
+</div>
+
+<!-- SEC 7 -->
+<div id="sec7">
+  <div class="section-header" onclick="toggleSection('c7')"><h1 style="border:none;margin:0;padding:0;">7. JavaScript is a "Loosely Typed" Language</h1><span class="toggle-icon" id="icon-c7">▼</span></div>
+  <div class="section-content" id="c7">
+    <p>JavaScript is <strong>loosely typed</strong> (also called dynamically typed / weakly typed) — variables aren't bound to a specific data type.</p>
+    <pre>let a;              // currently holds 'undefined'
+a = 10;             // now a Number
+a = "Hello World";  // now a String
+a = true;           // now a Boolean</pre>
+    <p>In C++ or Java, an integer variable can only ever hold integers. JavaScript is far more flexible.</p>
+    <div class="blue-box"><strong>💡 Insight:</strong> It's called "weakly typed" not because the language is flawed, but because it gives maximum flexibility. The engine handles type conversion and management behind the scenes.</div>
+  </div>
+</div>
+
+<!-- ================= PART B ================= -->
+
+<!-- SEC 8 -->
+<div id="sec8">
+  <div class="section-header" onclick="toggleSection('c8')"><h1 style="border:none;margin:0;padding:0;">8. <code>var</code> vs <code>let</code> vs <code>const</code> — Complete Comparison</h1><span class="toggle-icon" id="icon-c8">▼</span></div>
+  <div class="section-content" id="c8">
+    <table>
+      <tr><th>Feature</th><th><code>var</code></th><th><code>let</code></th><th><code>const</code></th></tr>
+      <tr><td><strong>Scope</strong></td><td>Function / Global</td><td>Block <code>{ }</code></td><td>Block <code>{ }</code></td></tr>
+      <tr><td><strong>Reassignable</strong></td><td>Yes</td><td>Yes</td><td>No</td></tr>
+      <tr><td><strong>Redeclarable (same scope)</strong></td><td>Yes</td><td>No</td><td>No</td></tr>
+      <tr><td><strong>Hoisting</strong></td><td>Initialized as <code>undefined</code></td><td>Hoisted but uninitialized (TDZ)</td><td>Hoisted but uninitialized (TDZ)</td></tr>
+      <tr><td><strong>Attached to <code>window</code></strong></td><td>Yes (at global level)</td><td>No</td><td>No</td></tr>
+      <tr><td><strong>Environment Record</strong></td><td>Variable Environment</td><td>Lexical Environment</td><td>Lexical Environment</td></tr>
+      <tr><td><strong>New copy per block?</strong></td><td>❌ No</td><td>✅ Yes</td><td>✅ Yes</td></tr>
+    </table>
+
+    <h3>Deep Dive — The Three Differences</h3>
+    <p><strong>1. Redeclaration:</strong></p>
+    <pre>// var: Allowed
+var a = 10;
+var a = 100;   // perfectly fine
+
+// let & const: NOT allowed in the same scope
+let b = 10;
+let b = 100;   // 💥 SyntaxError: Identifier 'b' has already been declared</pre>
+
+    <p><strong>2. Declaration Without Value:</strong></p>
+    <pre>// var & let: Allowed
+let a;
+a = 10;        // works fine
+
+// const: NOT allowed
+const b;       // 💥 SyntaxError: Missing initializer in const declaration
+// const MUST be initialized at the moment it's declared</pre>
+
+    <p><strong>3. Reassignment:</strong></p>
+    <pre>// var & let: Allowed
+let a = 10;
+a = 20;        // fine
+
+// const: NOT allowed
+const b = 10;
+b = 20;        // 💥 TypeError: Assignment to constant variable</pre>
+
+    <div class="note-box"><strong>🎯 Best Practice:</strong> Use <code>const</code> by default. Use <code>let</code> only when you need to reassign. Avoid <code>var</code> in modern code — its function-scoped nature causes bugs.</div>
+  </div>
+</div>
+
+<!-- SEC 9 -->
+<div id="sec9">
+  <div class="section-header" onclick="toggleSection('c9')"><h1 style="border:none;margin:0;padding:0;">9. Hoisting — How It Actually Works</h1><span class="toggle-icon" id="icon-c9">▼</span></div>
+  <div class="section-content" id="c9">
+    <div class="danger-box"><strong>❌ Common Misconception:</strong> "JavaScript moves your code to the top of the file."<br><br>
+    <strong>✅ The Truth:</strong> Hoisting is simply a <strong>byproduct of the Memory Creation Phase</strong>. Because memory is allocated for everything before line 1 executes, variables and functions already exist. <strong>Nothing is "moved" anywhere.</strong></div>
+
+    <h3>⭐ The Three States of a Variable</h3>
+    <p>This model (from Chapter 1) makes hoisting and TDZ crystal clear:</p>
+    <pre>1. DECLARED    — memory slot created
+2. INITIALIZED — slot given a value (even `undefined` counts)
+3. ASSIGNED    — your actual value written
+
+
+var a = 5:
+  Creation phase  → DECLARED + INITIALIZED to `undefined`
+  Execution phase → ASSIGNED 5
+  (steps 1 & 2 together → NO TDZ)
+
+let b = 5:
+  Creation phase  → DECLARED only (NOT initialized)   ← the TDZ gap
+  Execution phase → INITIALIZED + ASSIGNED 5
+  (steps 1 & 2 split apart → TDZ exists between them)
+
+function c() {}:
+  Creation phase  → DECLARED + INITIALIZED with the full function body
+  (immediately usable)</pre>
+
+    <h3>How Different Declarations Are Hoisted:</h3>
+    <table>
+      <tr><th>Declaration Type</th><th>Stored in Memory Phase</th><th>Accessible Before Declaration?</th></tr>
+      <tr><td>Function Declaration<br><code>function fn() {}</code></td><td>Entire function body</td><td>✅ Yes — fully usable</td></tr>
+      <tr><td><code>var</code> variable</td><td><code>undefined</code></td><td>✅ Yes — but value is <code>undefined</code></td></tr>
+      <tr><td>Function Expression<br><code>var fn = function() {}</code></td><td><code>undefined</code> (it's a <code>var</code>)</td><td>❌ TypeError (<code>undefined</code> is not a function)</td></tr>
+      <tr><td>Arrow Function (in var)<br><code>var fn = () =&gt; {}</code></td><td><code>undefined</code></td><td>❌ TypeError (same as expression)</td></tr>
+      <tr><td><code>let</code> / <code>const</code></td><td>Declared but NOT initialized (TDZ)</td><td>❌ ReferenceError</td></tr>
+    </table>
+
+    <pre>// Proof:
+console.log(a);       // undefined  (var hoisted with undefined)
+console.log(b());     // 💥 TypeError: b is not a function
+console.log(c());     // 30 ✅       (function declaration fully hoisted)
+
+var a = 10;
+var b = function() { return 20; };
+function c() { return 30; }</pre>
+
+    <div class="note-box"><strong>🎯 Interview Answer:</strong> "Hoisting is a phenomenon where you can access variables and functions before they're declared. This happens because memory is allocated during the Memory Creation Phase — <code>var</code> gets <code>undefined</code>, function declarations get their whole body, and <code>let</code>/<code>const</code> are declared but left uninitialized. Nothing is physically moved in the code."</div>
+  </div>
+</div>
+
+<!-- SEC 10 -->
+<div id="sec10">
+  <div class="section-header" onclick="toggleSection('c10')"><h1 style="border:none;margin:0;padding:0;">⭐ 10. The Temporal Dead Zone (TDZ)</h1><span class="toggle-icon" id="icon-c10">▼</span></div>
+  <div class="section-content" id="c10">
+    <div class="blue-box"><strong>Definition:</strong> The TDZ is the <strong>time period</strong> between a <code>let</code>/<code>const</code> variable being <strong>declared</strong> (memory allocated) and being <strong>initialized</strong> with a value. Accessing it during this window throws a <code>ReferenceError</code>.</div>
+
+    <pre>"TDZ starts at the beginning of the scope and ends at the
+ line where the variable is initialized."
+
+{
+  // ──── TDZ for 'a' starts here ────
+  console.log(a);   // 💥 ReferenceError: Cannot access 'a' before initialization
+
+  // ──── TDZ for 'a' still active ────
+
+  let a = 10;       // ← TDZ ENDS here. 'a' is now accessible.
+  console.log(a);   // 10 ✅
+}</pre>
+
+    <h3>Are <code>let</code> and <code>const</code> hoisted?</h3>
+    <p><strong>YES.</strong> Memory IS allocated during the creation phase. But unlike <code>var</code>, they're stored in the <strong>Lexical Environment</strong> and remain <strong>uninitialized</strong> (not even <code>undefined</code>) until execution reaches their declaration line. That gap is the TDZ.</p>
+
+    <h3>⭐ Does the memory allocation actually matter?</h3>
+    <p><strong>Yes — it's not a formality.</strong> The allocation is exactly what lets the engine distinguish two very different situations:</p>
+    <table>
+      <tr><th>Situation</th><th>Engine knows</th><th>Error message</th></tr>
+      <tr><td>Variable never declared</td><td>Nothing exists in the scope chain</td><td><code>xyz is not defined</code></td></tr>
+      <tr><td><code>let</code> declared later in scope</td><td>Slot EXISTS but is uninitialized</td><td><code>Cannot access 'xyz' before initialization</code></td></tr>
+    </table>
+    <p>If the engine allocated <strong>nothing</strong> for <code>let</code>, it couldn't know the variable is "coming later in this scope." It would walk the scope chain, find nothing, and say "not defined."</p>
+
+    <h3>The Real Behavioral Proof — Shadowing</h3>
+    <pre>let value = "outer";
+
+function demo() {
+  console.log(value);   // 💥 ReferenceError: Cannot access 'value' before initialization
+  let value = "inner";
+}
+demo();</pre>
+    <div class="note-box"><strong>💡 If <code>let value</code> inside the function had NO memory allocated</strong>, the engine would walk up the scope chain and happily print <code>"outer"</code>. Instead it errors — because the inner slot already exists and <strong>shadows</strong> the outer one, even before initialization. <strong>That's the allocation doing real work.</strong></div>
+
+    <h3>Proof via Error Messages:</h3>
+    <pre>console.log(a);     // ReferenceError: Cannot access 'a' before initialization
+let a = 10;         // ↑ "before initialization" → hoisted, but in TDZ
+
+console.log(xyz);   // ReferenceError: xyz is not defined
+                    // ↑ "is not defined" → never declared anywhere</pre>
+    <div class="warn-box"><strong>⚠️ Two different messages, two different meanings:</strong><br>
+    • <code>Cannot access 'a' before initialization</code> → declared, but in TDZ<br>
+    • <code>xyz is not defined</code> → never declared at all</div>
+
+    <div class="note-box"><strong>✅ Avoiding TDZ errors:</strong> Put declarations and initializations at the <strong>top of their scope</strong>. This shrinks the TDZ to zero.</div>
+  </div>
+</div>
+
+<!-- SEC 11 — NEW -->
+<div id="sec11">
+  <div class="section-header" onclick="toggleSection('c11')"><h1 style="border:none;margin:0;padding:0;">⚠️ 11. The DevTools Console Trap (Testing TDZ)</h1><span class="toggle-icon" id="icon-c11">▼</span></div>
+  <div class="section-content" id="c11">
+    <div class="danger-box"><strong>⚠️ Your console can lie to you.</strong> If you test TDZ directly in the Chrome DevTools console, you'll get <em>misleading</em> errors that seem to contradict everything in Section 10.</div>
+
+    <h3>What You'd See in the Console (misleading):</h3>
+    <pre>// Typed directly into DevTools console:
+
+&gt; console.log(xyz)
+❌ Uncaught ReferenceError: xyz is not defined
+
+&gt; console.log(xyx); let xyx = 1;
+❌ Uncaught ReferenceError: xyx is not defined     ← SAME error?!</pre>
+    <p>This makes it look like <code>let</code> gets no memory allocation at all — both cases give the identical error.</p>
+
+    <h3>What ACTUALLY Happens in a Real Script:</h3>
+    <pre>// In a .js file or &lt;script&gt; tag:
+
+console.log(xyz);
+// ❌ ReferenceError: xyz is not defined
+
+console.log(xyx);
+let xyx = 1;
+// ❌ ReferenceError: Cannot access 'xyx' before initialization</pre>
+    <div class="note-box"><strong>💡 TWO DIFFERENT messages.</strong> That difference is the entire proof that memory <em>was</em> allocated — the engine knows the slot exists but is uninitialized.</div>
+
+    <h3>Why the Console Behaves Differently</h3>
+    <p>DevTools doesn't run your input as a normal script. Each entry is wrapped in a special evaluation context so you can <strong>re-declare <code>let</code> variables across entries</strong> while debugging:</p>
+    <pre>// In the console — type each separately:
+let a = 1;   // fine
+let a = 2;   // fine! ✅  (DevTools relaxes the rule)
+
+// In a real .js file:
+let a = 1;
+let a = 2;   // 💥 SyntaxError: Identifier 'a' has already been declared</pre>
+    <p>That relaxation <strong>breaks TDZ semantics</strong>. Because the console re-scopes each entry instead of treating it as one continuous top-level script, the <code>let</code> isn't properly registered in the same lexical environment as the <code>console.log</code>. So the engine sees "not there at all" → generic <code>is not defined</code>.</p>
+
+    <h3>✅ How To Test TDZ Correctly</h3>
+    <pre>// Option A — wrap in a block
+{
+  console.log(xyx);
+  let xyx = 1;
+}
+// ❌ ReferenceError: Cannot access 'xyx' before initialization  ✅ correct!</pre>
+    <pre>// Option B — wrap in a function
+function test() {
+  console.log(xyx);
+  let xyx = 1;
+}
+test();
+// ❌ ReferenceError: Cannot access 'xyx' before initialization  ✅ correct!</pre>
+
+    <div class="warn-box"><strong>⚠️ Rule of thumb:</strong> <strong>Never trust the bare DevTools console</strong> for TDZ, <code>let</code>/<code>const</code> redeclaration, or top-level scope behavior. Use a real file, or wrap in a block <code>{ }</code> / function.<br><br>
+    <strong>One-line summary:</strong> DevTools trades spec-accuracy for developer convenience at the top level.</div>
+  </div>
+</div>
+
+<!-- SEC 12 -->
+<div id="sec12">
+  <div class="section-header" onclick="toggleSection('c12')"><h1 style="border:none;margin:0;padding:0;">12. Block Scope</h1><span class="toggle-icon" id="icon-c12">▼</span></div>
+  <div class="section-content" id="c12">
+    <h3>What is a Block?</h3>
+    <p>A block is defined by curly braces <code>{ }</code> — also called a <strong>Compound Statement</strong>. It groups multiple statements where JavaScript expects only one.</p>
+    <pre>if (true) statement;          // JS expects ONE statement here
+
+if (true) {                   // block groups MULTIPLE statements
+  statement1;
+  statement2;
+  statement3;
+}</pre>
+
+    <h3>What is Block Scope?</h3>
+    <pre>{
+  var a = 10;       // → Global scope (var ignores block boundaries)
+  let b = 20;       // → Block scope (specific to this block)
+  const c = 30;     // → Block scope (specific to this block)
+
+  console.log(a, b, c);   // 10 20 30 ✅ (all accessible inside)
+}
+
+console.log(a);     // 10 ✅ (var leaked out — it's in Global scope)
+console.log(b);     // 💥 ReferenceError: b is not defined
+console.log(c);     // 💥 ReferenceError: c is not defined</pre>
+
+    <h3>Where Do They Live? (DevTools View)</h3>
+    <pre>Chrome DevTools Scope Panel, paused INSIDE the block:
+
+┌─────────────────────────────┐
+│ Block scope:                │
+│   b: 20                     │  ← let lives here
+│   c: 30                     │  ← const lives here
+│                             │
+│ Global scope:               │
+│   a: 10                     │  ← var lives here (on window)
+└─────────────────────────────┘
+
+After the block ends:
+  Block scope  → DESTROYED (b and c are gone)
+  Global scope → a: 10 (still alive)</pre>
+
+    <div class="blue-box"><strong>🔑 Rule:</strong> <code>var</code> only respects <strong>function scope</strong> — it completely ignores block boundaries (<code>if</code>, <code>for</code>, plain <code>{ }</code>). <code>let</code> and <code>const</code> respect <strong>block scope</strong> — born and destroyed within their <code>{ }</code>.</div>
+
+    <div class="purple-box"><strong>🔗 The spec reason (Ch 1):</strong> <code>var</code> lives in the <strong>Variable Environment</strong> (function-scoped, same across blocks). <code>let</code>/<code>const</code> live in the <strong>Lexical Environment</strong>, and a <strong>fresh Lexical Environment is created for each block</strong>. That's the entire mechanism behind block scope.</div>
+  </div>
+</div>
+
+<!-- SEC 13 -->
+<div id="sec13">
+  <div class="section-header" onclick="toggleSection('c13')"><h1 style="border:none;margin:0;padding:0;">13. Shadowing &amp; Illegal Shadowing</h1><span class="toggle-icon" id="icon-c13">▼</span></div>
+  <div class="section-content" id="c13">
+    <h3>What is Shadowing?</h3>
+    <p>When a variable declared inside a block has the <strong>same name</strong> as one in an outer scope, the inner variable <strong>shadows</strong> (temporarily hides) the outer one within that block.</p>
+
+    <h3><code>var</code> Shadowing — Modifies the Original!</h3>
+    <pre>var x = 100;
+{
+  var x = 10;                    // SAME memory location as outer x!
+  console.log("Block x:", x);    // 10
+}
+console.log("Outside x:", x);    // 10 ← MODIFIED! (not 100 anymore)</pre>
+    <p><strong>Why?</strong> <code>var</code> doesn't respect block scope. Both declarations point to the <strong>same memory location</strong> in the Global scope. The inner overwrites the outer.</p>
+
+    <h3><code>let</code> Shadowing — Creates a Separate Variable</h3>
+    <pre>let y = 200;
+{
+  let y = 20;                    // DIFFERENT memory location (Block scope)
+  console.log("Block y:", y);    // 20
+}
+console.log("Outside y:", y);    // 200 ← UNCHANGED!</pre>
+    <p><strong>Why?</strong> <code>let</code> respects block scope. The inner <code>let y</code> creates a completely separate variable in a fresh Lexical Environment. The outer <code>y</code> is untouched.</p>
+
+    <h3>🚫 Illegal Shadowing</h3>
+    <pre>let a = 10;
+{
+  var a = 20;     // 💥 SyntaxError: Identifier 'a' has already been declared
+  console.log(a);
+}</pre>
+    <p><strong>Why?</strong> <code>var a</code> inside the block tries to declare <code>a</code> in the <em>function/global</em> scope (because <code>var</code> ignores blocks). But <code>let a</code> already occupies that scope. Conflict → SyntaxError.</p>
+
+    <div class="warn-box"><strong>Shadowing Rules:</strong><br>
+    • <code>var</code> shadows <code>var</code> → ✅ (same memory, overwrites)<br>
+    • <code>let</code> shadows <code>let</code> → ✅ (different scopes)<br>
+    • <code>let</code> shadows <code>var</code> → ✅ (block scope hides the global var)<br>
+    • <code>var</code> shadows <code>let</code> → ❌ <strong>Illegal!</strong> (SyntaxError)<br><br>
+    <strong>The rule:</strong> Shadowing is illegal if it <strong>crosses the boundary</strong> of the outer variable's scope. <code>var</code> doesn't respect block boundaries, so it "leaks" into <code>let</code>'s territory.</div>
+
+    <h3>But inside a function, it's fine:</h3>
+    <pre>let a = 10;
+function test() {
+  var a = 20;     // ✅ No error! var is contained by the function scope
+  console.log(a); // 20
+}
+test();
+console.log(a);   // 10</pre>
+    <p>The function creates its own scope, so <code>var a</code> is contained within it and doesn't conflict with the outer <code>let a</code>.</p>
+  </div>
+</div>
+
+<!-- ================= PART C ================= -->
+
+<!-- SEC 14 -->
+<div id="sec14">
+  <div class="section-header" onclick="toggleSection('c14')"><h1 style="border:none;margin:0;padding:0;">14. The 3 Error Types</h1><span class="toggle-icon" id="icon-c14">▼</span></div>
+  <div class="section-content" id="c14">
+    <table>
+      <tr><th>Error Type</th><th>What It Means</th><th>Examples</th></tr>
+      <tr><td><strong>SyntaxError</strong></td><td>Code <strong>violates basic syntax rules</strong>. Spotted during the <strong>parsing phase</strong>, before a single line executes.</td><td>
+        • Redeclaring <code>let</code>/<code>const</code>: <code>let a = 10; let a = 20;</code><br>
+        • <code>const</code> without value: <code>const b;</code><br>
+        • Illegal shadowing
+      </td></tr>
+      <tr><td><strong>TypeError</strong></td><td>The variable <strong>exists</strong>, but you're doing something its <strong>type doesn't allow</strong>.</td><td>
+        • Reassigning <code>const</code>: <code>const b = 10; b = 100;</code><br>
+        • Calling a non-function: <code>undefined()</code><br>
+        • Property access on <code>undefined</code>/<code>null</code>
+      </td></tr>
+      <tr><td><strong>ReferenceError</strong></td><td>The engine is trying to find a <strong>reference to a variable</strong> but <strong>cannot access it</strong>.</td><td>
+        • Accessing <code>let</code>/<code>const</code> in TDZ<br>
+        • Undeclared variable: <code>console.log(randomVar);</code>
+      </td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- SEC 15 -->
+<div id="sec15">
+  <div class="section-header" onclick="toggleSection('c15')"><h1 style="border:none;margin:0;padding:0;">⚙️ 15. Parsing vs Runtime — When Each Error Fires</h1><span class="toggle-icon" id="icon-c15">▼</span></div>
+  <div class="section-content" id="c15">
+    <div class="danger-box"><strong>🧠 The engine-level insight most developers miss.</strong> SyntaxErrors behave fundamentally differently from TypeError and ReferenceError because they fire at a different <em>stage</em>.</div>
+
+    <pre>Normal Flow:
+  Parsing → Memory Creation Phase → Code Execution Phase
+
+SyntaxError Flow:
+  Parsing → 💥 SyntaxError (program NEVER starts executing)</pre>
+
+    <table>
+      <tr><th>Error Type</th><th>When Detected</th><th>Does Any Code Run Before It?</th></tr>
+      <tr><td><strong>SyntaxError</strong></td><td>During <strong>parsing</strong> (before execution)</td><td>❌ NO — nothing runs at all</td></tr>
+      <tr><td><strong>ReferenceError</strong></td><td>During <strong>runtime</strong> (execution phase)</td><td>✅ YES — code runs until the error line</td></tr>
+      <tr><td><strong>TypeError</strong></td><td>During <strong>runtime</strong> (execution phase)</td><td>✅ YES — code runs until the error line</td></tr>
+    </table>
+
+    <pre>// Proof that SyntaxError kills EVERYTHING:
+console.log("I will never print");   // never executes!
+let x = 10;
+let x = 20;   // SyntaxError detected during PARSING → entire program dead</pre>
+
+    <div class="blue-box"><strong>🎯 Interview Gold:</strong> If an interviewer asks "what happens when this code runs?" and there's a SyntaxError anywhere in the file — the answer is always <em>"Nothing runs. The SyntaxError is caught during parsing, before execution begins."</em></div>
+  </div>
+</div>
+
+<!-- SEC 16 -->
+<div id="sec16">
+  <div class="section-header" onclick="toggleSection('c16')"><h1 style="border:none;margin:0;padding:0;">16. Common Gotchas</h1><span class="toggle-icon" id="icon-c16">▼</span></div>
+  <div class="section-content" id="c16">
+    <h2>Gotcha A: <code>typeof</code> on Undeclared Variables Doesn't Throw</h2>
+    <pre>console.log(typeof xyz);   // "undefined" — NO error!
+console.log(xyz);          // 💥 ReferenceError</pre>
+
+    <h2>Gotcha B: <code>var</code> in a <code>for</code> Loop Leaks</h2>
+    <pre>for (var i = 0; i &lt; 3; i++) { }
+console.log(i);   // 3 — leaked out!
+
+for (let j = 0; j &lt; 3; j++) { }
+console.log(j);   // 💥 ReferenceError — properly contained</pre>
+
+    <h2>Gotcha C: Function Expressions Behave Like Variables</h2>
+    <pre>greet();   // 💥 TypeError: greet is not a function
+var greet = function() { console.log("Hello"); };
+
+// Arrow functions behave the same:
+hi();      // 💥 TypeError
+var hi = () =&gt; console.log("Hi");</pre>
+
+    <h2>Gotcha D: Hoisting Inside Functions Creates LOCAL Shadows</h2>
+    <pre>var x = 10;
+function test() {
+  console.log(x);   // undefined! (NOT 10)
+  var x = 20;       // this var x is hoisted WITHIN test's EC
+  console.log(x);   // 20
+}
+test();
+console.log(x);     // 10 (global x unchanged)</pre>
+    <p>The <code>var x = 20</code> inside <code>test()</code> causes <code>x</code> to be hoisted within test's own EC. So line 3 sees the local <code>x</code> (<code>undefined</code> at that point), not the global one.</p>
+
+    <h2>Gotcha E: <code>const</code> Objects Can Be Mutated!</h2>
+    <pre>const obj = { name: "Ada" };
+
+obj.name = "Grace";        // ✅ works! Mutation is allowed.
+obj = { name: "New" };     // 💥 TypeError: Assignment to constant variable</pre>
+    <p><code>const</code> prevents <strong>reassignment</strong> of the binding, but does NOT make the value immutable. Object properties can still change. <em>(Full detail in Chapter 5 — Value vs Reference.)</em></p>
+
+    <h2>Gotcha F: Testing TDZ in DevTools</h2>
+    <p>See <a href="#sec11">Section 11</a> — the bare console gives misleading errors. Always wrap in a block or function.</p>
+  </div>
+</div>
+
+<!-- SEC 17 -->
+<div id="sec17">
+  <div class="section-header" onclick="toggleSection('c17')"><h1 style="border:none;margin:0;padding:0;">17. Master Cheat Sheet</h1><span class="toggle-icon" id="icon-c17">▼</span></div>
+  <div class="section-content" id="c17">
+    <table>
+      <tr><th>Concept</th><th>Key Point</th></tr>
+      <tr><td>Shortest JS Program</td><td>Empty file → engine still creates GEC, <code>window</code>, and <code>this</code></td></tr>
+      <tr><td>Global Object</td><td><code>window</code> (browser), <code>global</code> (Node), <code>globalThis</code> (universal)</td></tr>
+      <tr><td>Global Space</td><td>Code outside any function. <code>var</code> + fn declarations attach to <code>window</code>.</td></tr>
+      <tr><td><code>let</code>/<code>const</code> at global</td><td>Stored in Script scope (Declarative Env Record), NOT on <code>window</code></td></tr>
+      <tr><td><code>undefined</code></td><td>"Memory allocated, value not yet assigned." Engine's placeholder.</td></tr>
+      <tr><td><code>not defined</code></td><td>"Variable doesn't exist in memory at all." → ReferenceError</td></tr>
+      <tr><td><code>typeof</code> quirk</td><td>Only operator that doesn't throw on undeclared vars — returns <code>"undefined"</code></td></tr>
+      <tr><td>Loosely Typed</td><td>Variables not bound to a type. Can hold number, string, boolean, etc.</td></tr>
+      <tr><td>3 States of a Variable</td><td>DECLARED → INITIALIZED → ASSIGNED. TDZ = the gap between 1 and 2.</td></tr>
+      <tr><td>Hoisting</td><td>Memory Phase byproduct. <code>var</code> → <code>undefined</code>. Functions → full code. <code>let</code>/<code>const</code> → TDZ.</td></tr>
+      <tr><td>TDZ</td><td>Gap between declaration and initialization for <code>let</code>/<code>const</code>. Access → ReferenceError.</td></tr>
+      <tr><td>Does <code>let</code> allocation matter?</td><td>YES — enables "cannot access before initialization" vs "is not defined", and shadowing</td></tr>
+      <tr><td>DevTools TDZ trap</td><td>Bare console gives wrong errors. Wrap in <code>{ }</code> or a function to test properly.</td></tr>
+      <tr><td>Block Scope</td><td><code>let</code>/<code>const</code> respect <code>{ }</code>. <code>var</code> does NOT (function-scoped).</td></tr>
+      <tr><td>Environment split</td><td><code>var</code> → Variable Environment. <code>let</code>/<code>const</code> → Lexical Environment (fresh per block).</td></tr>
+      <tr><td>Shadowing</td><td><code>var</code> shadows by overwriting (same memory). <code>let</code> shadows by creating a new scope.</td></tr>
+      <tr><td>Illegal Shadowing</td><td><code>var</code> cannot shadow <code>let</code> in the same scope → SyntaxError</td></tr>
+      <tr><td>SyntaxError</td><td>Detected during <strong>parsing</strong>. NO code runs at all.</td></tr>
+      <tr><td>TypeError</td><td>Detected at <strong>runtime</strong>. Variable exists, operation not allowed.</td></tr>
+      <tr><td>ReferenceError</td><td>Detected at <strong>runtime</strong>. Can't find or access the variable.</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- SEC 18 -->
+<div id="sec18">
+  <div class="section-header" onclick="toggleSection('c18')"><h1 style="border:none;margin:0;padding:0;">18. Interview Answer Templates</h1><span class="toggle-icon" id="icon-c18">▼</span></div>
+  <div class="section-content" id="c18">
+    <h3>Q: "What is the shortest JavaScript program?"</h3>
+    <div class="note-box" style="line-height:1.8;"><em>"An empty file. When run, the JS Engine still creates a Global Execution Context, a Global Object like <code>window</code>, and sets up the <code>this</code> keyword to point to that Global Object."</em></div>
+
+    <h3>Q: "Difference between <code>undefined</code> and <code>not defined</code>?"</h3>
+    <div class="note-box" style="line-height:1.8;"><em>"<code>undefined</code> means the variable has been declared in memory but not yet assigned a value. <code>not defined</code> means the variable was never declared and doesn't exist in the current scope — accessing it throws a ReferenceError."</em></div>
+
+    <h3>Q: "What is Hoisting?"</h3>
+    <div class="note-box" style="line-height:1.8;"><em>"Hoisting lets you access variables and functions before they're declared in the code. It happens because memory is allocated during the Memory Creation Phase — <code>var</code> gets <code>undefined</code>, function declarations get their whole body. Nothing is physically moved in the code; it's a byproduct of how the Execution Context is created."</em></div>
+
+    <h3>Q: "What is the Temporal Dead Zone?"</h3>
+    <div class="note-box" style="line-height:1.8;"><em>"The TDZ is the window between a <code>let</code> or <code>const</code> variable being declared in memory and being initialized with a value. Accessing it during that window throws a ReferenceError saying 'cannot access before initialization' — which is different from 'is not defined', and that difference proves the memory was actually allocated."</em></div>
+
+    <h3>Q: "Are <code>let</code> and <code>const</code> hoisted?"</h3>
+    <div class="note-box" style="line-height:1.8;"><em>"Yes. Memory is allocated for them during the creation phase, but they're stored in the Lexical Environment and remain uninitialized until execution reaches their line. That's what creates the Temporal Dead Zone. You can prove they're hoisted by the error message — 'cannot access before initialization' only makes sense if the slot exists."</em></div>
+
+    <h3>Q: "Why doesn't <code>window.x</code> work for a global <code>let</code>?"</h3>
+    <div class="note-box" style="line-height:1.8;"><em>"Because the global scope has two environment records. <code>var</code> and function declarations go into the Object Environment Record, whose binding object literally is <code>window</code> — so they show up as properties of <code>window</code>. But <code>let</code>, <code>const</code>, and <code>class</code> go into the Declarative Environment Record, which DevTools shows as the 'Script' scope. It's still global and reachable by name via the scope chain, but it isn't a property of <code>window</code>."</em></div>
+
+    <h3>Q: "TypeError vs SyntaxError?"</h3>
+    <div class="note-box" style="line-height:1.8;"><em>"A SyntaxError occurs during parsing when code violates language rules — like redeclaring a <code>let</code> or a <code>const</code> without an initializer. Because it's caught at parse time, no code runs at all. A TypeError happens at runtime when you perform an invalid operation on an existing variable — like reassigning a <code>const</code> or calling <code>undefined</code> as a function. Since it's a runtime error, everything before it executes normally."</em></div>
+  </div>
+</div>
+
+<!-- SEC 19 — PRACTICE -->
+<div class="page-break" id="sec19">
+  <div class="section-header" onclick="toggleSection('c19')"><h1 style="border:none;margin:0;padding:0;">19. Practice Sheet — 10 Questions</h1><span class="toggle-icon" id="icon-c19">▼</span></div>
+  <div class="section-content" id="c19">
+    <p><strong>📝 Instructions:</strong> Predict the EXACT output or error type. Note whether code before the error still runs. Predict, don't run.</p>
+
+    <div class="question-block" id="q1"><h2>Q1 — Hoisting Basics <span class="tag tag-easy">Easy</span></h2>
+    <pre>console.log(a);
+console.log(b);
+var a = "hello";
+let b = "world";</pre>
+    <a class="nav-link" href="#ans1">→ See Answer</a></div>
+
+    <div class="question-block" id="q2"><h2>Q2 — Function Types <span class="tag tag-easy">Easy</span></h2>
+    <pre>console.log(add(2, 3));
+console.log(sub(5, 2));
+console.log(mul(3, 4));
+
+function add(a, b) { return a + b; }
+var sub = function(a, b) { return a - b; };
+var mul = (a, b) =&gt; a * b;</pre>
+    <a class="nav-link" href="#ans2">→ See Answer</a></div>
+
+    <div class="question-block" id="q3"><h2>Q3 — <code>const</code> Edge Case <span class="tag tag-easy">Easy</span></h2>
+    <pre>const obj = { city: "Mumbai" };
+obj.city = "Powai";
+console.log(obj.city);
+obj = { city: "Chennai" };</pre>
+    <a class="nav-link" href="#ans3">→ See Answer</a></div>
+
+    <div class="question-block" id="q4"><h2>Q4 — Block Scope <span class="tag tag-medium">Medium</span></h2>
+    <pre>let x = "global";
+{
+  let x = "block1";
+  console.log("A:", x);
+
+  {
+    let x = "block2";
+    console.log("B:", x);
+  }
+
+  console.log("C:", x);
+}
+console.log("D:", x);</pre>
+    <a class="nav-link" href="#ans4">→ See Answer</a></div>
+
+    <div class="question-block" id="q5"><h2>Q5 — Shadowing Trap <span class="tag tag-medium">Medium</span></h2>
+    <pre>var a = "outer";
+{
+  var a = "inner";
+  console.log("1:", a);
+}
+console.log("2:", a);</pre>
+    <a class="nav-link" href="#ans5">→ See Answer</a></div>
+
+    <div class="question-block" id="q6"><h2>Q6 — Error Type Identification <span class="tag tag-medium">Medium</span></h2>
+    <pre>console.log("Start");
+const x = 10;
+x = 20;
+console.log("End");</pre>
+    <p><strong>1)</strong> Does "Start" print?</p>
+    <p><strong>2)</strong> Does "End" print?</p>
+    <p><strong>3)</strong> What error is thrown?</p>
+    <a class="nav-link" href="#ans6">→ See Answer</a></div>
+
+    <div class="question-block" id="q7"><h2>Q7 — TDZ in Action <span class="tag tag-hard">Hard</span></h2>
+    <pre>let a = 10;
+function test() {
+  console.log(a);
+  let a = 20;
+}
+test();</pre>
+    <p><strong>Does it print 10 (from the outer scope) or something else?</strong></p>
+    <a class="nav-link" href="#ans7">→ See Answer</a></div>
+
+    <div class="question-block" id="q8"><h2>Q8 — SyntaxError Timing <span class="tag tag-hard">Hard</span></h2>
+    <pre>console.log("Hello World");
+var a = 10;
+let b = 20;
+let b = 30;</pre>
+    <p><strong>Does "Hello World" print?</strong></p>
+    <a class="nav-link" href="#ans8">→ See Answer</a></div>
+
+    <div class="question-block" id="q9"><h2>Q9 — Illegal Shadowing <span class="tag tag-expert">Expert</span></h2>
+    <pre>function test() {
+  let a = 10;
+
+  {
+    var a = 20;
+  }
+
+  console.log(a);
+}
+test();</pre>
+    <p><strong>What happens? Think about where <code>var a</code> tries to live.</strong></p>
+    <a class="nav-link" href="#ans9">→ See Answer</a></div>
+
+    <div class="question-block" id="q10"><h2>Q10 — The Final Boss <span class="tag tag-expert">Expert</span></h2>
+    <pre>var a = 100;
+let b = 200;
+{
+  var a = 10;
+  let b = 20;
+  const c = 30;
+
+  console.log("A:", a);
+  console.log("B:", b);
+  console.log("C:", c);
+
+  {
+    let b = 40;
+    console.log("D:", b);
+    console.log("E:", a);
+  }
+}
+console.log("F:", a);
+console.log("G:", b);
+console.log("H:", typeof c);</pre>
+    <p><strong>All 8 outputs (A through H).</strong></p>
+    <a class="nav-link" href="#ans10">→ See Answer</a></div>
+  </div>
+</div>
+
+<!-- SEC 20 — ANSWERS -->
+<div class="page-break" id="sec20">
+  <div class="section-header" onclick="toggleSection('c20')"><h1 style="border:none;margin:0;padding:0;">20. Answer Key</h1><span class="toggle-icon" id="icon-c20">▼</span></div>
+  <div class="section-content" id="c20">
+
+    <h2 id="ans1">Q1 — Answer</h2>
+    <pre>undefined
+💥 ReferenceError: Cannot access 'b' before initialization</pre>
+    <p><code>var a</code> is hoisted with <code>undefined</code>. <code>let b</code> is hoisted but sits in the TDZ → ReferenceError. Program crashes at line 2.</p>
+    <a class="nav-link back" href="#q1">← Back to Question 1</a><hr>
+
+    <h2 id="ans2">Q2 — Answer</h2>
+    <pre>5
+💥 TypeError: sub is not a function</pre>
+    <p><code>add</code> is a function declaration → fully hoisted → works. <code>sub</code> is a function expression in a <code>var</code> → hoisted as <code>undefined</code> → calling <code>undefined(5,2)</code> → TypeError. <code>mul</code> never executes (program already crashed).</p>
+    <a class="nav-link back" href="#q2">← Back to Question 2</a><hr>
+
+    <h2 id="ans3">Q3 — Answer</h2>
+    <pre>"Powai"
+💥 TypeError: Assignment to constant variable</pre>
+    <p><code>obj.city = "Powai"</code> is <strong>mutation</strong> (allowed for <code>const</code> objects). <code>obj = {...}</code> is <strong>reassignment</strong> (NOT allowed) → TypeError.</p>
+    <a class="nav-link back" href="#q3">← Back to Question 3</a><hr>
+
+    <h2 id="ans4">Q4 — Answer</h2>
+    <pre>A: "block1"
+B: "block2"
+C: "block1"
+D: "global"</pre>
+    <p>Each <code>let x</code> creates a separate variable in its own Lexical Environment (fresh per block). Nested blocks don't affect outer blocks. Each log sees the <code>x</code> in its nearest enclosing scope.</p>
+    <a class="nav-link back" href="#q4">← Back to Question 4</a><hr>
+
+    <h2 id="ans5">Q5 — Answer</h2>
+    <pre>1: "inner"
+2: "inner"</pre>
+    <p><code>var</code> ignores block scope. Both declarations point to the <strong>same</strong> Global memory slot. The inner one overwrites the outer. Output 2 is "inner", not "outer".</p>
+    <a class="nav-link back" href="#q5">← Back to Question 5</a><hr>
+
+    <h2 id="ans6">Q6 — Answer</h2>
+    <pre>"Start"    ← prints!
+💥 TypeError: Assignment to constant variable
+"End" never prints</pre>
+    <p>This is a <strong>TypeError</strong>, not a SyntaxError. TypeError is a <strong>runtime error</strong> — code runs until the error line. So "Start" prints, then <code>x = 20</code> throws, and "End" is never reached.</p>
+    <a class="nav-link back" href="#q6">← Back to Question 6</a><hr>
+
+    <h2 id="ans7">Q7 — Answer</h2>
+    <pre>💥 ReferenceError: Cannot access 'a' before initialization</pre>
+    <p>The <code>let a = 20</code> inside <code>test()</code> creates a <strong>new <code>a</code></strong> in test's scope, separate from the outer one. This local <code>a</code> is declared during the creation phase but sits in the TDZ until line 4. So <code>console.log(a)</code> hits the TDZ → ReferenceError. It does <strong>NOT</strong> fall back to the outer <code>a = 10</code>.</p>
+    <div class="danger-box"><strong>🔑 Key Trap:</strong> Once <code>let a</code> exists in a scope, that scope's <code>a</code> takes priority. The outer <code>a</code> is completely shadowed — <strong>even during the TDZ</strong>. There is no "fallback" to the outer variable. This is exactly why the memory allocation for <code>let</code> matters (Section 10).</div>
+    <a class="nav-link back" href="#q7">← Back to Question 7</a><hr>
+
+    <h2 id="ans8">Q8 — Answer</h2>
+    <pre>Nothing prints. Not even "Hello World".
+💥 SyntaxError: Identifier 'b' has already been declared</pre>
+    <p>SyntaxErrors are detected during <strong>parsing</strong>, before any code executes. The duplicate <code>let b</code> is caught immediately → entire program is dead on arrival.</p>
+    <a class="nav-link back" href="#q8">← Back to Question 8</a><hr>
+
+    <h2 id="ans9">Q9 — Answer</h2>
+    <pre>💥 SyntaxError: Identifier 'a' has already been declared</pre>
+    <p>Illegal shadowing inside a function. <code>var a = 20</code> tries to declare <code>a</code> in the <strong>function scope</strong> (because <code>var</code> ignores block boundaries). But <code>let a = 10</code> already occupies that function scope. Conflict → SyntaxError, caught at parse time, nothing runs.</p>
+    <a class="nav-link back" href="#q9">← Back to Question 9</a><hr>
+
+    <h2 id="ans10">Q10 — Answer</h2>
+    <pre>A: 10
+B: 20
+C: 30
+D: 40
+E: 10
+F: 10
+G: 200
+H: "undefined"</pre>
+    <ul>
+      <li><strong>A:</strong> <code>var a = 10</code> inside the block overwrites global <code>var a = 100</code> (same memory) → <code>10</code></li>
+      <li><strong>B:</strong> <code>let b = 20</code> is its own Block scope variable → <code>20</code></li>
+      <li><strong>C:</strong> <code>const c = 30</code> in Block scope → <code>30</code></li>
+      <li><strong>D:</strong> Nested block's <code>let b = 40</code> → its own fresh Lexical Environment → <code>40</code></li>
+      <li><strong>E:</strong> <code>a</code> in the nested block → no local <code>a</code> → walks up the scope chain → finds <code>var a = 10</code> (Global) → <code>10</code></li>
+      <li><strong>F:</strong> Outside all blocks → <code>var a</code> was permanently modified to 10 → <code>10</code></li>
+      <li><strong>G:</strong> Outside all blocks → the outer <code>let b = 200</code> was never touched (the block's <code>let b = 20</code> was a separate variable) → <code>200</code></li>
+      <li><strong>H:</strong> <code>c</code> lived in Block scope → destroyed when the block ended → <code>typeof c</code> → <code>"undefined"</code> (typeof on undeclared doesn't throw!)</li>
+    </ul>
+    <a class="nav-link back" href="#q10">← Back to Question 10</a>
+
+    <hr>
+    <h2 style="text-align:center;">📊 Scoring Guide</h2>
+    <table>
+      <tr><th>Score</th><th>Level</th><th>What It Means</th></tr>
+      <tr><td>9–10 / 10</td><td>🏆 Mastery</td><td>You own this topic. Teach others!</td></tr>
+      <tr><td>7–8 / 10</td><td>✅ Solid</td><td>Strong foundation. Review missed ones.</td></tr>
+      <tr><td>5–6 / 10</td><td>🟨 Getting There</td><td>Re-read Sections 10, 12, 13, 15 (TDZ, Scope, Shadowing, Errors).</td></tr>
+      <tr><td>Below 5</td><td>🔄 Needs Revision</td><td>Restart from Section 9 (Hoisting).</td></tr>
+    </table>
+
+    <div style="text-align:center;margin-top:25px;padding:18px;background:#e3f2fd;border-radius:8px;">
+      <p style="font-size:1.15em;font-weight:bold;color:#0078D4;">Key Mental Models:</p>
+      <p style="font-weight:bold;">🔹 var = function scope (Variable Env) | let/const = block scope (Lexical Env)</p>
+      <p style="font-weight:bold;">🔹 3 states: DECLARED → INITIALIZED → ASSIGNED. TDZ = the gap.</p>
+      <p style="font-weight:bold;">🔹 SyntaxError = parsing (nothing runs) | TypeError/ReferenceError = runtime</p>
+      <p style="font-weight:bold;">🔹 Hoisting = Memory Phase byproduct, NOT "moving code to the top"</p>
+      <p style="font-weight:bold;">🔹 Never test TDZ in the bare DevTools console — wrap in { } or a function</p>
+    </div>
+  </div>
+</div>
+</div>
+<script>
+function toggleSidebar(){document.getElementById('sidebar').classList.toggle('collapsed');document.getElementById('mainContent').classList.toggle('full');}
+function scrollTo(e,id){e.preventDefault();const el=document.getElementById(id);if(el){const cId='c'+id.replace('sec','');const c=document.getElementById(cId);if(c&&c.classList.contains('collapsed'))toggleSection(cId);el.scrollIntoView({behavior:'smooth',block:'start'});}if(window.innerWidth<=768){document.getElementById('sidebar').classList.add('collapsed');document.getElementById('mainContent').classList.add('full');}}
+function toggleSection(id){const el=document.getElementById(id);const icon=document.getElementById('icon-'+id);if(el.classList.contains('collapsed')){el.classList.remove('collapsed');el.style.maxHeight=el.scrollHeight+10000+'px';if(icon)icon.classList.remove('collapsed');}else{el.classList.add('collapsed');el.style.maxHeight='0px';if(icon)icon.classList.add('collapsed');}}
+document.addEventListener('DOMContentLoaded',function(){document.querySelectorAll('.section-content').forEach(el=>{el.style.maxHeight=el.scrollHeight+10000+'px';});});
+</script>
+</body>
+</html>

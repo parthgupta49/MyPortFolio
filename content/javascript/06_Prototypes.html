@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prototypes & Prototypal Inheritance — Complete Notes</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Calibri, Arial, sans-serif; color: #1a1a1a; line-height: 1.7; background: #fff; }
+
+  /* SIDEBAR */
+  .sidebar-toggle { position: fixed; top: 12px; left: 12px; z-index: 1001; background: #0078D4; color: #fff; border: none; width: 40px; height: 40px; border-radius: 8px; font-size: 1.4em; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+  .sidebar-toggle:hover { background: #106ebe; }
+  .sidebar { position: fixed; top: 0; left: 0; width: 290px; height: 100vh; background: #f0f4ff; border-right: 2px solid #0078D4; overflow-y: auto; z-index: 1000; transform: translateX(0); transition: transform 0.3s ease; padding: 60px 15px 20px 15px; }
+  .sidebar.collapsed { transform: translateX(-290px); }
+  .sidebar h3 { color: #0078D4; font-size: 1em; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 2px solid #0078D4; }
+  .sidebar a { display: block; padding: 5px 8px; color: #2b579a; text-decoration: none; font-size: 0.85em; border-radius: 4px; margin-bottom: 2px; }
+  .sidebar a:hover { background: #dce6f7; }
+  .sidebar .group-label { color: #555; font-weight: bold; font-size: 0.78em; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 12px; margin-bottom: 4px; padding-left: 8px; }
+
+  /* MAIN */
+  .main { margin-left: 290px; padding: 20px 30px 40px 30px; max-width: 990px; transition: margin-left 0.3s ease; }
+  .main.full { margin-left: 0; }
+
+  /* TITLE */
+  .title-block { text-align: center; padding: 25px 0; border-bottom: 4px solid #0078D4; margin-bottom: 25px; }
+  .title-block h1 { color: #0078D4; font-size: 2em; border: none; margin: 0; padding: 0; }
+  .title-block p { color: #555; font-size: 0.95em; margin: 3px 0; }
+
+  /* HEADINGS */
+  h1 { color: #0078D4; border-bottom: 3px solid #0078D4; padding-bottom: 8px; margin-top: 35px; font-size: 1.6em; }
+  h2 { color: #2b579a; margin-top: 25px; font-size: 1.3em; }
+  h3 { color: #444; margin-top: 18px; font-size: 1.1em; }
+  p { margin: 8px 0; }
+  ul, ol { padding-left: 24px; margin: 8px 0; }
+  li { margin-bottom: 6px; }
+
+  /* COLLAPSIBLE */
+  .section-header { cursor: pointer; display: flex; align-items: center; justify-content: space-between; padding: 10px 0; user-select: none; }
+  .section-header:hover h1 { color: #106ebe; }
+  .section-header .toggle-icon { font-size: 1.2em; color: #0078D4; transition: transform 0.3s; min-width: 24px; text-align: center; }
+  .section-header .toggle-icon.collapsed { transform: rotate(-90deg); }
+  .section-content { overflow: hidden; transition: max-height 0.4s ease; }
+  .section-content.collapsed { max-height: 0 !important; overflow: hidden; }
+
+  /* CODE */
+  pre { background: #f5f5f5; border: 1px solid #ddd; border-left: 4px solid #0078D4; padding: 14px 18px; font-family: 'Consolas', 'Courier New', monospace; font-size: 0.92em; overflow-x: auto; border-radius: 4px; white-space: pre-wrap; margin: 12px 0; }
+  code { font-family: 'Consolas', monospace; background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-size: 0.88em; }
+
+  /* TABLES */
+  table { border-collapse: collapse; width: 100%; margin: 14px 0; }
+  th { background: #0078D4; color: #fff; padding: 10px 14px; text-align: center; font-size: 0.92em; }
+  td { border: 1px solid #ccc; padding: 9px 14px; text-align: center; font-size: 0.9em; }
+  tr:nth-child(even) { background: #f9f9f9; }
+
+  /* BOXES */
+  .note-box { background: #e8f4e8; border-left: 4px solid #2e7d32; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+  .note-box strong { color: #2e7d32; }
+  .warn-box { background: #fff3e0; border-left: 4px solid #e65100; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+  .warn-box strong { color: #e65100; }
+  .danger-box { background: #fce4ec; border-left: 4px solid #c62828; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+  .danger-box strong { color: #c62828; }
+  .blue-box { background: #e3f2fd; border-left: 4px solid #1565c0; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+  .blue-box strong { color: #1565c0; }
+  .purple-box { background: #f3e5f5; border-left: 4px solid #7b1fa2; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+  .purple-box strong { color: #7b1fa2; }
+
+  /* PRACTICE */
+  .question-block { background: #fafafa; border: 1px solid #e0e0e0; padding: 16px 20px; margin: 18px 0; border-radius: 6px; }
+  .question-block h2 { margin-top: 0; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.78em; font-weight: bold; margin-left: 5px; }
+  .tag-easy { background: #e8f5e9; color: #2e7d32; }
+  .tag-medium { background: #fff8e1; color: #f57f17; }
+  .tag-hard { background: #fce4ec; color: #c62828; }
+  .tag-expert { background: #4a148c; color: #fff; }
+  .nav-link { display: inline-block; margin-top: 8px; font-size: 0.85em; color: #7b1fa2; text-decoration: none; font-weight: bold; }
+  .nav-link:hover { text-decoration: underline; }
+  .nav-link.back { color: #0078D4; }
+  .page-break { margin-top: 50px; border-top: 3px double #0078D4; padding-top: 20px; }
+
+  @media (max-width: 768px) {
+    .sidebar { width: 250px; }
+    .main { margin-left: 0; padding: 15px; }
+    .sidebar.collapsed { transform: translateX(-250px); }
+  }
+</style>
+</head>
+<body>
+
+<button class="sidebar-toggle" onclick="toggleSidebar()" id="sidebarBtn">☰</button>
+
+<nav class="sidebar" id="sidebar">
+  <h3>📑 Prototypes — Navigation</h3>
+  <div class="group-label">📖 Core Concepts</div>
+  <a href="#sec1" onclick="scrollTo(event,'sec1')">1. What is a Prototype?</a>
+  <a href="#sec2" onclick="scrollTo(event,'sec2')">2. ⚡ __proto__ vs prototype</a>
+  <a href="#sec3" onclick="scrollTo(event,'sec3')">3. The Prototype Chain</a>
+  <a href="#sec4" onclick="scrollTo(event,'sec4')">4. Property Lookup Algorithm</a>
+  <a href="#sec5" onclick="scrollTo(event,'sec5')">5. Object.create()</a>
+  <div class="group-label">🔬 Constructor Pattern</div>
+  <a href="#sec6" onclick="scrollTo(event,'sec6')">6. ⭐ The new Keyword — 4 Steps</a>
+  <a href="#sec7" onclick="scrollTo(event,'sec7')">7. ⭐ Classes Are Syntactic Sugar</a>
+  <a href="#sec8" onclick="scrollTo(event,'sec8')">8. extends, super &amp; instanceof</a>
+  <div class="group-label">💼 Practical</div>
+  <a href="#sec9" onclick="scrollTo(event,'sec9')">9. Extending Built-in Prototypes</a>
+  <a href="#sec10" onclick="scrollTo(event,'sec10')">10. Common Gotchas</a>
+  <div class="group-label">📝 Revision</div>
+  <a href="#sec11" onclick="scrollTo(event,'sec11')">11. Master Cheat Sheet</a>
+  <a href="#sec12" onclick="scrollTo(event,'sec12')">12. Interview Templates</a>
+  <div class="group-label">🧪 Practice</div>
+  <a href="#sec13" onclick="scrollTo(event,'sec13')">13. Practice Sheet (10 Qs)</a>
+  <a href="#sec14" onclick="scrollTo(event,'sec14')">14. Answer Key</a>
+</nav>
+
+<div class="main" id="mainContent">
+
+<div class="title-block">
+  <h1>Prototypes &amp; Prototypal Inheritance</h1>
+  <p><strong>Complete Revision Notes + Practice Sheet</strong></p>
+  <p>Chapter 5 — The JavaScript Codex | Week 2</p>
+  <p><em>Prototype chains, the <code>new</code> keyword under the hood, and why classes are just syntactic sugar</em></p>
+</div>
+
+<!-- ===== SEC 1 ===== -->
+<div id="sec1">
+  <div class="section-header" onclick="toggleSection('c1')">
+    <h1 style="border:none;margin:0;padding:0;">1. What is a Prototype?</h1>
+    <span class="toggle-icon" id="icon-c1">▼</span>
+  </div>
+  <div class="section-content" id="c1">
+    <div class="danger-box">
+      <strong>Core Idea:</strong> When you create a JavaScript object, array, or function, the JS engine <strong>automatically attaches a hidden object</strong> to it. That hidden object is called the <strong>Prototype</strong>. It contains built-in helper methods and properties.
+    </div>
+
+    <p>This is why you can call methods on things you never defined them on. The methods live on the prototype, and your object <em>inherits</em> access to them.</p>
+
+    <h3>Proof — Arrays Have Methods You Never Defined:</h3>
+    <pre>const arr = ["Parth", "Deepika"];
+
+// You never wrote push, pop, map, filter, etc.
+// But they all work:
+arr.push("Aditya");     // ✅ works
+arr.map(x => x);        // ✅ works
+arr.filter(x => x);     // ✅ works
+
+// Where are these methods coming from?
+console.log(arr.__proto__);  // Array.prototype — contains all array methods</pre>
+
+    <h3>Proof — Objects Have Methods You Never Defined:</h3>
+    <pre>const obj = { name: "Parth" };
+
+// You never wrote toString or hasOwnProperty.
+// But they work:
+obj.toString();                    // "[object Object]"
+obj.hasOwnProperty("name");        // true
+
+// Where are these methods coming from?
+console.log(obj.__proto__);        // Object.prototype</pre>
+
+    <h3>Proof — Functions Have Methods You Never Defined:</h3>
+    <pre>function fn() { }
+
+// You never wrote call, apply, or bind.
+// But they work:
+fn.call();
+fn.apply();
+fn.bind();
+
+// Where are these methods coming from?
+console.log(fn.__proto__);         // Function.prototype</pre>
+
+    <h3>The Hidden Attachment — Visualized:</h3>
+    <pre>const arr = ["Parth"];
+
+MEMORY:
+┌────────────────────┐
+│  arr               │
+│  ├── [0]: "Parth"  │
+│  ├── length: 1     │
+│  └── __proto__ ─────┐    ← hidden reference the engine adds
+└─────────────────────┼───→ Array.prototype
+                      │      ├── push
+                      │      ├── pop
+                      │      ├── map
+                      │      ├── filter
+                      │      └── ...</pre>
+
+    <div class="blue-box">
+      <strong>🔑 Key Insight:</strong> Prototypal inheritance in JavaScript is <strong>not classical inheritance</strong> like Java or C++. Forget classes and parent/child hierarchies for a moment. In JS, inheritance is simply <strong>"one object accessing the methods and properties of another object"</strong> through a hidden link (<code>__proto__</code>).
+    </div>
+  </div>
+</div>
+
+<!-- ===== SEC 2 ===== -->
+<div id="sec2">
+  <div class="section-header" onclick="toggleSection('c2')">
+    <h1 style="border:none;margin:0;padding:0;">⚡ 2. <code>__proto__</code> vs <code>prototype</code> — The Sharp Distinction</h1>
+    <span class="toggle-icon" id="icon-c2">▼</span>
+  </div>
+  <div class="section-content" id="c2">
+    <div class="danger-box">
+      <strong>🧠 This is THE most confusing pair in JavaScript.</strong> They sound similar, are related, but do completely different things. Get this section right and 80% of prototype confusion disappears.
+    </div>
+
+    <h3>The One-Line Difference:</h3>
+    <table>
+      <tr><th>Property</th><th>Who Has It?</th><th>What Is It?</th></tr>
+      <tr>
+        <td><code>SomeFunction.prototype</code></td>
+        <td>ONLY functions (constructor functions)</td>
+        <td>A container object where you attach methods that instances will inherit</td>
+      </tr>
+      <tr>
+        <td><code>someObject.__proto__</code></td>
+        <td>Every object / instance</td>
+        <td>A reference (pointer) to its prototype — the object it inherits from</td>
+      </tr>
+    </table>
+
+    <h3>Full Visualization:</h3>
+    <pre>function Person(name) {
+  this.name = name;
+}
+Person.prototype.greet = function() { return "Hi"; };
+
+const p = new Person("Parth");</pre>
+
+    <pre>FUNCTION SIDE                      INSTANCE SIDE
+─────────────                      ─────────────
+
+Person (the function)              p (the instance)
+├── name: "Person"                 ├── name: "Parth"
+├── length: 1                      │
+├── prototype ──────┐              ├── __proto__ ─┐
+│                   │              │              │
+└── (function code) │              └── (data)     │
+                    ↓                             │
+             ┌────────────────┐ ←─────────────────┘
+             │ Person.prototype│
+             │ (an object)     │
+             │ ├── greet: fn   │
+             │ ├── constructor │
+             │ └── __proto__ ──┐
+             └─────────────────┼──→ Object.prototype
+                               │      ├── toString
+                               │      ├── hasOwnProperty
+                               │      └── __proto__ ──→ null</pre>
+
+    <h3>The Connection Between Them:</h3>
+    <pre>p.__proto__ === Person.prototype;   // true ✅
+
+// When you do `new Person(...)`, the engine sets the new instance's
+// __proto__ to point to Person.prototype. THAT is the link that makes
+// inheritance work.</pre>
+
+    <div class="note-box">
+      <strong>🎯 The Memory Aid:</strong><br>
+      • <code>prototype</code> lives on the <strong>function/class</strong> — it's the <strong>template</strong> (what will be inherited).<br>
+      • <code>__proto__</code> lives on the <strong>instance</strong> — it's the <strong>link</strong> (pointing to that template).
+    </div>
+
+    <h3>Why the Weird <code>__proto__</code> Name?</h3>
+    <p>The double underscores (called "dunder" — <strong>d</strong>ouble <strong>under</strong>score) are a signal to developers: <em>"this is internal, don't accidentally mess with it."</em> It's visually distinct so you never type it by mistake.</p>
+
+    <h3>Modern Best Practice:</h3>
+    <pre>// __proto__ is technically deprecated (though universally supported)
+// Modern equivalents:
+
+Object.getPrototypeOf(p);              // read prototype (replaces p.__proto__)
+Object.setPrototypeOf(p, newProto);    // write prototype (replaces p.__proto__ = ...)
+
+// For learning and debugging in DevTools, __proto__ is still fine.
+// For production code, use the Object methods.</pre>
+  </div>
+</div>
+
+<!-- ===== SEC 3 ===== -->
+<div id="sec3">
+  <div class="section-header" onclick="toggleSection('c3')">
+    <h1 style="border:none;margin:0;padding:0;">3. The Prototype Chain</h1>
+    <span class="toggle-icon" id="icon-c3">▼</span>
+  </div>
+  <div class="section-content" id="c3">
+    <p>Because every prototype is itself an object, it has its own prototype. Follow the <code>__proto__</code> pointers, and you get a chain. This is the <strong>Prototype Chain</strong>.</p>
+
+    <h3>The Array Prototype Chain:</h3>
+    <pre>const arr = [1, 2, 3];
+
+arr.__proto__                              → Array.prototype
+arr.__proto__.__proto__                    → Object.prototype
+arr.__proto__.__proto__.__proto__          → null
+
+VISUALIZED:
+┌──────┐   ┌─────────────────┐   ┌──────────────────┐   ┌──────┐
+│ arr  │──→│ Array.prototype │──→│ Object.prototype │──→│ null │
+└──────┘   └─────────────────┘   └──────────────────┘   └──────┘
+           (push, map, filter,   (toString, hasOwn,      (end of chain)
+            forEach, ...)         valueOf, ...)</pre>
+
+    <h3>The Object Prototype Chain:</h3>
+    <pre>const obj = { name: "Parth" };
+
+obj.__proto__                              → Object.prototype
+obj.__proto__.__proto__                    → null
+
+┌──────┐   ┌──────────────────┐   ┌──────┐
+│ obj  │──→│ Object.prototype │──→│ null │
+└──────┘   └──────────────────┘   └──────┘</pre>
+
+    <h3>The Function Prototype Chain:</h3>
+    <pre>function fn() {}
+
+fn.__proto__                               → Function.prototype
+fn.__proto__.__proto__                     → Object.prototype
+fn.__proto__.__proto__.__proto__           → null
+
+┌──────┐   ┌───────────────────┐   ┌──────────────────┐   ┌──────┐
+│ fn   │──→│ Function.prototype│──→│ Object.prototype │──→│ null │
+└──────┘   └───────────────────┘   └──────────────────┘   └──────┘
+           (call, apply, bind)     (toString, hasOwn)     (end)</pre>
+
+    <div class="blue-box">
+      <strong>🔑 The Universal Truth:</strong> <em>"Everything in JavaScript is an object."</em> Arrays, functions, and custom objects — all eventually reach <code>Object.prototype</code>, and then <code>null</code>. This is why you can call <code>.toString()</code> on literally anything.
+    </div>
+
+    <h3>The End of the Chain — <code>null</code>:</h3>
+    <p><code>Object.prototype.__proto__ === null</code></p>
+    <p>Every chain terminates at <code>null</code>. When the engine reaches <code>null</code> while searching for a property, it stops looking and returns <code>undefined</code>.</p>
+  </div>
+</div>
+
+<!-- ===== SEC 4 ===== -->
+<div id="sec4">
+  <div class="section-header" onclick="toggleSection('c4')">
+    <h1 style="border:none;margin:0;padding:0;">4. Property Lookup Algorithm</h1>
+    <span class="toggle-icon" id="icon-c4">▼</span>
+  </div>
+  <div class="section-content" id="c4">
+    <p>When you access a property or method (like <code>obj.someMethod()</code>), here's exactly what the engine does:</p>
+
+    <h3>The Algorithm:</h3>
+    <pre>function lookup(obj, propertyName) {
+  let current = obj;
+
+  while (current !== null) {
+    if (current has propertyName as OWN property) {
+      return current[propertyName];   // ✅ Found it! Stop.
+    }
+    current = current.__proto__;      // Move up the chain
+  }
+
+  return undefined;                    // ❌ Reached null. Not found.
+}</pre>
+
+    <h3>Example — Trace Through:</h3>
+    <pre>const parent = { greet: function() { return "Hello"; } };
+const child = Object.create(parent);
+child.name = "Parth";
+
+child.name;         // How does the engine find this?
+child.greet();      // How does the engine find this?
+child.toString();   // How does the engine find this?</pre>
+
+    <p><strong>Lookup for <code>child.name</code>:</strong></p>
+    <pre>Step 1: Look in child's own properties → { name: "Parth" }
+         Found "name"! → return "Parth"  ✅</pre>
+
+    <p><strong>Lookup for <code>child.greet</code>:</strong></p>
+    <pre>Step 1: Look in child's own properties → { name: "Parth" }
+         Not found. Continue.
+
+Step 2: Go to child.__proto__ → parent → { greet: function }
+         Found "greet"! → return the function  ✅</pre>
+
+    <p><strong>Lookup for <code>child.toString</code>:</strong></p>
+    <pre>Step 1: Look in child's own properties → { name: "Parth" }
+         Not found. Continue.
+
+Step 2: Go to child.__proto__ → parent → { greet: function }
+         Not found. Continue.
+
+Step 3: Go to parent.__proto__ → Object.prototype → { toString, hasOwn, ... }
+         Found "toString"! → return the function  ✅</pre>
+
+    <p><strong>Lookup for <code>child.nonExistent</code>:</strong></p>
+    <pre>Step 1: child → not found
+Step 2: parent → not found
+Step 3: Object.prototype → not found
+Step 4: Object.prototype.__proto__ → null → stop!
+         Return undefined  ❌</pre>
+
+    <h3><code>this</code> in Inherited Methods:</h3>
+    <div class="warn-box">
+      <strong>⚠️ Critical:</strong> When you call an inherited method, <code>this</code> refers to the <strong>object the method was called ON</strong>, not the object where the method was defined.
+    </div>
+
+    <pre>const parent = {
+  name: "Parent",
+  intro: function() { return "I am " + this.name; }
+};
+
+const child = Object.create(parent);
+child.name = "Child";
+
+parent.intro();  // "I am Parent"  — this = parent
+child.intro();   // "I am Child"   — this = child (even though intro lives on parent!)</pre>
+
+    <p>This is why the <code>this</code> keyword rules you learned in Chapter 4 combine so powerfully with prototypes.</p>
+  </div>
+</div>
+
+<!-- ===== SEC 5 ===== -->
+<div id="sec5">
+  <div class="section-header" onclick="toggleSection('c5')">
+    <h1 style="border:none;margin:0;padding:0;">5. <code>Object.create()</code> — Manually Setting the Prototype</h1>
+    <span class="toggle-icon" id="icon-c5">▼</span>
+  </div>
+  <div class="section-content" id="c5">
+    <p><code>Object.create(proto)</code> creates a new object with its <code>__proto__</code> explicitly set to <code>proto</code>. It's the most direct way to establish a prototype link.</p>
+
+    <h3>Basic Usage:</h3>
+    <pre>const animal = {
+  eats: true,
+  sleep: function() { return "zzz"; }
+};
+
+const dog = Object.create(animal);
+dog.barks = true;
+
+console.log(dog.barks);        // true       (own property)
+console.log(dog.eats);         // true       (inherited)
+console.log(dog.sleep());      // "zzz"      (inherited method)
+console.log(dog.__proto__);    // animal object
+console.log(dog.__proto__ === animal);  // true</pre>
+
+    <h3>Chaining Prototypes with <code>Object.create()</code>:</h3>
+    <pre>const animal = { eats: true };
+const dog = Object.create(animal);      // dog.__proto__ = animal
+dog.barks = true;
+
+const puppy = Object.create(dog);       // puppy.__proto__ = dog
+puppy.cute = true;
+
+// The chain:
+puppy → dog → animal → Object.prototype → null
+
+puppy.cute;   // true  (own)
+puppy.barks;  // true  (from dog)
+puppy.eats;   // true  (from animal)</pre>
+
+    <h3>Visualized Chain:</h3>
+    <pre>┌────────┐   ┌──────┐   ┌────────┐   ┌──────────────────┐   ┌──────┐
+│ puppy  │──→│ dog  │──→│ animal │──→│ Object.prototype │──→│ null │
+│ cute   │   │ barks│   │ eats   │   │ toString, ...    │   │      │
+└────────┘   └──────┘   └────────┘   └──────────────────┘   └──────┘</pre>
+
+    <div class="note-box">
+      <strong>💡 <code>Object.create(null)</code> Creates a Pure Object:</strong><br>
+      <code>const bare = Object.create(null);</code><br>
+      This creates an object with NO prototype at all — not even <code>Object.prototype</code>. Useful for creating dictionaries where you don't want keys like <code>toString</code> to accidentally collide with inherited methods.
+    </div>
+  </div>
+</div>
+
+<!-- ===== SEC 6 ===== -->
+<div id="sec6">
+  <div class="section-header" onclick="toggleSection('c6')">
+    <h1 style="border:none;margin:0;padding:0;">⭐ 6. The <code>new</code> Keyword — What It Actually Does</h1>
+    <span class="toggle-icon" id="icon-c6">▼</span>
+  </div>
+  <div class="section-content" id="c6">
+    <div class="purple-box">
+      <strong>⭐ This is one of the most-asked JavaScript interview questions.</strong> "Explain what <code>new</code> does under the hood." If you can explain the 4 steps below, you're ahead of 95% of candidates.
+    </div>
+
+    <h3>The Constructor Function Pattern:</h3>
+    <pre>function Person(name) {
+  this.name = name;
+}
+Person.prototype.greet = function() {
+  return "Hi, I'm " + this.name;
+};
+
+const p = new Person("Parth");
+console.log(p.name);         // "Parth"
+console.log(p.greet());      // "Hi, I'm Parth"</pre>
+
+    <h3>What <code>new</code> Does — The 4 Steps:</h3>
+    <p>When you write <code>new Person("Parth")</code>, the engine executes these 4 steps:</p>
+
+    <table>
+      <tr><th>Step</th><th>What Happens</th></tr>
+      <tr><td><strong>1</strong></td><td>Creates a brand new empty object: <code>{}</code></td></tr>
+      <tr><td><strong>2</strong></td><td>Sets the new object's <code>__proto__</code> to <code>Person.prototype</code></td></tr>
+      <tr><td><strong>3</strong></td><td>Calls <code>Person</code> with <code>this</code> bound to the new object (passing "Parth" as name)</td></tr>
+      <tr><td><strong>4</strong></td><td>Returns the new object (implicitly — you don't write <code>return</code>)</td></tr>
+    </table>
+
+    <h3>The 4 Steps — Visualized:</h3>
+    <pre>Step 1: Create empty object
+        ┌──────────────┐
+        │ newObj: {}   │
+        └──────────────┘
+
+Step 2: Link __proto__ to Person.prototype
+        newObj.__proto__ = Person.prototype;
+
+        ┌──────────────┐        ┌──────────────────┐
+        │ newObj: {}   │───────→│ Person.prototype │
+        │ __proto__    │        │ ├── greet: fn    │
+        └──────────────┘        └──────────────────┘
+
+Step 3: Call Person.call(newObj, "Parth")
+        // Inside Person: this = newObj
+        // this.name = "Parth" → sets newObj.name = "Parth"
+
+        ┌───────────────────────┐        ┌──────────────────┐
+        │ newObj:               │───────→│ Person.prototype │
+        │ ├── name: "Parth"     │        │ ├── greet: fn    │
+        │ └── __proto__         │        └──────────────────┘
+        └───────────────────────┘
+
+Step 4: Return newObj
+        p = newObj;</pre>
+
+    <h3>Doing It Manually (Without <code>new</code>):</h3>
+    <p>You can replicate what <code>new</code> does with plain code. This proves there's no magic:</p>
+
+    <pre>// This:
+const p = new Person("Parth");
+
+// Is EQUIVALENT to:
+const p = {};                                    // Step 1
+Object.setPrototypeOf(p, Person.prototype);      // Step 2
+Person.call(p, "Parth");                         // Step 3
+// (Step 4: return happens automatically since we already have p)</pre>
+
+    <h3>Why All Instances Share Methods (Q4 Answer):</h3>
+    <pre>const p1 = new Person("Parth");
+const p2 = new Person("Deepika");
+
+console.log(p1.greet === p2.greet);   // true ✅
+
+// Why? Because greet is NOT on p1 or p2. It lives on Person.prototype.
+// Both p1 and p2 look up "greet" via their __proto__, which points to
+// the SAME Person.prototype object. Same function reference. Same memory.
+
+MEMORY:
+┌─────────────────┐        ┌──────────────────────┐
+│ p1: {name}      │───────→│ Person.prototype     │
+├─────────────────┤        │ └── greet: fn (ONE   │
+│ p2: {name}      │───────→│                copy) │
+└─────────────────┘        └──────────────────────┘
+
+If greet lived on each instance, we'd waste memory.
+Prototypes let 1000 instances share 1 function.</pre>
+
+    <div class="warn-box">
+      <strong>⚠️ Forget <code>new</code> = Silent Bug:</strong>
+      <pre>const p = Person("Parth");   // no `new`!
+console.log(p);              // undefined
+// Person was called as a regular function.
+// `this` was window (or undefined in strict mode).
+// It set window.name = "Parth" — a silent global pollution!</pre>
+      This is why capitalized functions signal "call me with new."
+    </div>
+  </div>
+</div>
+
+<!-- ===== SEC 7 ===== -->
+<div id="sec7">
+  <div class="section-header" onclick="toggleSection('c7')">
+    <h1 style="border:none;margin:0;padding:0;">⭐ 7. Classes Are Just Syntactic Sugar</h1>
+    <span class="toggle-icon" id="icon-c7">▼</span>
+  </div>
+  <div class="section-content" id="c7">
+    <div class="danger-box">
+      <strong>🧠 THE breakthrough insight for anyone who's ever said "I don't get JS classes":</strong><br><br>
+      A <code>class</code> in JavaScript is <strong>not a new construct</strong>. It's <strong>syntactic sugar</strong> over the constructor function + prototype pattern you just learned. Under the hood, they compile to the exact same thing.
+    </div>
+
+    <h3>Proof — Class vs Constructor Function Are Identical:</h3>
+
+    <p><strong>Using <code>class</code>:</strong></p>
+    <pre>class Animal {
+  constructor(name) {
+    this.name = name;
+  }
+  speak() {
+    return this.name + " makes a sound";
+  }
+}
+
+const a = new Animal("Dog");</pre>
+
+    <p><strong>Using the constructor function pattern (what it becomes internally):</strong></p>
+    <pre>function Animal(name) {
+  this.name = name;
+}
+Animal.prototype.speak = function() {
+  return this.name + " makes a sound";
+};
+
+const a = new Animal("Dog");</pre>
+
+    <p>Both produce the <strong>exact same result</strong>:</p>
+    <ul>
+      <li>A function called <code>Animal</code></li>
+      <li>With a <code>prototype</code> property containing <code>speak</code></li>
+      <li>That you invoke with <code>new</code> to create instances</li>
+    </ul>
+
+    <h3>Proof from <code>typeof</code>:</h3>
+    <pre>class Animal { }
+console.log(typeof Animal);   // "function"  ← NOT "object", NOT "class"!
+
+// Classes ARE functions under the hood.</pre>
+
+    <h3>Proof from the Prototype Chain:</h3>
+    <pre>class Animal {
+  speak() { return "hi"; }
+}
+const a = new Animal();
+
+console.log(a.__proto__ === Animal.prototype);        // true ✅
+console.log(Animal.prototype.speak === a.speak);      // true ✅
+console.log(a.__proto__.__proto__ === Object.prototype); // true ✅
+
+// Same chain. Same mechanism. Just prettier syntax.</pre>
+
+    <h3>Why Did They Add Classes Then?</h3>
+    <ol>
+      <li><strong>Familiarity</strong> for developers coming from Java, C++, Python, etc.</li>
+      <li><strong>Cleaner syntax</strong> — one block instead of function + multiple prototype assignments</li>
+      <li><strong>Cleaner inheritance</strong> — <code>extends</code> is way nicer than manually chaining prototypes</li>
+      <li><strong>Enforced <code>new</code></strong> — calling a class without <code>new</code> throws an error (safer than constructor functions)</li>
+    </ol>
+
+    <div class="blue-box">
+      <strong>🎯 The Bottom Line:</strong> A class in JS is just a nicer syntax for the prototype pattern. It adds no new capability, no new inheritance model. If you understand prototypes, you understand classes. If someone tells you "JS uses classical inheritance now" — they're wrong. JS uses prototypal inheritance, with a class-looking coat of paint.
+    </div>
+
+    <h3>Side-by-Side Feature Comparison:</h3>
+    <table>
+      <tr><th>Feature</th><th>Class Syntax</th><th>Constructor Function</th></tr>
+      <tr><td>Define constructor</td><td><code>constructor(name) {...}</code></td><td><code>function Animal(name) {...}</code></td></tr>
+      <tr><td>Add method</td><td><code>speak() {...}</code></td><td><code>Animal.prototype.speak = function() {...}</code></td></tr>
+      <tr><td>Instantiate</td><td><code>new Animal("Dog")</code></td><td><code>new Animal("Dog")</code></td></tr>
+      <tr><td>Inherit</td><td><code>class Dog extends Animal</code></td><td>Manual: <code>Dog.prototype = Object.create(Animal.prototype)</code></td></tr>
+      <tr><td>Call parent</td><td><code>super()</code></td><td>Manual: <code>Animal.call(this)</code></td></tr>
+      <tr><td>Forget <code>new</code></td><td>TypeError</td><td>Silent global pollution</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ===== SEC 8 ===== -->
+<div id="sec8">
+  <div class="section-header" onclick="toggleSection('c8')">
+    <h1 style="border:none;margin:0;padding:0;">8. <code>extends</code>, <code>super</code> &amp; <code>instanceof</code></h1>
+    <span class="toggle-icon" id="icon-c8">▼</span>
+  </div>
+  <div class="section-content" id="c8">
+    <h3>Inheritance with <code>extends</code>:</h3>
+    <pre>class Vehicle {
+  constructor(type) {
+    this.type = type;
+  }
+  describe() {
+    return "This is a " + this.type;
+  }
+}
+
+class Car extends Vehicle {
+  constructor(brand) {
+    super("car");       // MUST call super() first in derived class
+    this.brand = brand;
+  }
+  showBrand() {
+    return this.describe() + " made by " + this.brand;
+  }
+}
+
+const c = new Car("Toyota");
+console.log(c.showBrand());  // "This is a car made by Toyota"</pre>
+
+    <h3>What <code>super()</code> Does:</h3>
+    <p><code>super("car")</code> calls the parent class's constructor (<code>Vehicle</code>) with <code>this</code> bound to the new <code>Car</code> instance. So <code>Vehicle</code>'s <code>this.type = "car"</code> ends up setting the property on the <code>Car</code> instance.</p>
+
+    <div class="warn-box">
+      <strong>⚠️ In derived class constructors, you MUST call <code>super()</code> BEFORE using <code>this</code>.</strong> If you don't, you'll get a ReferenceError. This is because <code>this</code> isn't initialized until <code>super()</code> runs.
+    </div>
+
+    <h3>The Prototype Chain with <code>extends</code>:</h3>
+    <pre>const c = new Car("Toyota");
+
+CHAIN:
+┌─────┐   ┌──────────────┐   ┌──────────────────┐   ┌──────────────────┐   ┌──────┐
+│  c  │──→│ Car.prototype│──→│ Vehicle.prototype│──→│ Object.prototype │──→│ null │
+└─────┘   │ ├── showBrand│   │ └── describe     │   │ ├── toString     │   └──────┘
+          └──────────────┘   └──────────────────┘   └──────────────────┘
+
+// Property lookups walk up this chain:
+c.brand        → found on c
+c.showBrand()  → found on Car.prototype
+c.describe()   → found on Vehicle.prototype
+c.toString()   → found on Object.prototype</pre>
+
+    <h3><code>instanceof</code> — Checking the Chain:</h3>
+    <pre>c instanceof Car        // true
+c instanceof Vehicle    // true (because Vehicle.prototype is in the chain)
+c instanceof Object     // true (because Object.prototype is in the chain)
+
+// How it works internally:
+// x instanceof Y  →  Is Y.prototype anywhere in x's prototype chain?</pre>
+
+    <h3>Key Chain Relationships:</h3>
+    <pre>c.__proto__ === Car.prototype                       // true
+Car.prototype.__proto__ === Vehicle.prototype       // true
+Vehicle.prototype.__proto__ === Object.prototype    // true
+Object.prototype.__proto__ === null                 // true</pre>
+
+    <div class="note-box">
+      <strong>💡 The chain traverses <code>.prototype</code> objects, NOT the classes themselves.</strong> A common confusion: writing "c → Car → Vehicle" as if the classes were part of the chain. They're not. The classes are functions. The <em>chain</em> is built from the <em>prototype objects</em> of those classes.
+    </div>
+  </div>
+</div>
+
+<!-- ===== SEC 9 ===== -->
+<div id="sec9">
+  <div class="section-header" onclick="toggleSection('c9')">
+    <h1 style="border:none;margin:0;padding:0;">9. Extending Built-in Prototypes (Polyfills)</h1>
+    <span class="toggle-icon" id="icon-c9">▼</span>
+  </div>
+  <div class="section-content" id="c9">
+    <p>You can add methods to built-in prototypes like <code>Array.prototype</code>, <code>String.prototype</code>, or <code>Function.prototype</code>. Every existing and future instance instantly gets the new method through the chain.</p>
+
+    <h3>Example — Adding a Custom Array Method:</h3>
+    <pre>Array.prototype.first = function() {
+  return this[0];
+};
+
+// Now every array in your codebase has this method:
+[1, 2, 3].first();              // 1
+["a", "b", "c"].first();        // "a"</pre>
+
+    <h3>Example — Writing a Polyfill for <code>bind</code>:</h3>
+    <pre>// If a browser didn't support Function.prototype.bind (very old IE), we could add it:
+Function.prototype.myBind = function(context, ...args) {
+  const originalFn = this;
+  return function(...remainingArgs) {
+    return originalFn.apply(context, [...args, ...remainingArgs]);
+  };
+};
+
+// Every function now has myBind:
+function greet(greeting, name) { return greeting + ", " + name; }
+const boundGreet = greet.myBind(null, "Hello");
+boundGreet("Parth");   // "Hello, Parth"</pre>
+
+    <p>This is called a <strong>polyfill</strong> — code that provides a modern feature in older environments where it doesn't exist natively. Writing a polyfill for <code>bind</code>, <code>call</code>, <code>apply</code>, or array methods like <code>map</code>/<code>filter</code>/<code>reduce</code> is a very common interview question.</p>
+
+    <h3>⚠️ Warning — Don't Do This in Production:</h3>
+    <div class="danger-box">
+      <strong>Modifying built-in prototypes is dangerous:</strong>
+      <ul>
+        <li><strong>Naming collisions:</strong> If your <code>Array.prototype.first</code> conflicts with a future JS spec addition, chaos ensues.</li>
+        <li><strong>Third-party library conflicts:</strong> Another library might add the same method with different behavior.</li>
+        <li><strong>Debugging nightmares:</strong> Someone reading your code has no idea where <code>arr.first()</code> came from.</li>
+        <li><strong>Performance:</strong> Some engines can't optimize modified built-ins as aggressively.</li>
+      </ul>
+      Use utility functions or wrapper classes instead. Extending built-in prototypes is fine for learning, polyfills for real missing features, or writing frameworks — but not for regular application code.
+    </div>
+  </div>
+</div>
+
+<!-- ===== SEC 10 ===== -->
+<div id="sec10">
+  <div class="section-header" onclick="toggleSection('c10')">
+    <h1 style="border:none;margin:0;padding:0;">10. Common Gotchas &amp; Pitfalls</h1>
+    <span class="toggle-icon" id="icon-c10">▼</span>
+  </div>
+  <div class="section-content" id="c10">
+
+    <h2>Gotcha A: Shadowing (Instance Beats Prototype)</h2>
+    <p>If you set a property directly on an instance with the same name as one on its prototype, the instance version wins during lookup — but the prototype version is still there.</p>
+    <pre>function Bird() {}
+Bird.prototype.sing = function() { return "Tweet"; };
+
+const b1 = new Bird();
+console.log(b1.sing());       // "Tweet" (from prototype)
+
+b1.sing = function() { return "Silent"; };   // shadows on instance
+
+console.log(b1.sing());       // "Silent" (instance wins)
+
+// The prototype version is still there:
+console.log(b1.__proto__.sing());   // "Tweet"
+
+// Delete the shadow → prototype version returns:
+delete b1.sing;
+console.log(b1.sing());       // "Tweet" again</pre>
+
+    <h2>Gotcha B: Modifying Prototype at Runtime Affects Existing Instances</h2>
+    <pre>function Bird() {}
+const b1 = new Bird();
+const b2 = new Bird();
+
+// Add a method to the prototype AFTER instances were created:
+Bird.prototype.fly = function() { return "flying"; };
+
+// Existing instances INSTANTLY have access:
+b1.fly();   // "flying"  ✅
+b2.fly();   // "flying"  ✅
+
+// Because instances only hold a REFERENCE to the prototype, not a copy.
+// When you modify the prototype, all instances see the change immediately.</pre>
+
+    <h2>Gotcha C: <code>prototype</code> vs <code>__proto__</code> on the Constructor Itself</h2>
+    <pre>function Person() {}
+
+// The function has BOTH:
+Person.prototype     // → template object (for instances to inherit)
+Person.__proto__     // → Function.prototype (because Person IS a function)
+
+// A common confusion:
+const p = new Person();
+p.__proto__ === Person.prototype;   // true (this is what we care about)
+p.__proto__ === Person.__proto__;   // false (unrelated)</pre>
+
+    <h2>Gotcha D: Forgetting <code>new</code></h2>
+    <pre>function Person(name) {
+  this.name = name;
+}
+
+const p = Person("Parth");   // ❌ Forgot new!
+console.log(p);              // undefined
+console.log(window.name);    // "Parth" — polluted the global!</pre>
+    <p>With classes, this can't happen — calling a class without <code>new</code> throws a TypeError.</p>
+
+    <h2>Gotcha E: <code>hasOwnProperty()</code> vs <code>in</code></h2>
+    <pre>const parent = { inherited: true };
+const child = Object.create(parent);
+child.own = true;
+
+child.hasOwnProperty("own");         // true
+child.hasOwnProperty("inherited");   // false — not on child, only on parent
+
+"own" in child;                      // true
+"inherited" in child;                // true — `in` walks the whole chain</pre>
+    <p><code>hasOwnProperty()</code> checks only the object itself. <code>in</code> walks the entire prototype chain.</p>
+
+    <h2>Gotcha F: <code>Object.create(null)</code> — No Prototype at All</h2>
+    <pre>const bare = Object.create(null);
+
+bare.toString;         // undefined — no Object.prototype!
+bare.hasOwnProperty;   // undefined
+bare.__proto__;        // undefined
+
+// Useful for pure dictionaries where you don't want inherited methods
+// interfering with your keys.</pre>
+  </div>
+</div>
+
+<!-- ===== SEC 11 ===== -->
+<div id="sec11">
+  <div class="section-header" onclick="toggleSection('c11')">
+    <h1 style="border:none;margin:0;padding:0;">11. Master Cheat Sheet</h1>
+    <span class="toggle-icon" id="icon-c11">▼</span>
+  </div>
+  <div class="section-content" id="c11">
+    <table>
+      <tr><th>Concept</th><th>Key Point</th></tr>
+      <tr><td>Prototype</td><td>Hidden object attached to every JS object/array/function, containing shared methods and properties</td></tr>
+      <tr><td><code>__proto__</code></td><td>Instance property — a reference (pointer) to the prototype it inherits from</td></tr>
+      <tr><td><code>prototype</code></td><td>Only on functions — a container object holding methods that <code>new</code>-created instances will inherit</td></tr>
+      <tr><td>The link</td><td><code>instance.__proto__ === Constructor.prototype</code></td></tr>
+      <tr><td>Prototype Chain</td><td>Chain of <code>__proto__</code> references, ending at <code>null</code></td></tr>
+      <tr><td>Property lookup</td><td>Own → __proto__ → __proto__.__proto__ → ... → null (undefined if not found)</td></tr>
+      <tr><td>End of chain</td><td>Always <code>null</code>. <code>Object.prototype.__proto__ === null</code></td></tr>
+      <tr><td><code>Object.create(proto)</code></td><td>Creates new object with __proto__ set to <code>proto</code></td></tr>
+      <tr><td><code>Object.create(null)</code></td><td>Object with no prototype at all — pure dictionary</td></tr>
+      <tr><td><code>new</code> keyword — 4 steps</td><td>1) Create empty obj  2) Link __proto__ to fn.prototype  3) Call fn with <code>this</code>=obj  4) Return obj</td></tr>
+      <tr><td>Classes</td><td>Syntactic sugar over constructor + prototype pattern. <code>typeof MyClass === "function"</code></td></tr>
+      <tr><td><code>extends</code></td><td>Sets up prototype chain between child.prototype → parent.prototype</td></tr>
+      <tr><td><code>super()</code></td><td>Calls parent constructor. MUST be called before <code>this</code> in derived class</td></tr>
+      <tr><td><code>instanceof</code></td><td>Checks if a class's prototype is anywhere in the chain</td></tr>
+      <tr><td>Modern getters</td><td><code>Object.getPrototypeOf(obj)</code> / <code>Object.setPrototypeOf(obj, proto)</code></td></tr>
+      <tr><td>Shadowing</td><td>Own property beats prototype property. Delete to unshadow.</td></tr>
+      <tr><td>Polyfill</td><td>Adding a method to a built-in prototype to backfill missing functionality</td></tr>
+      <tr><td>hasOwnProperty vs in</td><td><code>hasOwn</code> checks own only. <code>in</code> walks the entire chain.</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ===== SEC 12 ===== -->
+<div id="sec12">
+  <div class="section-header" onclick="toggleSection('c12')">
+    <h1 style="border:none;margin:0;padding:0;">12. Interview Answer Templates</h1>
+    <span class="toggle-icon" id="icon-c12">▼</span>
+  </div>
+  <div class="section-content" id="c12">
+    <h3>Q: "What is prototypal inheritance in JavaScript?"</h3>
+    <div class="note-box" style="line-height:1.8;">
+      <em>"Prototypal inheritance is JavaScript's inheritance model. Every object has a hidden reference called <code>__proto__</code> pointing to another object called its prototype. When you access a property that doesn't exist on the object, the engine walks up the <code>__proto__</code> chain until it finds the property or reaches <code>null</code>. This lets one object share methods and properties with another, without copying them. It's fundamentally different from classical inheritance in languages like Java — there are no real classes, just objects linking to other objects."</em>
+    </div>
+
+    <h3>Q: "What's the difference between <code>__proto__</code> and <code>prototype</code>?"</h3>
+    <div class="note-box" style="line-height:1.8;">
+      <em>"<code>prototype</code> is a property that exists only on functions. It's the template object where you attach methods that instances will inherit when you use <code>new</code>. <code>__proto__</code> is a property on every object — it's the actual link pointing to the prototype the object inherits from. When you do <code>new Person()</code>, the engine sets the new instance's <code>__proto__</code> to point to <code>Person.prototype</code>. So they're related: <code>__proto__</code> is the link, <code>prototype</code> is what it links to. In modern code, <code>Object.getPrototypeOf()</code> and <code>Object.setPrototypeOf()</code> are the recommended replacements for <code>__proto__</code>."</em>
+    </div>
+
+    <h3>Q: "Explain what the <code>new</code> keyword does under the hood."</h3>
+    <div class="note-box" style="line-height:1.8;">
+      <em>"When you write <code>new Person("Parth")</code>, the engine does 4 things in order: First, it creates a brand new empty object. Second, it sets that object's <code>__proto__</code> to <code>Person.prototype</code>, establishing the inheritance link. Third, it calls the <code>Person</code> function with <code>this</code> bound to the new object, so any assignments like <code>this.name = ...</code> populate the new object. Fourth, it returns that new object automatically. That's it — there's no magic. You can replicate <code>new</code> manually using <code>Object.create()</code> and <code>.call()</code>."</em>
+    </div>
+
+    <h3>Q: "Are JavaScript classes real classes?"</h3>
+    <div class="note-box" style="line-height:1.8;">
+      <em>"No — JavaScript classes are syntactic sugar over the constructor function and prototype pattern. Under the hood, <code>class Foo { }</code> creates a function <code>Foo</code> with its methods attached to <code>Foo.prototype</code>. <code>typeof</code> a class returns <code>"function"</code>. JavaScript still uses prototypal inheritance — <code>extends</code> just sets up the prototype chain between the child's and parent's prototype objects automatically. The class syntax makes it look like classical OOP, but under the hood it's the same prototype mechanism."</em>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SEC 13 ===== -->
+<div class="page-break" id="sec13">
+  <div class="section-header" onclick="toggleSection('c13')">
+    <h1 style="border:none;margin:0;padding:0;">13. Practice Sheet — 10 Questions</h1>
+    <span class="toggle-icon" id="icon-c13">▼</span>
+  </div>
+  <div class="section-content" id="c13">
+    <p><strong>📝 Instructions:</strong> Predict exact output. Explain in terms of prototype lookup and chains where relevant.</p>
+
+<div class="question-block" id="q1">
+<h2>Q1 — Chain Basics <span class="tag tag-easy">Easy</span></h2>
+<pre>const obj = {};
+console.log(obj.__proto__ === Object.prototype);
+console.log(obj.__proto__.__proto__);
+console.log(obj.hasOwnProperty("toString"));
+console.log("toString" in obj);</pre>
+<p><strong>1)</strong> All 4 outputs?</p>
+<p><strong>2)</strong> Explain why <code>hasOwnProperty</code> and <code>in</code> give different results for <code>toString</code>.</p>
+<a class="nav-link" href="#ans1">→ See Answer</a>
+</div>
+
+<div class="question-block" id="q2">
+<h2>Q2 — Object.create() <span class="tag tag-easy">Easy</span></h2>
+<pre>const parent = { hello: "world", greet: function() { return this.hello; } };
+const child = Object.create(parent);
+child.hello = "everyone";
+
+console.log(child.greet());
+console.log(child.__proto__ === parent);
+console.log(parent.greet());</pre>
+<p><strong>1)</strong> All 3 outputs?</p>
+<p><strong>2)</strong> Why does <code>child.greet()</code> return one value but <code>parent.greet()</code> return another, even though they call the same function?</p>
+<a class="nav-link" href="#ans2">→ See Answer</a>
+</div>
+
+<div class="question-block" id="q3">
+<h2>Q3 — Constructor Function Basics <span class="tag tag-easy">Easy</span></h2>
+<pre>function Book(title) {
+  this.title = title;
+}
+Book.prototype.describe = function() {
+  return "Book: " + this.title;
+};
+
+const b1 = new Book("Atomic Habits");
+const b2 = new Book("Deep Work");
+
+console.log(b1.describe());
+console.log(b2.describe());
+console.log(b1.describe === b2.describe);
+console.log(b1.__proto__ === b2.__proto__);</pre>
+<p><strong>1)</strong> All 4 outputs?</p>
+<p><strong>2)</strong> Explain why <code>b1.describe === b2.describe</code> gives that answer.</p>
+<a class="nav-link" href="#ans3">→ See Answer</a>
+</div>
+
+<div class="question-block" id="q4">
+<h2>Q4 — Forgetting new <span class="tag tag-medium">Medium</span></h2>
+<pre>function User(name) {
+  this.name = name;
+}
+User.prototype.hi = function() { return "Hi " + this.name; };
+
+const u1 = new User("Parth");
+const u2 = User("Deepika");   // Note: no `new`!
+
+console.log(u1.name);
+console.log(u1.hi());
+console.log(u2);</pre>
+<p><strong>1)</strong> All 3 outputs?</p>
+<p><strong>2)</strong> Explain what happens on the <code>User("Deepika")</code> line (assume non-strict mode in a browser).</p>
+<a class="nav-link" href="#ans4">→ See Answer</a>
+</div>
+
+<div class="question-block" id="q5">
+<h2>Q5 — Shadowing <span class="tag tag-medium">Medium</span></h2>
+<pre>function Animal() {}
+Animal.prototype.sound = function() { return "generic sound"; };
+
+const a = new Animal();
+console.log(a.sound());
+
+a.sound = function() { return "custom sound"; };
+console.log(a.sound());
+
+delete a.sound;
+console.log(a.sound());</pre>
+<p><strong>1)</strong> All 3 outputs?</p>
+<p><strong>2)</strong> After <code>delete a.sound</code>, why does the original method reappear?</p>
+<a class="nav-link" href="#ans5">→ See Answer</a>
+</div>
+
+<div class="question-block" id="q6">
+<h2>Q6 — Modifying Prototype After Instance Creation <span class="tag tag-medium">Medium</span></h2>
+<pre>function Widget() { this.type = "widget"; }
+
+const w1 = new Widget();
+
+// Add method AFTER w1 was created:
+Widget.prototype.render = function() { return "rendering " + this.type; };
+
+const w2 = new Widget();
+
+console.log(w1.render());
+console.log(w2.render());
+console.log(w1.render === w2.render);</pre>
+<p><strong>1)</strong> All 3 outputs?</p>
+<p><strong>2)</strong> Why does <code>w1.render()</code> work even though <code>render</code> was added after <code>w1</code> was created?</p>
+<a class="nav-link" href="#ans6">→ See Answer</a>
+</div>
+
+<div class="question-block" id="q7">
+<h2>Q7 — Class = Function <span class="tag tag-hard">Hard</span></h2>
+<pre>class Robot {
+  constructor(id) {
+    this.id = id;
+  }
+  activate() {
+    return "Robot " + this.id + " activated";
+  }
+}
+
+const r = new Robot(42);
+
+console.log(typeof Robot);
+console.log(typeof Robot.prototype);
+console.log(r instanceof Robot);
+console.log(r.__proto__ === Robot.prototype);
+console.log(Robot.prototype.activate === r.activate);
+console.log(r.activate());</pre>
+<p><strong>1)</strong> All 6 outputs?</p>
+<p><strong>2)</strong> If <code>Robot</code> is a class, why does <code>typeof Robot</code> return that value?</p>
+<a class="nav-link" href="#ans7">→ See Answer</a>
+</div>
+
+<div class="question-block" id="q8">
+<h2>Q8 — extends and super <span class="tag tag-hard">Hard</span></h2>
+<pre>class Shape {
+  constructor(name) {
+    this.name = name;
+  }
+  describe() {
+    return "A " + this.name;
+  }
+}
+
+class Circle extends Shape {
+  constructor(radius) {
+    super("circle");
+    this.radius = radius;
+  }
+  area() {
+    return this.describe() + " with area " + (Math.PI * this.radius * this.radius).toFixed(2);
+  }
+}
+
+const c = new Circle(5);
+
+console.log(c.area());
+console.log(c instanceof Circle);
+console.log(c instanceof Shape);
+console.log(c instanceof Object);
+console.log(Circle.prototype.__proto__ === Shape.prototype);</pre>
+<p><strong>1)</strong> All 5 outputs?</p>
+<p><strong>2)</strong> Draw the prototype chain from <code>c</code> all the way to <code>null</code>.</p>
+<a class="nav-link" href="#ans8">→ See Answer</a>
+</div>
+
+<div class="question-block" id="q9">
+<h2>Q9 — Polyfill Practice <span class="tag tag-expert">Expert</span></h2>
+<pre>// Implement a polyfill for Array.prototype.myMap
+// Should behave like the native map()
+
+Array.prototype.myMap = function(callback) {
+  const result = [];
+  for (let i = 0; i &lt; this.length; i++) {
+    result.push(callback(this[i], i, this));
+  }
+  return result;
+};
+
+const nums = [1, 2, 3];
+const doubled = nums.myMap(n => n * 2);
+const withIndex = nums.myMap((n, i) => n + "_" + i);
+
+console.log(doubled);
+console.log(withIndex);
+console.log([].myMap === nums.myMap);</pre>
+<p><strong>1)</strong> All 3 outputs?</p>
+<p><strong>2)</strong> Why does an empty array (<code>[]</code>) also have <code>myMap</code>? Explain in terms of prototypes.</p>
+<a class="nav-link" href="#ans9">→ See Answer</a>
+</div>
+
+<div class="question-block" id="q10">
+<h2>Q10 — The Final Boss <span class="tag tag-expert">Expert</span></h2>
+<pre>function Vehicle(type) {
+  this.type = type;
+}
+Vehicle.prototype.getType = function() { return this.type; };
+
+function Car(brand) {
+  Vehicle.call(this, "car");
+  this.brand = brand;
+}
+Car.prototype = Object.create(Vehicle.prototype);
+Car.prototype.constructor = Car;
+Car.prototype.getBrand = function() { return this.brand; };
+
+const c = new Car("Tesla");
+
+console.log(c.getType());
+console.log(c.getBrand());
+console.log(c instanceof Car);
+console.log(c instanceof Vehicle);
+console.log(c.__proto__ === Car.prototype);
+console.log(Car.prototype.__proto__ === Vehicle.prototype);
+console.log(c.constructor === Car);</pre>
+<p><strong>1)</strong> All 7 outputs?</p>
+<p><strong>2)</strong> This is the "old way" of doing <code>class Car extends Vehicle</code>. Explain what each of these 3 lines does:</p>
+<pre>Vehicle.call(this, "car");
+Car.prototype = Object.create(Vehicle.prototype);
+Car.prototype.constructor = Car;</pre>
+<a class="nav-link" href="#ans10">→ See Answer</a>
+</div>
+
+  </div>
+</div>
+
+<!-- ===== SEC 14: ANSWERS ===== -->
+<div class="page-break" id="sec14">
+  <div class="section-header" onclick="toggleSection('c14')">
+    <h1 style="border:none;margin:0;padding:0;">14. Answer Key</h1>
+    <span class="toggle-icon" id="icon-c14">▼</span>
+  </div>
+  <div class="section-content" id="c14">
+
+<h2 id="ans1">Q1 — Answer</h2>
+<pre>true
+null
+false
+true</pre>
+<p><strong>Explanation:</strong></p>
+<ul>
+  <li><code>obj.__proto__ === Object.prototype</code> → <code>true</code>. Every plain object's <code>__proto__</code> points to <code>Object.prototype</code>.</li>
+  <li><code>obj.__proto__.__proto__</code> → <code>null</code>. <code>Object.prototype</code> is the top of the chain; its <code>__proto__</code> is <code>null</code>.</li>
+  <li><code>obj.hasOwnProperty("toString")</code> → <code>false</code>. <code>toString</code> is inherited from <code>Object.prototype</code>, not owned by <code>obj</code>.</li>
+  <li><code>"toString" in obj</code> → <code>true</code>. The <code>in</code> operator walks the entire prototype chain, so it finds <code>toString</code> on <code>Object.prototype</code>.</li>
+</ul>
+<a class="nav-link back" href="#q1">← Back to Question 1</a><hr>
+
+<h2 id="ans2">Q2 — Answer</h2>
+<pre>"everyone"
+true
+"world"</pre>
+<p><strong>Explanation:</strong></p>
+<ul>
+  <li><code>child.greet()</code> → <code>this</code> = <code>child</code> (because we called the method ON child). <code>this.hello</code> looks up "hello" on child → <code>"everyone"</code>.</li>
+  <li><code>child.__proto__ === parent</code> → <code>true</code>. <code>Object.create(parent)</code> sets child's __proto__ to parent.</li>
+  <li><code>parent.greet()</code> → <code>this</code> = <code>parent</code>. <code>this.hello</code> looks up "hello" on parent → <code>"world"</code>.</li>
+</ul>
+<p><strong>Key insight:</strong> The method is the same function, but <code>this</code> is determined by the object it was called ON. This is <code>this</code> keyword behavior from Chapter 4 combining with prototype lookup.</p>
+<a class="nav-link back" href="#q2">← Back to Question 2</a><hr>
+
+<h2 id="ans3">Q3 — Answer</h2>
+<pre>"Book: Atomic Habits"
+"Book: Deep Work"
+true
+true</pre>
+<p><strong>Explanation:</strong> <code>describe</code> lives on <code>Book.prototype</code>, not on individual instances. Both <code>b1</code> and <code>b2</code> have <code>__proto__</code> pointing to the same <code>Book.prototype</code> object. When they look up <code>describe</code>, they find the same function in memory. So <code>b1.describe === b2.describe</code> is <code>true</code>. This is why prototypes save memory — 1000 instances share 1 method.</p>
+<a class="nav-link back" href="#q3">← Back to Question 3</a><hr>
+
+<h2 id="ans4">Q4 — Answer</h2>
+<pre>"Parth"
+"Hi Parth"
+undefined</pre>
+<p><strong>Explanation:</strong> On the <code>User("Deepika")</code> line — <strong>no</strong> new — the function is called as a regular function. <code>this</code> is <code>window</code> (non-strict mode in browser). So <code>this.name = "Deepika"</code> silently sets <code>window.name = "Deepika"</code>, polluting the global scope. The function has no <code>return</code>, so <code>u2</code> receives <code>undefined</code>. Classic bug that classes prevent — calling a class without <code>new</code> throws a TypeError.</p>
+<a class="nav-link back" href="#q4">← Back to Question 4</a><hr>
+
+<h2 id="ans5">Q5 — Answer</h2>
+<pre>"generic sound"
+"custom sound"
+"generic sound"</pre>
+<p><strong>Explanation:</strong></p>
+<ul>
+  <li>Initially, <code>a.sound()</code> looks up <code>sound</code> on <code>a</code> → not found → walks to <code>Animal.prototype</code> → finds "generic sound".</li>
+  <li>After <code>a.sound = function() {...}</code>, <code>a</code> now has its own <code>sound</code> property. Instance property shadows the prototype's. Lookup stops at the instance → "custom sound".</li>
+  <li>After <code>delete a.sound</code>, the instance property is removed. The prototype's <code>sound</code> is still there (it was never touched). Lookup now walks past <code>a</code> to <code>Animal.prototype</code> again → "generic sound".</li>
+</ul>
+<a class="nav-link back" href="#q5">← Back to Question 5</a><hr>
+
+<h2 id="ans6">Q6 — Answer</h2>
+<pre>"rendering widget"
+"rendering widget"
+true</pre>
+<p><strong>Explanation:</strong> Instances don't hold copies of prototype methods — they hold a <strong>reference</strong> to the prototype object. When you modify the prototype at runtime, existing instances instantly see the change because they were always pointing to that same object. This is why <code>w1.render === w2.render</code> is <code>true</code> — both look up the same function in the same shared prototype.</p>
+<a class="nav-link back" href="#q6">← Back to Question 6</a><hr>
+
+<h2 id="ans7">Q7 — Answer</h2>
+<pre>"function"
+"object"
+true
+true
+true
+"Robot 42 activated"</pre>
+<p><strong>Explanation:</strong></p>
+<ul>
+  <li><code>typeof Robot</code> → <code>"function"</code>. Classes ARE functions under the hood. They're just syntactic sugar over the constructor function pattern.</li>
+  <li><code>typeof Robot.prototype</code> → <code>"object"</code>. The <code>prototype</code> property is a plain object containing the class's methods.</li>
+  <li>The 3 <code>true</code> outputs confirm the same prototype mechanism as constructor functions — nothing new, just prettier syntax.</li>
+</ul>
+<a class="nav-link back" href="#q7">← Back to Question 7</a><hr>
+
+<h2 id="ans8">Q8 — Answer</h2>
+<pre>"A circle with area 78.54"
+true
+true
+true
+true</pre>
+<p><strong>The prototype chain:</strong></p>
+<pre>c
+├── __proto__ ──→ Circle.prototype
+                    │
+                    ├── __proto__ ──→ Shape.prototype
+                                        │
+                                        ├── __proto__ ──→ Object.prototype
+                                                            │
+                                                            └── __proto__ ──→ null</pre>
+<p><strong>Property lookups:</strong> <code>c.radius</code> found on <code>c</code>. <code>c.area()</code> found on <code>Circle.prototype</code>. <code>c.describe()</code> found on <code>Shape.prototype</code>. <code>c.toString()</code> found on <code>Object.prototype</code>. Chain terminates at null.</p>
+<a class="nav-link back" href="#q8">← Back to Question 8</a><hr>
+
+<h2 id="ans9">Q9 — Answer</h2>
+<pre>[2, 4, 6]
+["1_0", "2_1", "3_2"]
+true</pre>
+<p><strong>Explanation:</strong> We added <code>myMap</code> to <code>Array.prototype</code>. Every array in the codebase — existing, empty, or future — inherits it through their <code>__proto__</code> link. Both <code>nums</code> and <code>[]</code> have their <code>__proto__</code> pointing to the same <code>Array.prototype</code> object. So <code>[].myMap === nums.myMap</code> is <code>true</code> — they're literally the same function in memory.</p>
+<a class="nav-link back" href="#q9">← Back to Question 9</a><hr>
+
+<h2 id="ans10">Q10 — Answer</h2>
+<pre>"car"
+"Tesla"
+true
+true
+true
+true
+true</pre>
+<p><strong>Explanation of the 3 setup lines:</strong></p>
+<ul>
+  <li><code>Vehicle.call(this, "car")</code> — Inside <code>Car</code>'s constructor, this manually calls the parent's constructor with <code>this</code> bound to the new Car instance. This runs <code>this.type = "car"</code>, adding the parent's properties to the new instance. It's the pre-class equivalent of <code>super("car")</code>.</li>
+  <li><code>Car.prototype = Object.create(Vehicle.prototype)</code> — Sets up the prototype chain. Now <code>Car.prototype.__proto__</code> points to <code>Vehicle.prototype</code>, so Car instances can inherit methods like <code>getType</code>. This is the pre-class equivalent of <code>extends Vehicle</code>.</li>
+  <li><code>Car.prototype.constructor = Car</code> — Fixes a side effect. When we replaced <code>Car.prototype</code> with a new object, we lost the automatic <code>constructor</code> property that pointed back to <code>Car</code>. This line restores it, so <code>c.constructor === Car</code> works correctly.</li>
+</ul>
+<p><strong>The class version is much cleaner:</strong></p>
+<pre>class Car extends Vehicle {
+  constructor(brand) {
+    super("car");
+    this.brand = brand;
+  }
+  getBrand() { return this.brand; }
+}</pre>
+<p>Same result, no manual prototype plumbing. This is why classes were added — to hide this ceremony behind cleaner syntax.</p>
+<a class="nav-link back" href="#q10">← Back to Question 10</a>
+
+<hr>
+<h2 style="text-align:center;">📊 Scoring Guide</h2>
+<table>
+  <tr><th>Score</th><th>Level</th></tr>
+  <tr><td>9–10 / 10</td><td>🏆 Mastery — you understand prototypes at engine level</td></tr>
+  <tr><td>7–8 / 10</td><td>✅ Solid — review Q7 (class = function) and Q10 (manual extends)</td></tr>
+  <tr><td>5–6 / 10</td><td>🟨 Getting There — re-read Sections 2 (__proto__ vs prototype) and 6 (new keyword)</td></tr>
+  <tr><td>Below 5</td><td>🔄 Needs Revision — restart from Section 2</td></tr>
+</table>
+
+<div style="text-align:center;margin-top:25px;padding:18px;background:#e3f2fd;border-radius:8px;">
+  <p style="font-size:1.15em;font-weight:bold;color:#0078D4;">Key Mental Models:</p>
+  <p style="font-weight:bold;">🔹 <code>prototype</code> = template on functions. <code>__proto__</code> = link on instances.</p>
+  <p style="font-weight:bold;">🔹 Property lookup walks up <code>__proto__</code> until found or null.</p>
+  <p style="font-weight:bold;">🔹 <code>new</code> does 4 things: create obj, link proto, call fn with this, return obj.</p>
+  <p style="font-weight:bold;">🔹 Classes are syntactic sugar over constructor + prototype pattern.</p>
+  <p style="font-weight:bold;">🔹 <code>this</code> in inherited methods = the object the method was CALLED on.</p>
+</div>
+
+  </div>
+</div>
+
+</div><!-- end main -->
+
+<script>
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('collapsed');
+  document.getElementById('mainContent').classList.toggle('full');
+}
+function scrollTo(e, id) {
+  e.preventDefault();
+  const el = document.getElementById(id);
+  if (el) {
+    const cId = 'c' + id.replace('sec','');
+    const c = document.getElementById(cId);
+    if (c && c.classList.contains('collapsed')) toggleSection(cId);
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  if (window.innerWidth <= 768) {
+    document.getElementById('sidebar').classList.add('collapsed');
+    document.getElementById('mainContent').classList.add('full');
+  }
+}
+function toggleSection(id) {
+  const el = document.getElementById(id);
+  const icon = document.getElementById('icon-' + id);
+  if (el.classList.contains('collapsed')) {
+    el.classList.remove('collapsed');
+    el.style.maxHeight = el.scrollHeight + 10000 + 'px';
+    if (icon) icon.classList.remove('collapsed');
+  } else {
+    el.classList.add('collapsed');
+    el.style.maxHeight = '0px';
+    if (icon) icon.classList.add('collapsed');
+  }
+}
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.section-content').forEach(el => {
+    el.style.maxHeight = el.scrollHeight + 10000 + 'px';
+  });
+});
+</script>
+</body>
+</html>

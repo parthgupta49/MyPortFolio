@@ -1,0 +1,314 @@
+{
+  "subject": "javascript",
+  "series": "The JavaScript Codex",
+  "short": "JavaScript",
+  "blurb": "Execution contexts, closures, prototypes, the event loop, and what V8 is doing while your code runs.",
+  "accent": "#e3b341",
+  "generatedFrom": 11,
+  "chapters": [
+    {
+      "subject": "javascript",
+      "slug": "execution-context-and-call-stack",
+      "order": 1,
+      "chapterLabel": "Chapter 1",
+      "title": "Execution Context & The Call Stack",
+      "summary": "How the engine creates, populates, and destroys the environments your code runs in — with spec-level terminology and call stack mechanics.",
+      "tags": [
+        "fundamentals",
+        "scope",
+        "memory",
+        "hoisting",
+        "errors"
+      ],
+      "groups": [
+        "Foundation",
+        "Mechanics",
+        "Depth",
+        "Revision",
+        "Practice"
+      ],
+      "sectionCount": 19,
+      "codeCount": 51,
+      "questionCount": 10,
+      "words": 5219,
+      "readingMinutes": 27,
+      "companions": []
+    },
+    {
+      "subject": "javascript",
+      "slug": "hoisting-tdz-block-scope-and-errors",
+      "order": 2,
+      "chapterLabel": "Chapter 2",
+      "title": "Hoisting, TDZ, Block Scope & Errors",
+      "summary": "Shortest JS program · window &amp; global object · var/let/const · Hoisting · TDZ · Shadowing · The 3 error types",
+      "tags": [
+        "scope",
+        "hoisting",
+        "errors",
+        "memory",
+        "objects"
+      ],
+      "groups": [
+        "Part A — Global Space",
+        "Part B — Hoisting & Scope",
+        "Part C — Errors",
+        "Revision",
+        "Practice"
+      ],
+      "sectionCount": 20,
+      "codeCount": 53,
+      "questionCount": 10,
+      "words": 4640,
+      "readingMinutes": 24,
+      "companions": []
+    },
+    {
+      "subject": "javascript",
+      "slug": "closures-in-javascript",
+      "order": 3,
+      "chapterLabel": "Chapter 3",
+      "title": "Closures in JavaScript",
+      "summary": "With embedded interactive demos, engine-level depth, and interview patterns",
+      "tags": [
+        "closures",
+        "scope",
+        "async",
+        "functions",
+        "memory"
+      ],
+      "groups": [
+        "Core Concepts",
+        "Deep Dives",
+        "Practical",
+        "Revision",
+        "Practice"
+      ],
+      "sectionCount": 17,
+      "codeCount": 60,
+      "questionCount": 10,
+      "words": 4408,
+      "readingMinutes": 23,
+      "companions": []
+    },
+    {
+      "subject": "javascript",
+      "slug": "the-this-keyword-in-javascript",
+      "order": 4,
+      "chapterLabel": "Chapter 4",
+      "title": "The this Keyword in JavaScript",
+      "summary": "Enriched with gotchas, mental models &amp; interview patterns from hands-on practice",
+      "tags": [
+        "this",
+        "objects",
+        "scope",
+        "errors",
+        "fundamentals"
+      ],
+      "groups": [
+        "Contents"
+      ],
+      "sectionCount": 18,
+      "codeCount": 51,
+      "questionCount": 10,
+      "words": 3946,
+      "readingMinutes": 20,
+      "companions": []
+    },
+    {
+      "subject": "javascript",
+      "slug": "value-vs-reference-and-deep-immutability",
+      "order": 5,
+      "chapterLabel": "Chapter 5",
+      "title": "Value vs Reference & Deep Immutability",
+      "summary": "Stack vs Heap memory, all copying techniques, and why React state must be immutable",
+      "tags": [
+        "objects",
+        "memory",
+        "functional",
+        "arrays"
+      ],
+      "groups": [
+        "Core Concepts",
+        "Copying Techniques",
+        "Practical",
+        "Revision",
+        "Practice"
+      ],
+      "sectionCount": 14,
+      "codeCount": 57,
+      "questionCount": 10,
+      "words": 4774,
+      "readingMinutes": 24,
+      "companions": []
+    },
+    {
+      "subject": "javascript",
+      "slug": "prototypes-and-prototypal-inheritance",
+      "order": 6,
+      "chapterLabel": "Chapter 6",
+      "title": "Prototypes & Prototypal Inheritance",
+      "summary": "Prototype chains, the <code>new</code> keyword under the hood, and why classes are just syntactic sugar",
+      "tags": [
+        "prototypes",
+        "objects",
+        "classes"
+      ],
+      "groups": [
+        "Core Concepts",
+        "Constructor Pattern",
+        "Practical",
+        "Revision",
+        "Practice"
+      ],
+      "sectionCount": 14,
+      "codeCount": 65,
+      "questionCount": 10,
+      "words": 4514,
+      "readingMinutes": 23,
+      "companions": []
+    },
+    {
+      "subject": "javascript",
+      "slug": "higher-order-functions-and-functional-patterns",
+      "order": 7,
+      "chapterLabel": "Chapter 7",
+      "title": "Higher-Order Functions & Functional Patterns",
+      "summary": "The most beautiful part of JavaScript: functions as first-class citizens",
+      "tags": [
+        "functional",
+        "arrays",
+        "functions"
+      ],
+      "groups": [
+        "Core Concepts",
+        "The Big Three",
+        "Advanced",
+        "Practical",
+        "Revision",
+        "Practice"
+      ],
+      "sectionCount": 16,
+      "codeCount": 76,
+      "questionCount": 10,
+      "words": 5181,
+      "readingMinutes": 26,
+      "companions": []
+    },
+    {
+      "subject": "javascript",
+      "slug": "currying-and-partial-application",
+      "order": 8,
+      "chapterLabel": "Chapter 8",
+      "title": "Currying & Partial Application",
+      "summary": "Honest take: it's closures wearing a fancy name. Useful in a few real places, overused everywhere else.",
+      "tags": [
+        "currying",
+        "closures",
+        "this",
+        "functional",
+        "interview"
+      ],
+      "groups": [
+        "Core",
+        "Reality Check",
+        "Revision",
+        "Practice"
+      ],
+      "sectionCount": 11,
+      "codeCount": 24,
+      "questionCount": 6,
+      "words": 2349,
+      "readingMinutes": 12,
+      "companions": []
+    },
+    {
+      "subject": "javascript",
+      "slug": "the-event-loop",
+      "order": 9,
+      "chapterLabel": "Chapter 9",
+      "title": "The Event Loop",
+      "summary": "How single-threaded JavaScript does async work without blocking — the #1 frontend interview topic.",
+      "tags": [
+        "async",
+        "scope",
+        "functions",
+        "fundamentals",
+        "objects"
+      ],
+      "groups": [
+        "Foundation",
+        "Mechanics",
+        "The Traps",
+        "Revision",
+        "Practice"
+      ],
+      "sectionCount": 16,
+      "codeCount": 41,
+      "questionCount": 8,
+      "words": 3071,
+      "readingMinutes": 16,
+      "companions": [
+        "js-engine-and-v8-architecture"
+      ]
+    },
+    {
+      "subject": "javascript",
+      "slug": "js-engine-and-v8-architecture",
+      "order": 10,
+      "chapterLabel": "Chapter 10",
+      "title": "JS Engine & V8 Architecture",
+      "summary": "What's actually inside the engine that runs your code — parsing, JIT compilation, execution, garbage collection, and V8's optimizations.",
+      "tags": [
+        "engine",
+        "memory",
+        "fundamentals",
+        "objects",
+        "async"
+      ],
+      "groups": [
+        "The Big Picture",
+        "Inside the Engine",
+        "Bonus / Advanced",
+        "Revision",
+        "Practice"
+      ],
+      "sectionCount": 17,
+      "codeCount": 10,
+      "questionCount": 8,
+      "words": 3494,
+      "readingMinutes": 18,
+      "companions": [
+        "the-event-loop"
+      ]
+    },
+    {
+      "subject": "javascript",
+      "slug": "js-everyday-reference",
+      "order": 11,
+      "chapterLabel": "Reference",
+      "title": "JS Everyday Reference",
+      "summary": "Keep this open in a tab. Ctrl+F to jump to anything.",
+      "tags": [
+        "arrays",
+        "objects",
+        "functional",
+        "reference"
+      ],
+      "groups": [
+        "Objects",
+        "Arrays",
+        "Strings",
+        "Null & Truthy",
+        "Numbers",
+        "Patterns",
+        "Method"
+      ],
+      "sectionCount": 22,
+      "codeCount": 91,
+      "questionCount": 0,
+      "words": 2990,
+      "readingMinutes": 15,
+      "companions": []
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+# Netlify / Cloudflare Pages: this is a single-page app, so every path must be
+# served index.html and let the router decide. Without it, opening a shared
+# chapter link directly — or just refreshing one — returns the host's 404.
+/*  /index.html  200

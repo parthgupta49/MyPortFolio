@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Parth Gupta — Developer</title>
+    <meta
+      name="description"
+      content="Parth Gupta — JavaScript developer at LTM. Projects, writing, and The JavaScript Codex: detailed documentation on the JavaScript engine and the event loop."
+    />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#08090c" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#fbfbfa" media="(prefers-color-scheme: light)" />
+
+    <!-- build-note
+      The four tags below need an ABSOLUTE url, because a link-preview crawler
+      fetches this HTML on its own and has no page to resolve a relative path
+      against. The deployed origin isn't knowable here, and committing a guessed
+      domain is worse than having no tag, so vite.config.js fills it in from the
+      host's own deploy URL (Vercel, Netlify and Cloudflare all provide one) or
+      from a SITE URL you set. With none available it removes these tags instead.
+      This comment is stripped from the build.
+    -->
+    <link rel="canonical" href="%SITE_URL%/" />
+    <meta property="og:url" content="%SITE_URL%/" />
+    <meta property="og:site_name" content="Parth Gupta" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Parth Gupta — Developer" />
+    <meta
+      property="og:description"
+      content="Projects, writing, and The JavaScript Codex: detailed documentation on the JavaScript engine and the event loop."
+    />
+    <meta property="og:image" content="%SITE_URL%/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Parth Gupta — JavaScript Developer at LTM" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="%SITE_URL%/og.png" />
+    <meta name="twitter:title" content="Parth Gupta — Developer" />
+    <meta name="twitter:description" content="Projects, writing, and The JavaScript Codex: detailed documentation on the JavaScript engine and the event loop." />
+
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon/favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon/apple-touch-icon.png" />
+    <link rel="manifest" href="/assets/favicon/site.webmanifest" />
+
+    <!--
+      Resolve the theme before first paint. Without this the page paints the
+      default theme, then swaps — a visible flash on every load.
+      Kept inline and tiny on purpose: it must run render-blocking.
+    -->
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem('theme')
+          var theme =
+            saved === 'light' || saved === 'dark'
+              ? saved
+              : window.matchMedia('(prefers-color-scheme: light)').matches
+                ? 'light'
+                : 'dark'
+          document.documentElement.dataset.theme = theme
+        } catch (e) {
+          /* private mode / blocked storage — the dark default in the markup stands */
+        }
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>This site needs JavaScript enabled to run.</noscript>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

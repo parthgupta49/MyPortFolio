@@ -1,0 +1,32 @@
+{
+  "title": "The JavaScript Codex",
+  "short": "JavaScript",
+  "blurb": "Execution contexts, closures, prototypes, the event loop, and what V8 is doing while your code runs.",
+  "order": 1,
+  "accent": "#e3b341",
+
+  "_comment": "vocabulary drives the tag filter. `match` terms are matched whole-word, case-insensitive; regex is not required. A chapter is scored against every entry (its title counts 10x, section titles 6x, body 1x) and the top 3-5 win. Give generic catch-all tags a weight below 1 so a chapter's real subject always outranks them. Delete this block entirely and tags will be inferred from recurring section-title terms instead.",
+
+  "vocabulary": [
+    { "tag": "engine", "match": ["v8", "js engine", "javascript engine", "jit", "bytecode", "ignition", "turbofan", "interpreter", "garbage collection", "runtime environment"] },
+    { "tag": "fundamentals", "match": ["execution context", "call stack", "fundamental", "single-threaded", "synchronous", "how javascript works"] },
+    { "tag": "memory", "match": ["memory", "heap", "stack memory", "stack frame", "allocation", "garbage", "mutation", "reference type"] },
+    { "tag": "scope", "match": ["scope", "lexical", "shadowing", "block scope", "scope chain"] },
+    { "tag": "hoisting", "match": ["hoisting", "hoisted", "tdz", "temporal dead zone"] },
+    { "tag": "closures", "match": ["closure", "closures"] },
+    { "tag": "async", "match": ["async", "asynchronous", "event loop", "promise", "settimeout", "microtask", "callback queue", "await", "non-blocking"] },
+    { "tag": "this", "match": ["this keyword", "this binding", "call()", "apply()", "bind()", "arrow function"] },
+    { "tag": "objects", "match": ["object", "objects", "destructuring", "key-value pair"] },
+    { "tag": "prototypes", "match": ["prototype", "prototypes", "prototypal", "__proto__", "inheritance", "instanceof"] },
+    { "tag": "classes", "match": ["class", "classes", "constructor function", "new keyword", "syntactic sugar"] },
+    { "tag": "functions", "match": ["higher-order function", "hof", "callback", "first-class", "function expression"] },
+    { "tag": "functional", "match": ["map", "filter", "reduce", "pure function", "composition", "functional", "immutable", "immutability"] },
+    { "tag": "currying", "match": ["curry", "curried", "currying", "partial application"] },
+    { "tag": "arrays", "match": ["array", "arrays", "slice", "splice", "sort()", "spread operator"] },
+    { "tag": "errors", "match": ["referenceerror", "typeerror", "syntaxerror", "error type", "stack overflow"] },
+
+    { "tag": "interview", "match": ["interview", "cheat sheet", "answer template"], "weight": 0.5 },
+    { "tag": "practice", "match": ["practice sheet", "answer key", "output-based", "predict the output"], "weight": 0.5 },
+    { "tag": "reference", "match": ["everyday reference", "quick reference", "recipe", "daily cheat"], "weight": 0.5 }
+  ]
+}

@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Event Loop — Complete Notes</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Calibri, Arial, sans-serif; color: #1a1a1a; line-height: 1.7; background: #fff; }
+  .sidebar-toggle { position: fixed; top: 12px; left: 12px; z-index: 1001; background: #0078D4; color: #fff; border: none; width: 40px; height: 40px; border-radius: 8px; font-size: 1.4em; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+  .sidebar-toggle:hover { background: #106ebe; }
+  .sidebar { position: fixed; top: 0; left: 0; width: 300px; height: 100vh; background: #f0f4ff; border-right: 2px solid #0078D4; overflow-y: auto; z-index: 1000; transform: translateX(0); transition: transform 0.3s ease; padding: 60px 15px 20px 15px; }
+  .sidebar.collapsed { transform: translateX(-300px); }
+  .sidebar h3 { color: #0078D4; font-size: 1em; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 2px solid #0078D4; }
+  .sidebar a { display: block; padding: 5px 8px; color: #2b579a; text-decoration: none; font-size: 0.85em; border-radius: 4px; margin-bottom: 2px; }
+  .sidebar a:hover { background: #dce6f7; }
+  .sidebar .group-label { color: #555; font-weight: bold; font-size: 0.78em; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 12px; margin-bottom: 4px; padding-left: 8px; }
+  .main { margin-left: 300px; padding: 20px 30px 40px 30px; max-width: 990px; transition: margin-left 0.3s ease; }
+  .main.full { margin-left: 0; }
+  .title-block { text-align: center; padding: 25px 0; border-bottom: 4px solid #0078D4; margin-bottom: 25px; }
+  .title-block h1 { color: #0078D4; font-size: 2em; border: none; margin: 0; padding: 0; }
+  .title-block p { color: #555; font-size: 0.95em; margin: 3px 0; }
+  h1 { color: #0078D4; border-bottom: 3px solid #0078D4; padding-bottom: 8px; margin-top: 35px; font-size: 1.6em; }
+  h2 { color: #2b579a; margin-top: 25px; font-size: 1.3em; }
+  h3 { color: #444; margin-top: 18px; font-size: 1.1em; }
+  p { margin: 8px 0; }
+  ul, ol { padding-left: 24px; margin: 8px 0; }
+  li { margin-bottom: 6px; }
+  .section-header { cursor: pointer; display: flex; align-items: center; justify-content: space-between; padding: 10px 0; user-select: none; }
+  .section-header:hover h1 { color: #106ebe; }
+  .section-header .toggle-icon { font-size: 1.2em; color: #0078D4; transition: transform 0.3s; min-width: 24px; text-align: center; }
+  .section-header .toggle-icon.collapsed { transform: rotate(-90deg); }
+  .section-content { overflow: hidden; transition: max-height 0.4s ease; }
+  .section-content.collapsed { max-height: 0 !important; overflow: hidden; }
+  pre { background: #f5f5f5; border: 1px solid #ddd; border-left: 4px solid #0078D4; padding: 14px 18px; font-family: 'Consolas', 'Courier New', monospace; font-size: 0.9em; overflow-x: auto; border-radius: 4px; white-space: pre-wrap; margin: 12px 0; line-height: 1.55; }
+  code { font-family: 'Consolas', monospace; background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-size: 0.88em; }
+  table { border-collapse: collapse; width: 100%; margin: 14px 0; }
+  th { background: #0078D4; color: #fff; padding: 10px 14px; text-align: left; font-size: 0.92em; }
+  td { border: 1px solid #ccc; padding: 9px 14px; font-size: 0.9em; vertical-align: top; }
+  tr:nth-child(even) { background: #f9f9f9; }
+  .note-box { background: #e8f4e8; border-left: 4px solid #2e7d32; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+  .note-box strong { color: #2e7d32; }
+  .warn-box { background: #fff3e0; border-left: 4px solid #e65100; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+  .warn-box strong { color: #e65100; }
+  .danger-box { background: #fce4ec; border-left: 4px solid #c62828; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+  .danger-box strong { color: #c62828; }
+  .blue-box { background: #e3f2fd; border-left: 4px solid #1565c0; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+  .blue-box strong { color: #1565c0; }
+  .purple-box { background: #f3e5f5; border-left: 4px solid #7b1fa2; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+  .purple-box strong { color: #7b1fa2; }
+  .question-block { background: #fafafa; border: 1px solid #e0e0e0; padding: 16px 20px; margin: 18px 0; border-radius: 6px; }
+  .question-block h2 { margin-top: 0; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.78em; font-weight: bold; margin-left: 5px; }
+  .tag-easy { background: #e8f5e9; color: #2e7d32; }
+  .tag-medium { background: #fff8e1; color: #f57f17; }
+  .tag-hard { background: #fce4ec; color: #c62828; }
+  .tag-expert { background: #4a148c; color: #fff; }
+  .nav-link { display: inline-block; margin-top: 8px; font-size: 0.85em; color: #7b1fa2; text-decoration: none; font-weight: bold; }
+  .nav-link:hover { text-decoration: underline; }
+  .nav-link.back { color: #0078D4; }
+  .page-break { margin-top: 50px; border-top: 3px double #0078D4; padding-top: 20px; }
+  @media (max-width: 768px) { .sidebar { width: 260px; } .main { margin-left: 0; padding: 15px; } .sidebar.collapsed { transform: translateX(-260px); } }
+</style>
+</head>
+<body>
+<button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+<nav class="sidebar" id="sidebar">
+  <h3>📑 Event Loop — Navigation</h3>
+  <div class="group-label">📖 Foundation</div>
+  <a href="#sec1" onclick="scrollTo(event,'sec1')">1. The Problem It Solves</a>
+  <a href="#sec2" onclick="scrollTo(event,'sec2')">2. Browser's Superpowers (Web APIs)</a>
+  <a href="#sec3" onclick="scrollTo(event,'sec3')">3. ⭐ How Naked Global Calls Resolve</a>
+  <a href="#sec4" onclick="scrollTo(event,'sec4')">4. The 5 Players</a>
+  <div class="group-label">⚙️ Mechanics</div>
+  <a href="#sec5" onclick="scrollTo(event,'sec5')">5. How It Works — Full Trace</a>
+  <a href="#sec6" onclick="scrollTo(event,'sec6')">6. ⭐ Microtask vs Macrotask</a>
+  <a href="#sec7" onclick="scrollTo(event,'sec7')">7. The Golden Rule (Priority)</a>
+  <a href="#sec8" onclick="scrollTo(event,'sec8')">8. What Goes Where</a>
+  <div class="group-label">🎯 The Traps</div>
+  <a href="#sec9" onclick="scrollTo(event,'sec9')">9. ⚠️ fetch ≠ instant</a>
+  <a href="#sec10" onclick="scrollTo(event,'sec10')">10. ⚠️ Returned Promise ticks</a>
+  <a href="#sec11" onclick="scrollTo(event,'sec11')">11. Starvation</a>
+  <a href="#sec12" onclick="scrollTo(event,'sec12')">12. Common Gotchas</a>
+  <div class="group-label">📝 Revision</div>
+  <a href="#sec13" onclick="scrollTo(event,'sec13')">13. Cheat Sheet</a>
+  <a href="#sec14" onclick="scrollTo(event,'sec14')">14. Interview Answers</a>
+  <div class="group-label">🧪 Practice</div>
+  <a href="#sec15" onclick="scrollTo(event,'sec15')">15. Practice (8 Qs)</a>
+  <a href="#sec16" onclick="scrollTo(event,'sec16')">16. Answer Key</a>
+</nav>
+<div class="main" id="mainContent">
+<div class="title-block">
+  <h1>The Event Loop</h1>
+  <p><strong>Complete Revision Notes + Practice Sheet</strong></p>
+  <p>Chapter 7 — The JavaScript Codex | Week 2</p>
+  <p><em>How single-threaded JavaScript does async work without blocking — the #1 frontend interview topic.</em></p>
+  <p><em>🔗 Companion file: JS Engine &amp; V8 Architecture (what's inside the engine that runs all this)</em></p>
+</div>
+
+<div id="sec1">
+  <div class="section-header" onclick="toggleSection('c1')"><h1 style="border:none;margin:0;padding:0;">1. The Problem the Event Loop Solves</h1><span class="toggle-icon" id="icon-c1">▼</span></div>
+  <div class="section-content" id="c1">
+    <div class="danger-box"><strong>The core paradox:</strong> JavaScript is <strong>synchronous and single-threaded</strong> — one call stack, one thing at a time, top to bottom. Yet it can wait 5 seconds for a timer, fetch from a server, and respond to clicks — without freezing the page. <strong>How?</strong> That's what the Event Loop explains.</div>
+    <p>If JavaScript were <em>only</em> the call stack, then "wait 5 seconds" would <strong>block everything</strong> — the whole page frozen until done. Unusable.</p>
+    <p>The trick: JavaScript itself doesn't handle timers, network calls, or the DOM. The <strong>browser</strong> does. JavaScript hands slow jobs to the browser, keeps running the rest of the code, and the browser hands results back later through a queue system managed by the <strong>Event Loop</strong>.</p>
+    <div class="blue-box"><strong>🔑 One-line summary:</strong> The Event Loop lets single-threaded JavaScript <em>delegate</em> slow work to the browser and pick up results later — without ever blocking the main thread.</div>
+  </div>
+</div>
+
+<div id="sec2">
+  <div class="section-header" onclick="toggleSection('c2')"><h1 style="border:none;margin:0;padding:0;">2. The Browser's Superpowers (Web APIs)</h1><span class="toggle-icon" id="icon-c2">▼</span></div>
+  <div class="section-content" id="c2">
+    <p>The JS Engine (like V8) is small — just the Call Stack + Memory Heap. On its own it cannot set a timer, make a network call, or touch the page. The <strong>browser</strong> wraps the engine and gives it <strong>superpowers</strong> via <strong>Web APIs</strong> — NOT part of JavaScript:</p>
+    <table>
+      <tr><th>Superpower (Web API)</th><th>What it does</th></tr>
+      <tr><td><code>setTimeout</code> / <code>setInterval</code></td><td>Timers</td></tr>
+      <tr><td><code>fetch</code> / <code>XMLHttpRequest</code></td><td>Network calls to servers</td></tr>
+      <tr><td><code>DOM APIs</code> (<code>document.*</code>)</td><td>Access &amp; modify the page</td></tr>
+      <tr><td><code>console</code></td><td>Logging</td></tr>
+      <tr><td><code>localStorage</code></td><td>Persistent storage</td></tr>
+      <tr><td>Event listeners (<code>addEventListener</code>)</td><td>Respond to clicks, scrolls, etc.</td></tr>
+    </table>
+    <div class="note-box"><strong>💡 How JS accesses them:</strong> All superpowers are exposed through the global <code>window</code> object. <code>setTimeout(...)</code> is really <code>window.setTimeout(...)</code>. Same for <code>console.log</code>, <code>fetch</code>, etc. <code>window</code> is the bridge between your JS code and the browser's superpowers. <em>(The very next section explains the exact memory-level mechanism behind this.)</em></div>
+    <div class="blue-box"><strong>🔑 Key takeaway:</strong> <code>setTimeout</code>, <code>fetch</code>, and the DOM are <strong>browser features, not JavaScript features</strong>. Node.js provides its own versions. This is why the same JS behaves differently in a browser vs Node.</div>
+  </div>
+</div>
+
+<!-- ===== NEW SECTION 3 ===== -->
+<div id="sec3">
+  <div class="section-header" onclick="toggleSection('c3')"><h1 style="border:none;margin:0;padding:0;">⭐ 3. How Naked Global Calls Resolve (<code>setTimeout</code>, <code>fetch</code>, <code>console</code>)</h1><span class="toggle-icon" id="icon-c3">▼</span></div>
+  <div class="section-content" id="c3">
+    <div class="purple-box"><strong>⭐ The question most people never ask:</strong> If these APIs live on <code>window</code>, why can we call <code>setTimeout(...)</code> directly instead of <code>window.setTimeout(...)</code>? How does the naked call actually resolve at the memory level?</div>
+
+    <h3>The Short Answer</h3>
+    <p>When you write <code>setTimeout(...)</code>, the engine performs an <strong>identifier lookup</strong> through the scope chain — the same lookup as for any variable. It's not in your local scope, so it walks up... and up... until it reaches the <strong>Global Scope</strong>. And here's the key: at the global level, the scope's storage <strong>IS</strong> the global object (<code>window</code>). So <code>setTimeout</code> and <code>window.setTimeout</code> resolve to the exact same function.</p>
+
+    <div class="note-box"><strong>💡 <code>window.</code> is just the explicit path.</strong> The naked call is the engine walking the scope chain and arriving at the same destination on its own.</div>
+
+    <h3>The Machinery — The Global Environment Has TWO Records</h3>
+    <p>You know from the Execution Context notes that every scope has a Lexical Environment. But the <strong>global</strong> lexical environment is special — the spec splits it into <strong>two separate storage records</strong>:</p>
+
+    <pre>          GLOBAL LEXICAL ENVIRONMENT
+                     │
+     ┌───────────────┴────────────────┐
+     │                                │
+┌────▼─────────────────┐   ┌──────────▼──────────────────┐
+│ 1. DECLARATIVE        │   │ 2. OBJECT                    │
+│    Environment Record │   │    Environment Record        │
+│                       │   │                              │
+│  Holds:               │   │  Binding object = window     │
+│   • let               │   │                              │
+│   • const             │   │  Holds:                      │
+│   • class             │   │   • var declarations         │
+│                       │   │   • function declarations    │
+│  (This is the         │   │   • ALL built-in Web APIs:   │
+│   "Script" scope you  │   │       setTimeout, fetch,     │
+│   see in DevTools)    │   │       console, localStorage… │
+│                       │   │                              │
+│  NOT on window ❌     │   │  IS window ✅                │
+└───────────────────────┘   └──────────────────────────────┘</pre>
+
+    <div class="blue-box"><strong>🔑 The crucial piece:</strong> The Object Environment Record's "binding object" <strong>literally is the <code>window</code> object</strong>. So looking up an identifier in the global scope's Object Record = checking for that property on <code>window</code>. The global object isn't just "linked to" the scope — it <em>is</em> the backing store for one half of it.</div>
+
+    <h3>Step-by-Step: Resolving a Naked <code>setTimeout</code></h3>
+    <pre>function outer() {
+  function inner() {
+    setTimeout(() =&gt; console.log("hi"), 0);
+    //  ↑ how is "setTimeout" resolved?
+  }
+  inner();
+}
+outer();</pre>
+
+    <pre>Engine needs to resolve the identifier: "setTimeout"
+
+STEP 1: Look in inner()'s Lexical Environment
+        Local memory: { the arrow fn }
+        "setTimeout"? → NOT FOUND
+        → follow reference to parent lexical environment
+
+STEP 2: Look in outer()'s Lexical Environment
+        Local memory: { inner: fn }
+        "setTimeout"? → NOT FOUND
+        → follow reference to parent → Global
+
+STEP 3: Look in the GLOBAL Lexical Environment
+        ├── check Declarative Record (let/const/class)
+        │      "setTimeout"? → NOT FOUND
+        │
+        └── check Object Environment Record
+               binding object = window
+               does window have property "setTimeout"?
+               → YES ✅  → return that function reference
+
+Naked call resolved. No `window.` needed —
+the engine found window for you by walking the scope chain.</pre>
+
+    <h3>Why <code>setTimeout === window.setTimeout</code></h3>
+    <pre>setTimeout   === window.setTimeout    // true
+console.log  === window.console.log   // true
+fetch        === window.fetch         // true</pre>
+    <p>Two different <em>paths</em>, one <em>destination</em>:</p>
+    <pre>NAKED:     setTimeout
+           → scope-chain walk → reaches global scope
+           → global scope's Object Record binding object = window
+           → reads window.setTimeout  ─────────┐
+                                                │
+                                                ▼
+                                    ┌────────────────────────┐
+EXPLICIT:  window.setTimeout        │  [the actual function  │
+           → you name window        │   reference in the     │
+           → read .setTimeout ──────▶│   memory heap]         │
+             property directly      └────────────────────────┘
+
+Same function, same memory. The naked version just skips
+typing `window.` because the global scope IS window's record.</pre>
+
+    <h3>Who Put These On <code>window</code>? (The Browser Did)</h3>
+    <p>The JS engine (V8) has no idea what <code>setTimeout</code> or <code>fetch</code> is — it's just Call Stack + Heap. When the browser builds the Runtime Environment (before your code runs), it <strong>pre-loads</strong> <code>window</code> with all the Web APIs. Conceptually:</p>
+    <pre>// The browser does this BEFORE your code runs:
+window.setTimeout   = function(cb, delay) { /* timer machinery */ };
+window.fetch        = function(url) { /* network machinery */ };
+window.console      = { log: function() { /* logging */ }, ... };
+window.localStorage = { /* storage machinery */ };
+// ...every Web API, installed as a property of window</pre>
+    <p>So by the time your code runs, <code>window</code> is <strong>pre-filled</strong>. Your naked calls resolve into it via the scope chain. In <strong>Node.js</strong>, the global object is <code>globalThis</code>/<code>global</code>, pre-filled with <em>different</em> superpowers (file system, etc.) — which is why there's no <code>document</code> in Node.</p>
+
+    <h3>The Callback to Your Hoisting Notes — <code>var</code> vs <code>let</code> at Global Level</h3>
+    <p>This is <strong>exactly</strong> why <code>window.b</code> was <code>undefined</code> for a global <code>let</code>:</p>
+    <pre>var a = 10;
+let b = 20;
+function c() {}
+
+console.log(window.a);   // 10          ✅ var → Object Record (on window)
+console.log(window.b);   // undefined   ❌ let → Declarative Record (NOT on window)
+console.log(window.c);   // function c  ✅ function decl → Object Record (on window)</pre>
+    <table>
+      <tr><th>Declaration</th><th>Goes into</th><th>On window?</th><th>Reachable by naked name?</th></tr>
+      <tr><td><code>var</code></td><td>Object Env Record</td><td>✅ Yes</td><td>✅ Yes (scope chain)</td></tr>
+      <tr><td>function declaration</td><td>Object Env Record</td><td>✅ Yes</td><td>✅ Yes</td></tr>
+      <tr><td><code>let</code> / <code>const</code> / <code>class</code></td><td>Declarative Env Record ("Script" scope)</td><td>❌ No</td><td>✅ Yes (scope chain)</td></tr>
+    </table>
+    <div class="note-box"><strong>💡 Notice:</strong> BOTH records are part of the global scope, so BOTH are reachable by naked name via the scope chain. The only difference is whether they're ALSO exposed as a property on <code>window</code>. <code>var</code>/functions are; <code>let</code>/<code>const</code>/<code>class</code> are not.</div>
+
+    <div class="blue-box"><strong>🎯 The one-line mental model:</strong> The global scope and the global object aren't two loosely-linked things — the global object (<code>window</code>) <strong>is</strong> the physical backing store for the Object Environment Record half of the global scope. That's why looking up a naked global identifier and reading a property off <code>window</code> are the same operation, and why no <code>window.</code> prefix is needed.</div>
+  </div>
+</div>
+
+<div id="sec4">
+  <div class="section-header" onclick="toggleSection('c4')"><h1 style="border:none;margin:0;padding:0;">4. The 5 Players</h1><span class="toggle-icon" id="icon-c4">▼</span></div>
+  <div class="section-content" id="c4">
+    <table>
+      <tr><th>Player</th><th>Role</th></tr>
+      <tr><td><strong>1. Call Stack</strong></td><td>Where JS actually runs code. One thing at a time. LIFO.</td></tr>
+      <tr><td><strong>2. Web APIs</strong></td><td>Browser features (timers, fetch, DOM). Slow jobs run HERE, off the main thread.</td></tr>
+      <tr><td><strong>3. Callback Queue</strong> (Macrotask)</td><td>Where <code>setTimeout</code>/event callbacks wait after their Web API finishes.</td></tr>
+      <tr><td><strong>4. Microtask Queue</strong></td><td>Where Promise <code>.then</code> callbacks wait. HIGHER priority than the callback queue.</td></tr>
+      <tr><td><strong>5. Event Loop</strong></td><td>The traffic cop. Moves waiting callbacks onto the Call Stack — but only when the stack is empty.</td></tr>
+    </table>
+    <pre>            ┌─────────────────────────────────────────┐
+            │              JS ENGINE                  │
+            │  ┌───────────────┐   ┌───────────────┐  │
+            │  │  Call Stack   │   │  Memory Heap  │  │
+            │  │  (runs code)  │   │  (variables)  │  │
+            │  └───────▲───────┘   └───────────────┘  │
+            └──────────┼──────────────────────────────┘
+                       │  Event Loop pushes callbacks here
+                       │  ONLY when the stack is empty
+            ┌──────────┴──────────┐
+            │     EVENT LOOP      │
+            │  "Is stack empty?   │
+            │   Any callbacks?"   │
+            └──▲───────────────▲──┘
+   drains FIRST│               │ only when microtask Q empty
+        ┌──────┴──────┐  ┌─────┴────────┐
+        │  Microtask  │  │  Callback    │
+        │   Queue     │  │  Queue       │
+        │ (.then,     │  │ (setTimeout, │
+        │  fetch cb)  │  │  DOM events) │
+        └──────▲──────┘  └──────▲───────┘
+               └────────┬───────┘
+            ┌───────────┴──────────────┐
+            │        WEB APIs           │  ← timers, fetch, DOM
+            │  (run OFF the main thread)│
+            └───────────────────────────┘</pre>
+  </div>
+</div>
+
+<div id="sec5">
+  <div class="section-header" onclick="toggleSection('c5')"><h1 style="border:none;margin:0;padding:0;">5. How It Works — A Full Trace</h1><span class="toggle-icon" id="icon-c5">▼</span></div>
+  <div class="section-content" id="c5">
+    <pre>console.log("Start");
+setTimeout(() =&gt; { console.log("Timeout"); }, 2000);
+console.log("End");</pre>
+    <pre>1. "Start" pushed to Call Stack → logged → popped.
+2. setTimeout(cb, 2000) hits the stack.
+   → JS hands cb + 2000ms timer to the Web APIs.
+   → Browser starts a 2-second timer OFF the main thread.
+   → setTimeout returns immediately. JS does NOT wait.
+3. "End" pushed → logged → popped.
+4. Call Stack now EMPTY. Main script done.
+   (Browser's timer still counting...)
+5. After 2s, timer expires → browser puts cb into CALLBACK QUEUE.
+6. Event Loop: "Is Call Stack empty?" → YES → moves cb onto stack.
+7. cb runs → "Timeout" logged → popped.</pre>
+    <h3>Output:</h3>
+    <pre>Start
+End
+Timeout   ← after 2 seconds, even though written in the middle</pre>
+    <div class="note-box"><strong>💡 This is why <code>setTimeout</code> is non-blocking.</strong> The 2-second wait happens in the browser, not on the call stack. JS keeps running "End" immediately.</div>
+    <div class="warn-box"><strong>⚠️ <code>setTimeout(fn, 0)</code> is NOT instant.</strong> Even with 0ms, the callback still goes through Web API → Callback Queue → Event Loop. It runs only after current sync code finishes AND the stack is empty AND all microtasks are done.</div>
+  </div>
+</div>
+
+<div id="sec6">
+  <div class="section-header" onclick="toggleSection('c6')"><h1 style="border:none;margin:0;padding:0;">⭐ 6. Microtask Queue vs Callback (Macrotask) Queue</h1><span class="toggle-icon" id="icon-c6">▼</span></div>
+  <div class="section-content" id="c6">
+    <div class="purple-box"><strong>⭐ THE distinction interviewers test.</strong> Two waiting queues, one has priority.</div>
+    <table>
+      <tr><th></th><th>Microtask Queue</th><th>Callback / Macrotask Queue</th></tr>
+      <tr><td><strong>Priority</strong></td><td>HIGH — drained first</td><td>LOW — only when microtasks empty</td></tr>
+      <tr><td><strong>Holds callbacks from</strong></td><td>Promises (<code>.then/.catch/.finally</code>), <code>async/await</code>, <code>queueMicrotask</code></td><td><code>setTimeout</code>, <code>setInterval</code>, DOM events, I/O</td></tr>
+      <tr><td><strong>Also called</strong></td><td>Job Queue</td><td>Task Queue, Macrotask Queue</td></tr>
+    </table>
+    <h3>The Classic Proof:</h3>
+    <pre>console.log("1");
+setTimeout(() =&gt; console.log("2"), 0);          // → Callback Queue
+Promise.resolve().then(() =&gt; console.log("3")); // → Microtask Queue
+console.log("4");</pre>
+    <pre>Sync phase:       "1", "4" logged.            → 1, 4
+Stack empty. Event Loop runs.
+Microtasks FIRST: "3" logged.                 → 3
+Then macrotasks:  "2" logged.                 → 2
+Output: 1, 4, 3, 2</pre>
+    <div class="blue-box"><strong>🔑 The mental model:</strong> Sync code first. THEN microtask queue drains <strong>completely</strong>. THEN one macrotask. Then microtasks drain again. Then next macrotask. And so on.</div>
+  </div>
+</div>
+
+<div id="sec7">
+  <div class="section-header" onclick="toggleSection('c7')"><h1 style="border:none;margin:0;padding:0;">7. The Golden Rule (Exact Priority Order)</h1><span class="toggle-icon" id="icon-c7">▼</span></div>
+  <div class="section-content" id="c7">
+    <div class="danger-box"><strong>Memorize this exact cycle. It answers EVERY event-loop question:</strong></div>
+    <ol>
+      <li><strong>Run all synchronous code</strong> (top to bottom) until the call stack is empty.</li>
+      <li><strong>Drain the ENTIRE microtask queue</strong> — including microtasks added while draining — until completely empty.</li>
+      <li><strong>Run exactly ONE macrotask</strong> from the callback queue.</li>
+      <li><strong>Go back to step 2</strong> — drain all microtasks again.</li>
+      <li>Repeat: one macrotask → drain all microtasks → one macrotask → ...</li>
+    </ol>
+    <pre>SYNC CODE  →  [ALL microtasks]  →  1 macrotask  →  [ALL microtasks]  →  1 macrotask  →  ...</pre>
+    <div class="warn-box"><strong>⚠️ The crucial part people miss:</strong> Microtasks drain <strong>completely</strong> before <strong>each</strong> macrotask. If a microtask adds another microtask, that new one ALSO runs before any macrotask.</div>
+    <div class="note-box"><strong>🎯 Interview technique:</strong> Keep 3 lists on paper — (1) sync output, (2) microtask queue, (3) macrotask queue in <em>registration order</em>. Listing macrotasks in registration order is where the "wrote F instead of E" type slip happens.</div>
+  </div>
+</div>
+
+<div id="sec8">
+  <div class="section-header" onclick="toggleSection('c8')"><h1 style="border:none;margin:0;padding:0;">8. What Goes Into Which Queue</h1><span class="toggle-icon" id="icon-c8">▼</span></div>
+  <div class="section-content" id="c8">
+    <table>
+      <tr><th>Code</th><th>Queue</th></tr>
+      <tr><td><code>setTimeout / setInterval</code></td><td>Macrotask</td></tr>
+      <tr><td>DOM event callbacks (click, scroll)</td><td>Macrotask</td></tr>
+      <tr><td><code>Promise.then / .catch / .finally</code></td><td>Microtask</td></tr>
+      <tr><td><code>fetch(...).then(cb)</code> — the <code>cb</code></td><td>Microtask</td></tr>
+      <tr><td><code>async/await</code> (code after <code>await</code>)</td><td>Microtask</td></tr>
+      <tr><td><code>queueMicrotask(fn)</code></td><td>Microtask</td></tr>
+    </table>
+    <div class="note-box"><strong>💡 Rule of thumb:</strong> Promise-based → microtask (high priority). Timer or event → macrotask (low priority).</div>
+  </div>
+</div>
+
+<div id="sec9">
+  <div class="section-header" onclick="toggleSection('c9')"><h1 style="border:none;margin:0;padding:0;">⚠️ 9. The <code>fetch</code> Trap — Promises Aren't Instant</h1><span class="toggle-icon" id="icon-c9">▼</span></div>
+  <div class="section-content" id="c9">
+    <div class="danger-box"><strong>The subtle trap:</strong> "Microtasks beat macrotasks" is only true <strong>when both are ready at the same moment</strong>. A real <code>fetch</code> is NOT ready instantly — it waits on the network.</div>
+    <pre>console.log("Parth");
+fetch("https://api.example.com/data").then(() =&gt; console.log("API RESPONSE"));
+setTimeout(() =&gt; console.log("Timer Done"), 0);
+console.log("Gupta");</pre>
+    <p><strong>Tempting (WRONG) answer:</strong> <code>Parth, Gupta, API RESPONSE, Timer Done</code></p>
+    <p><strong>Actual real-world output:</strong> <code>Parth, Gupta, Timer Done, API RESPONSE</code></p>
+    <pre>1. "Parth", "Gupta" — sync, logged immediately.
+2. fetch(...) starts a NETWORK CALL — takes REAL time (50ms, 200ms...).
+   Its .then goes to the microtask queue ONLY AFTER the response arrives.
+3. setTimeout(0) timer expires almost immediately → macrotask queue.
+4. Stack empty. Microtask queue EMPTY (fetch hasn't responded yet!).
+   → Event loop runs the macrotask: "Timer Done".
+5. Later, network responds. fetch's .then runs: "API RESPONSE".</pre>
+    <div class="warn-box"><strong>⚠️ The lesson:</strong> The microtask-beats-macrotask rule assumes both are <strong>ready at the same instant</strong>. To cleanly demonstrate microtask priority, use <code>Promise.resolve().then(...)</code> — that resolves immediately.</div>
+  </div>
+</div>
+
+<div id="sec10">
+  <div class="section-header" onclick="toggleSection('c10')"><h1 style="border:none;margin:0;padding:0;">⚠️ 10. Returned Promise = Extra Microtask Ticks</h1><span class="toggle-icon" id="icon-c10">▼</span></div>
+  <div class="section-content" id="c10">
+    <div class="purple-box"><strong>Advanced but interview-relevant.</strong> When a <code>.then()</code> callback <strong>returns a Promise</strong>, the chain needs extra microtask "ticks" to unwrap it before the next <code>.then()</code> runs.</div>
+    <pre>console.log("A");
+setTimeout(() =&gt; console.log("B"), 0);
+Promise.resolve().then(() =&gt; {
+  console.log("C");
+  return Promise.resolve();     // ← returns a Promise!
+}).then(() =&gt; console.log("D"));
+setTimeout(() =&gt; console.log("E"), 0);
+Promise.resolve().then(() =&gt; console.log("F"));
+console.log("G");</pre>
+    <h3>Output: <code>A, G, C, F, D, B, E</code></h3>
+    <pre>SYNC:  "A", "G".  Macrotasks: [B, E]  Microtasks: [C-cb, F-cb]
+DRAIN MICROTASKS:
+  C-cb → "C". Returns a promise → next .then(D) needs extra ticks.
+  F-cb → "F".
+  (extra ticks resolve) → .then(D) scheduled → "D".
+  Microtask queue empty. (D still beat the macrotasks!)
+MACROTASKS (registration order): "B", then "E".
+Output: A, G, C, F, D, B, E</pre>
+    <div class="note-box"><strong>💡 Key insight:</strong> Even with extra ticks, <code>D</code> runs before <code>B</code>/<code>E</code> because the ENTIRE microtask queue (including new microtasks) empties before any macrotask. And macrotask order is <strong>registration order</strong>: B before E.</div>
+  </div>
+</div>
+
+<div id="sec11">
+  <div class="section-header" onclick="toggleSection('c11')"><h1 style="border:none;margin:0;padding:0;">11. Starvation of the Callback Queue</h1><span class="toggle-icon" id="icon-c11">▼</span></div>
+  <div class="section-content" id="c11">
+    <p>Because microtasks always drain completely before any macrotask, macrotasks can theoretically <strong>never run</strong> if microtasks keep adding more microtasks endlessly.</p>
+    <pre>function loop() {
+  Promise.resolve().then(loop);   // each microtask schedules another
+}
+loop();
+setTimeout(() =&gt; console.log("I will NEVER run"), 0);
+// Macrotask starves forever — microtasks never stop.</pre>
+    <div class="warn-box"><strong>⚠️ "Starvation."</strong> The <code>setTimeout</code> is stuck forever because the microtask queue never empties. Explains WHY heavy Promise chains can delay timers and rendering.</div>
+  </div>
+</div>
+
+<div id="sec12">
+  <div class="section-header" onclick="toggleSection('c12')"><h1 style="border:none;margin:0;padding:0;">12. Common Gotchas</h1><span class="toggle-icon" id="icon-c12">▼</span></div>
+  <div class="section-content" id="c12">
+    <h2>Gotcha A: <code>setTimeout(fn, 0)</code> ≠ "right now"</h2>
+    <pre>console.log("1");
+setTimeout(() =&gt; console.log("2"), 0);
+console.log("3");
+// Output: 1, 3, 2</pre>
+    <h2>Gotcha B: Timer delay is a MINIMUM, not a guarantee</h2>
+    <pre>setTimeout(() =&gt; console.log("done"), 100);
+// If the call stack is busy for 5 seconds, this won't run at 100ms.
+// "100ms" = "at least 100ms."</pre>
+    <h2>Gotcha C: A long synchronous task freezes everything</h2>
+    <pre>setTimeout(() =&gt; console.log("timer"), 10);
+const end = Date.now() + 5000;
+while (Date.now() &lt; end) { }   // stack busy — nothing else runs
+console.log("sync done");
+// Output: "sync done" THEN "timer" — timer expired long ago but couldn't run.</pre>
+    <h2>Gotcha D: <code>async/await</code> is microtasks in disguise</h2>
+    <pre>async function foo() {
+  console.log("1");
+  await null;              // everything AFTER await = microtask
+  console.log("2");
+}
+console.log("A");
+foo();
+console.log("B");
+// Output: A, 1, B, 2</pre>
+    <h2>Gotcha E: Sync code always finishes before any microtask</h2>
+    <pre>Promise.resolve().then(() =&gt; console.log("micro"));
+console.log("sync");
+// Output: sync, micro</pre>
+  </div>
+</div>
+
+<div id="sec13">
+  <div class="section-header" onclick="toggleSection('c13')"><h1 style="border:none;margin:0;padding:0;">13. Master Cheat Sheet</h1><span class="toggle-icon" id="icon-c13">▼</span></div>
+  <div class="section-content" id="c13">
+    <table>
+      <tr><th>Concept</th><th>Key Point</th></tr>
+      <tr><td>JS nature</td><td>Single-threaded, synchronous, ONE call stack</td></tr>
+      <tr><td>Web APIs</td><td>Browser features (timers, fetch, DOM) — NOT JS. Via <code>window</code>.</td></tr>
+      <tr><td>Naked global calls</td><td>Resolve via scope chain → global scope's Object Env Record = window. Browser pre-fills window with APIs.</td></tr>
+      <tr><td>Two global records</td><td>Declarative (let/const/class = "Script" scope, NOT on window) + Object (var/functions/APIs = IS window)</td></tr>
+      <tr><td>Callback Queue</td><td>Macrotasks: setTimeout, setInterval, DOM events. LOW priority.</td></tr>
+      <tr><td>Microtask Queue</td><td>Promises, async/await, queueMicrotask. HIGH priority.</td></tr>
+      <tr><td>Event Loop</td><td>Moves callbacks to stack ONLY when stack is empty.</td></tr>
+      <tr><td>Golden Rule</td><td>Sync → drain ALL microtasks → 1 macrotask → drain ALL microtasks → ...</td></tr>
+      <tr><td>setTimeout(fn, 0)</td><td>NOT instant. Runs after sync + all microtasks.</td></tr>
+      <tr><td>Timer delay</td><td>A MINIMUM, not a guarantee.</td></tr>
+      <tr><td>fetch trap</td><td>Network takes real time → its microtask isn't instant.</td></tr>
+      <tr><td>Returned promise</td><td>Extra microtask ticks, but still before any macrotask.</td></tr>
+      <tr><td>Starvation</td><td>Endless microtasks can starve macrotasks forever.</td></tr>
+    </table>
+  </div>
+</div>
+
+<div id="sec14">
+  <div class="section-header" onclick="toggleSection('c14')"><h1 style="border:none;margin:0;padding:0;">14. Interview Answer Templates</h1><span class="toggle-icon" id="icon-c14">▼</span></div>
+  <div class="section-content" id="c14">
+    <h3>Q: "Explain the event loop."</h3>
+    <div class="note-box" style="line-height:1.8;"><em>"JavaScript is single-threaded with one call stack, so it does one thing at a time. Slow operations like timers, network calls, and DOM events are handled by the browser's Web APIs, off the main thread. When they finish, their callbacks go into a queue. The event loop continuously checks whether the call stack is empty, and if so, moves waiting callbacks onto the stack. That's how single-threaded JS handles async work without blocking."</em></div>
+    <h3>Q: "Why can we call <code>setTimeout</code> without <code>window.</code>?"</h3>
+    <div class="note-box" style="line-height:1.8;"><em>"When you write a naked <code>setTimeout</code>, the engine resolves it as an identifier by walking up the scope chain until it reaches the global scope. At the global level, the scope's Object Environment Record is backed by the <code>window</code> object itself — so looking up <code>setTimeout</code> in the global scope is the same as reading <code>window.setTimeout</code>. The browser pre-installs all Web APIs as properties of <code>window</code> before your code runs. So <code>setTimeout</code> and <code>window.setTimeout</code> are literally the same function reference."</em></div>
+    <h3>Q: "Microtask vs macrotask queue?"</h3>
+    <div class="note-box" style="line-height:1.8;"><em>"The microtask queue holds Promise callbacks — then/catch/finally and code after await. The macrotask queue holds setTimeout, setInterval, and DOM events. Microtasks have higher priority: after each sync run, the event loop drains the ENTIRE microtask queue before running a single macrotask, then repeats."</em></div>
+    <h3>Q: "Does <code>setTimeout(fn, 0)</code> run immediately?"</h3>
+    <div class="note-box" style="line-height:1.8;"><em>"No. Even with 0ms, the callback goes through the Web API, then the callback queue, then waits for the event loop. It runs only after all sync code finishes, the stack is empty, and the microtask queue is fully drained."</em></div>
+  </div>
+</div>
+
+<div class="page-break" id="sec15">
+  <div class="section-header" onclick="toggleSection('c15')"><h1 style="border:none;margin:0;padding:0;">15. Practice Sheet — 8 Questions</h1><span class="toggle-icon" id="icon-c15">▼</span></div>
+  <div class="section-content" id="c15">
+    <p><strong>📝 Instructions:</strong> Predict the EXACT output order. Track 3 lists: sync, microtasks, macrotasks (registration order). Predict, don't run.</p>
+    <div class="question-block" id="q1"><h2>Q1 — Warm-up <span class="tag tag-easy">Easy</span></h2><pre>console.log("A");
+setTimeout(() =&gt; console.log("B"), 0);
+console.log("C");
+setTimeout(() =&gt; console.log("D"), 0);
+console.log("E");</pre><a class="nav-link" href="#ans1">→ See Answer</a></div>
+    <div class="question-block" id="q2"><h2>Q2 — Micro vs Macro <span class="tag tag-easy">Easy</span></h2><pre>console.log("1");
+Promise.resolve().then(() =&gt; console.log("2"));
+setTimeout(() =&gt; console.log("3"), 0);
+Promise.resolve().then(() =&gt; console.log("4"));
+console.log("5");</pre><a class="nav-link" href="#ans2">→ See Answer</a></div>
+    <div class="question-block" id="q3"><h2>Q3 — Nested Timers <span class="tag tag-medium">Medium</span></h2><pre>console.log("start");
+setTimeout(() =&gt; {
+  console.log("timeout1");
+  Promise.resolve().then(() =&gt; console.log("promise-in-timeout"));
+}, 0);
+setTimeout(() =&gt; console.log("timeout2"), 0);
+console.log("end");</pre><a class="nav-link" href="#ans3">→ See Answer</a></div>
+    <div class="question-block" id="q4"><h2>Q4 — Microtask Adds Microtask <span class="tag tag-medium">Medium</span></h2><pre>console.log("A");
+Promise.resolve().then(() =&gt; {
+  console.log("B");
+  Promise.resolve().then(() =&gt; console.log("C"));
+});
+setTimeout(() =&gt; console.log("D"), 0);
+console.log("E");</pre><a class="nav-link" href="#ans4">→ See Answer</a></div>
+    <div class="question-block" id="q5"><h2>Q5 — async / await <span class="tag tag-medium">Medium</span></h2><pre>async function foo() {
+  console.log("1");
+  await null;
+  console.log("2");
+}
+console.log("3");
+foo();
+console.log("4");</pre><a class="nav-link" href="#ans5">→ See Answer</a></div>
+    <div class="question-block" id="q6"><h2>Q6 — The fetch Trap <span class="tag tag-hard">Hard</span></h2><pre>console.log("start");
+fetch("https://api.example.com")   // takes ~200ms
+  .then(() =&gt; console.log("fetched"));
+setTimeout(() =&gt; console.log("timer"), 0);
+Promise.resolve().then(() =&gt; console.log("promise"));
+console.log("end");</pre><p><strong>Assume fetch takes 200ms. Predict real-world order.</strong></p><a class="nav-link" href="#ans6">→ See Answer</a></div>
+    <div class="question-block" id="q7"><h2>Q7 — Returned Promise <span class="tag tag-hard">Hard</span></h2><pre>console.log("A");
+setTimeout(() =&gt; console.log("B"), 0);
+Promise.resolve()
+  .then(() =&gt; { console.log("C"); return Promise.resolve(); })
+  .then(() =&gt; console.log("D"));
+Promise.resolve().then(() =&gt; console.log("E"));
+console.log("F");</pre><a class="nav-link" href="#ans7">→ See Answer</a></div>
+    <div class="question-block" id="q8"><h2>Q8 — Final Boss <span class="tag tag-expert">Expert</span></h2><pre>console.log("1");
+setTimeout(() =&gt; {
+  console.log("2");
+  Promise.resolve().then(() =&gt; console.log("3"));
+}, 0);
+Promise.resolve().then(() =&gt; {
+  console.log("4");
+  setTimeout(() =&gt; console.log("5"), 0);
+});
+setTimeout(() =&gt; console.log("6"), 0);
+Promise.resolve().then(() =&gt; console.log("7"));
+console.log("8");</pre><a class="nav-link" href="#ans8">→ See Answer</a></div>
+  </div>
+</div>
+
+<div class="page-break" id="sec16">
+  <div class="section-header" onclick="toggleSection('c16')"><h1 style="border:none;margin:0;padding:0;">16. Answer Key</h1><span class="toggle-icon" id="icon-c16">▼</span></div>
+  <div class="section-content" id="c16">
+    <h2 id="ans1">Q1</h2><pre>A
+C
+E
+B
+D</pre><p>Sync: A, C, E. Macrotasks [B, D] run in registration order.</p><a class="nav-link back" href="#q1">← Back to Question 1</a><hr>
+    <h2 id="ans2">Q2</h2><pre>1
+5
+2
+4
+3</pre><p>Sync: 1, 5. Microtasks [2, 4] drain first. Then macrotask 3.</p><a class="nav-link back" href="#q2">← Back to Question 2</a><hr>
+    <h2 id="ans3">Q3</h2><pre>start
+end
+timeout1
+promise-in-timeout
+timeout2</pre><p>After timeout1 logs, its microtask drains BEFORE timeout2 runs. Microtasks drain between each macrotask.</p><a class="nav-link back" href="#q3">← Back to Question 3</a><hr>
+    <h2 id="ans4">Q4</h2><pre>A
+E
+B
+C
+D</pre><p>Sync: A, E. Microtask B runs, adds C. C drains (still before macrotask). Then D.</p><a class="nav-link back" href="#q4">← Back to Question 4</a><hr>
+    <h2 id="ans5">Q5</h2><pre>3
+1
+4
+2</pre><p>"3" sync. foo(): "1" sync (before await). After await = microtask. "4" sync. Then microtask "2".</p><a class="nav-link back" href="#q5">← Back to Question 5</a><hr>
+    <h2 id="ans6">Q6</h2><pre>start
+end
+promise
+timer
+fetched   ← last, ~200ms later</pre><p>fetch's .then isn't in the microtask queue until the response arrives. So "promise" (immediate microtask), then "timer" (macrotask), then "fetched" much later. The fetch trap.</p><a class="nav-link back" href="#q6">← Back to Question 6</a><hr>
+    <h2 id="ans7">Q7</h2><pre>A
+F
+C
+E
+D
+B</pre><p>Sync: A, F. Microtasks: C (returns promise → extra ticks for D), E. Then D via extra ticks. All before macrotask B.</p><a class="nav-link back" href="#q7">← Back to Question 7</a><hr>
+    <h2 id="ans8">Q8</h2><pre>1
+8
+4
+7
+2
+3
+6
+5</pre>
+    <pre>SYNC: "1", "8".  Macrotasks: [T2, T6]  Microtasks: [M4, M7]
+MICRO: M4 → "4", schedules setTimeout(5) → macros [T2, T6, T5]
+       M7 → "7".
+MACRO T2 → "2", schedules micro(3). Drain micro → "3".
+MACRO T6 → "6".
+MACRO T5 → "5".
+Output: 1, 8, 4, 7, 2, 3, 6, 5</pre>
+    <a class="nav-link back" href="#q8">← Back to Question 8</a>
+    <hr>
+    <div style="text-align:center;margin-top:25px;padding:18px;background:#e3f2fd;border-radius:8px;">
+      <p style="font-size:1.15em;font-weight:bold;color:#0078D4;">Key Mental Models:</p>
+      <p style="font-weight:bold;">🔹 Naked global calls resolve via scope chain → global Object Record IS window</p>
+      <p style="font-weight:bold;">🔹 Sync → drain ALL microtasks → 1 macrotask → repeat</p>
+      <p style="font-weight:bold;">🔹 Microtasks beat macrotasks — when both are ready</p>
+      <p style="font-weight:bold;">🔹 fetch takes real network time → its microtask isn't instant</p>
+      <p style="font-weight:bold;">🔹 setTimeout(0) ≠ instant; timer delay is a MINIMUM</p>
+    </div>
+  </div>
+</div>
+</div>
+<script>
+function toggleSidebar(){document.getElementById('sidebar').classList.toggle('collapsed');document.getElementById('mainContent').classList.toggle('full');}
+function scrollTo(e,id){e.preventDefault();const el=document.getElementById(id);if(el){const cId='c'+id.replace('sec','');const c=document.getElementById(cId);if(c&&c.classList.contains('collapsed'))toggleSection(cId);el.scrollIntoView({behavior:'smooth',block:'start'});}if(window.innerWidth<=768){document.getElementById('sidebar').classList.add('collapsed');document.getElementById('mainContent').classList.add('full');}}
+function toggleSection(id){const el=document.getElementById(id);const icon=document.getElementById('icon-'+id);if(el.classList.contains('collapsed')){el.classList.remove('collapsed');el.style.maxHeight=el.scrollHeight+10000+'px';if(icon)icon.classList.remove('collapsed');}else{el.classList.add('collapsed');el.style.maxHeight='0px';if(icon)icon.classList.add('collapsed');}}
+document.addEventListener('DOMContentLoaded',function(){document.querySelectorAll('.section-content').forEach(el=>{el.style.maxHeight=el.scrollHeight+10000+'px';});});
+</script>
+</body>
+</html>

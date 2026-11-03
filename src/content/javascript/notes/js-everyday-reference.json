@@ -1,0 +1,1057 @@
+{
+  "subject": "javascript",
+  "slug": "js-everyday-reference",
+  "title": "JS Everyday Reference",
+  "chapterLabel": "Reference",
+  "summary": "Keep this open in a tab. Ctrl+F to jump to anything.",
+  "tags": [
+    "arrays",
+    "objects",
+    "functional",
+    "reference"
+  ],
+  "video": null,
+  "groups": [
+    {
+      "label": "Objects",
+      "sectionIds": [
+        "obj-check",
+        "obj-iterate",
+        "obj-immutable",
+        "obj-dynamic",
+        "obj-destructure"
+      ]
+    },
+    {
+      "label": "Arrays",
+      "sectionIds": [
+        "arr-hof",
+        "arr-search",
+        "arr-manipulate",
+        "arr-immutable",
+        "arr-dedupe",
+        "arr-sort"
+      ]
+    },
+    {
+      "label": "Strings",
+      "sectionIds": [
+        "str-essentials",
+        "str-splitjoin",
+        "str-replace",
+        "str-template"
+      ]
+    },
+    {
+      "label": "Null & Truthy",
+      "sectionIds": [
+        "null-patterns",
+        "falsy-table"
+      ]
+    },
+    {
+      "label": "Numbers",
+      "sectionIds": [
+        "num-parsing",
+        "num-math"
+      ]
+    },
+    {
+      "label": "Patterns",
+      "sectionIds": [
+        "pat-common",
+        "pat-debug"
+      ]
+    },
+    {
+      "label": "Method",
+      "sectionIds": [
+        "method-approach"
+      ]
+    }
+  ],
+  "sections": [
+    {
+      "id": "obj-check",
+      "n": "1",
+      "title": "Does a property exist on this object?",
+      "badge": null,
+      "group": "Objects",
+      "blocks": [
+        {
+          "t": "p",
+          "html": "Four ways — each with its own use case."
+        },
+        {
+          "t": "code",
+          "code": "\"name\" in user;           // true if property exists, including inherited\n\"toString\" in {};         // true — inherited from Object.prototype",
+          "label": "The in operator — walks the prototype chain"
+        },
+        {
+          "t": "code",
+          "code": "user.hasOwnProperty(\"name\");   // true only if OWN property\n({}).hasOwnProperty(\"toString\"); // false — inherited, not owned",
+          "label": "hasOwnProperty — own properties only, ignores inherited"
+        },
+        {
+          "t": "code",
+          "code": "Object.hasOwn(user, \"name\");     // preferred over user.hasOwnProperty()\n// Safer because it works even if `user` was created with Object.create(null)",
+          "label": "Modern & safest — Object.hasOwn() (ES2022)"
+        },
+        {
+          "t": "code",
+          "code": "if (user.name !== undefined) { ... }\n// ⚠️  fails if user.name = undefined was explicitly set\n// Use `in` or Object.hasOwn if you need to distinguish \"missing\" vs \"set to undefined\"",
+          "label": "Undefined check — quick & dirty (but misleading)"
+        },
+        {
+          "t": "callout",
+          "kind": "tip",
+          "html": "<strong>💡 When to use which:</strong> Most code: <code>Object.hasOwn(obj, \"key\")</code>. Need inherited too: <code>\"key\" in obj</code>. Never: relying on <code>obj.key === undefined</code>."
+        }
+      ]
+    },
+    {
+      "id": "obj-iterate",
+      "n": "2",
+      "title": "Iterate over an object",
+      "badge": null,
+      "group": "Objects",
+      "blocks": [
+        {
+          "t": "code",
+          "code": "const user = { name: \"Parth\", age: 25, city: \"Hyderabad\" };\n\nObject.keys(user);     // [\"name\", \"age\", \"city\"]\nObject.values(user);   // [\"Parth\", 25, \"Hyderabad\"]\nObject.entries(user);  // [[\"name\",\"Parth\"], [\"age\",25], [\"city\",\"Hyderabad\"]]",
+          "label": "Get keys / values / entries as arrays"
+        },
+        {
+          "t": "code",
+          "code": "for (const [key, value] of Object.entries(user)) {\n  console.log(key, \"=\", value);\n}",
+          "label": "Loop over entries — the most common pattern"
+        },
+        {
+          "t": "code",
+          "code": "// Filter out age from a user object\nconst filtered = Object.fromEntries(\n  Object.entries(user).filter(([key]) => key !== \"age\")\n);\n// { name: \"Parth\", city: \"Hyderabad\" }",
+          "label": "Use HOFs on entries (turn object → array → transform → object)"
+        },
+        {
+          "t": "callout",
+          "kind": "warn",
+          "html": "<strong>⚠️ Never use <code>for...in</code></strong> unless you know what you're doing. It walks the prototype chain and picks up inherited keys. <code>for...of Object.entries()</code> is safer."
+        }
+      ]
+    },
+    {
+      "id": "obj-immutable",
+      "n": "3",
+      "title": "Update an object immutably",
+      "badge": null,
+      "group": "Objects",
+      "blocks": [
+        {
+          "t": "p",
+          "html": "These are the patterns you'll use every day in React. Never mutate — always return a new object."
+        },
+        {
+          "t": "code",
+          "code": "const user = { name: \"Parth\", age: 25 };\n\nconst updated = { ...user, age: 26 };\n// { name: \"Parth\", age: 26 }\n// Original `user` is untouched.",
+          "label": "Change one key"
+        },
+        {
+          "t": "code",
+          "code": "const withCity = { ...user, city: \"Hyderabad\" };\n// { name: \"Parth\", age: 25, city: \"Hyderabad\" }",
+          "label": "Add a new key"
+        },
+        {
+          "t": "code",
+          "code": "const { age, ...withoutAge } = user;\n// withoutAge = { name: \"Parth\" }",
+          "label": "Remove a key (using destructuring)"
+        },
+        {
+          "t": "code",
+          "code": "const state = { user: { name: \"Parth\", age: 25 }, theme: \"dark\" };\n\nconst newState = {\n  ...state,\n  user: { ...state.user, age: 26 }\n};\n// state is untouched; newState has age: 26",
+          "label": "Update a nested key (spread at every level)"
+        },
+        {
+          "t": "code",
+          "code": "const defaults = { theme: \"light\", notifications: true };\nconst custom   = { theme: \"dark\" };\n\nconst merged = { ...defaults, ...custom };\n// { theme: \"dark\", notifications: true }",
+          "label": "Merge two objects (right side wins on conflicts)"
+        },
+        {
+          "t": "code",
+          "code": "const deepCopy = structuredClone(originalObj);\n// Handles Dates, Maps, Sets, circular refs. Not functions.",
+          "label": "Deep clone (2022+)"
+        },
+        {
+          "t": "callout",
+          "kind": "tip",
+          "html": "<strong>💡 The mental model:</strong> \"spread the object I'm keeping, then override what I'm changing.\" Once this clicks, all React state updates become one-liners."
+        }
+      ]
+    },
+    {
+      "id": "obj-dynamic",
+      "n": "4",
+      "title": "Dynamic keys — accessing/setting properties from a variable",
+      "badge": null,
+      "group": "Objects",
+      "blocks": [
+        {
+          "t": "code",
+          "code": "const key = \"name\";\nuser[key];        // \"Parth\"  ← same as user.name\nuser[\"name\"];     // \"Parth\"",
+          "label": "Read a property using a variable"
+        },
+        {
+          "t": "code",
+          "code": "const key = \"email\";\nuser[key] = \"parth@example.com\";",
+          "label": "Set a property using a variable"
+        },
+        {
+          "t": "code",
+          "code": "const key = \"role\";\nconst value = \"engineer\";\n\nconst obj = { [key]: value };\n// { role: \"engineer\" }\n\n// Especially useful in reduce / grouping:\nacc[category] = (acc[category] || 0) + 1;",
+          "label": "Create an object with a dynamic key (computed property)"
+        },
+        {
+          "t": "code",
+          "code": "acc[key] = acc[key] || [];      // if missing, use []\nacc[key] ??= [];                // modern equivalent (ES2021)\nacc[key].push(item);",
+          "label": "The \"initialize if missing\" idiom (very common in reduce)"
+        }
+      ]
+    },
+    {
+      "id": "obj-destructure",
+      "n": "5",
+      "title": "Destructuring objects",
+      "badge": null,
+      "group": "Objects",
+      "blocks": [
+        {
+          "t": "code",
+          "code": "const user = { name: \"Parth\", age: 25, city: \"Hyderabad\" };\n\nconst { name, age } = user;\n// name = \"Parth\", age = 25",
+          "label": "Basic — extract properties into variables"
+        },
+        {
+          "t": "code",
+          "code": "const { name: userName, age: userAge } = user;\n// userName = \"Parth\", userAge = 25",
+          "label": "Rename while destructuring"
+        },
+        {
+          "t": "code",
+          "code": "const { name, role = \"guest\" } = user;\n// role = \"guest\" because user.role doesn't exist",
+          "label": "Default values for missing keys"
+        },
+        {
+          "t": "code",
+          "code": "const data = { user: { name: \"Parth\", address: { city: \"Hyderabad\" } } };\n\nconst { user: { name, address: { city } } } = data;\n// name = \"Parth\", city = \"Hyderabad\"",
+          "label": "Nested destructuring"
+        },
+        {
+          "t": "code",
+          "code": "function UserCard({ name, age, city = \"Unknown\" }) {\n  return `${name}, ${age}, ${city}`;\n}\n\nUserCard({ name: \"Parth\", age: 25 });   // \"Parth, 25, Unknown\"",
+          "label": "Destructure in function parameters (super common in React)"
+        }
+      ]
+    },
+    {
+      "id": "arr-hof",
+      "n": "6",
+      "title": "Array HOFs — one-line quick reference",
+      "badge": null,
+      "group": "Arrays",
+      "blocks": [
+        {
+          "t": "table",
+          "head": [
+            "Method",
+            "What it does",
+            "Returns"
+          ],
+          "rows": [
+            [
+              "<code>map</code>",
+              "Transform each element",
+              "New array (same length)"
+            ],
+            [
+              "<code>filter</code>",
+              "Keep elements matching predicate",
+              "New array (≤ length)"
+            ],
+            [
+              "<code>reduce</code>",
+              "Collapse array into single value",
+              "Any single value"
+            ],
+            [
+              "<code>forEach</code>",
+              "Iterate for side effects only",
+              "<code>undefined</code>"
+            ],
+            [
+              "<code>flatMap</code>",
+              "map, then flatten one level",
+              "New flat array"
+            ]
+          ]
+        },
+        {
+          "t": "code",
+          "code": "arr.map(x => x * 2);                          // [2,4,6]\narr.filter(x => x > 1);                       // [2,3]\narr.reduce((sum, x) => sum + x, 0);           // 6\narr.forEach(x => console.log(x));             // undefined (side effects)\narr.flatMap(x => [x, x * 2]);                 // [1,2,2,4,3,6]",
+          "label": "All the shapes in one place"
+        },
+        {
+          "t": "callout",
+          "kind": "tip",
+          "html": "<strong>💡 Decision tree:</strong> <br>Same length transformation? → <code>map</code> <br>Keep some, drop others? → <code>filter</code> <br>Boil down to one value? → <code>reduce</code> <br>Side effect only? → <code>forEach</code>"
+        }
+      ]
+    },
+    {
+      "id": "arr-search",
+      "n": "7",
+      "title": "Search an array",
+      "badge": null,
+      "group": "Arrays",
+      "blocks": [
+        {
+          "t": "table",
+          "head": [
+            "Method",
+            "Purpose",
+            "Returns"
+          ],
+          "rows": [
+            [
+              "<code>find</code>",
+              "First element matching predicate",
+              "Element or <code>undefined</code>"
+            ],
+            [
+              "<code>findIndex</code>",
+              "Index of first match",
+              "Number or <code>-1</code>"
+            ],
+            [
+              "<code>some</code>",
+              "Does ANY element match?",
+              "Boolean"
+            ],
+            [
+              "<code>every</code>",
+              "Do ALL elements match?",
+              "Boolean"
+            ],
+            [
+              "<code>includes</code>",
+              "Contains this exact value?",
+              "Boolean"
+            ],
+            [
+              "<code>indexOf</code>",
+              "Index of value (exact match)",
+              "Number or <code>-1</code>"
+            ]
+          ]
+        },
+        {
+          "t": "code",
+          "code": "const user = users.find(u => u.id === 42);\n// user or undefined",
+          "label": "Find a specific object in an array"
+        },
+        {
+          "t": "code",
+          "code": "users.some(u => u.isAdmin);      // true if at least one admin\nusers.every(u => u.age >= 18);   // true only if ALL are 18+",
+          "label": "Check if any/all elements match"
+        },
+        {
+          "t": "code",
+          "code": "[1, 2, 3].includes(2);         // true\n[\"a\", \"b\"].indexOf(\"b\");       // 1\n[\"a\", \"b\"].indexOf(\"z\");       // -1  (not found)",
+          "label": "Check for a primitive value"
+        },
+        {
+          "t": "callout",
+          "kind": "warn",
+          "html": "<strong>⚠️ <code>includes</code> uses <code>===</code></strong> — it won't find objects by content, only by reference. <br><code>[{a:1}].includes({a:1})</code> → <strong>false</strong> (different reference). <br>Use <code>.some()</code> for object matching: <code>arr.some(o =&gt; o.a === 1)</code>."
+        }
+      ]
+    },
+    {
+      "id": "arr-manipulate",
+      "n": "8",
+      "title": "Slice, splice, concat, flat",
+      "badge": null,
+      "group": "Arrays",
+      "blocks": [
+        {
+          "t": "code",
+          "code": "const arr = [1, 2, 3, 4, 5];\n\narr.slice(1, 3);      // [2, 3]    (indices 1 to 2)\narr.slice(2);         // [3, 4, 5] (from index 2 to end)\narr.slice(-2);        // [4, 5]    (last 2 elements)\narr.slice();          // [1,2,3,4,5]  (shallow copy)",
+          "label": "slice — extract a portion (does NOT mutate)"
+        },
+        {
+          "t": "code",
+          "code": "const arr = [1, 2, 3, 4, 5];\n\narr.splice(1, 2);           // removes 2 elements from index 1\n// arr = [1, 4, 5]\n\narr.splice(1, 0, \"x\", \"y\"); // insert at index 1, remove 0\n// arr = [1, \"x\", \"y\", 4, 5]\n\n// ⚠️ splice MUTATES. Prefer slice + spread for immutability.",
+          "label": "splice — insert/remove at index (MUTATES!)"
+        },
+        {
+          "t": "code",
+          "code": "[1, 2].concat([3, 4]);        // [1, 2, 3, 4]\n[1, 2].concat(3, 4, [5]);     // [1, 2, 3, 4, 5]\n\n// Modern equivalent (usually preferred):\n[...arr1, ...arr2];",
+          "label": "concat — merge arrays (returns new)"
+        },
+        {
+          "t": "code",
+          "code": "[[1, 2], [3, 4]].flat();          // [1, 2, 3, 4]\n[[1, [2, [3]]]].flat(2);          // [1, 2, [3]]  (depth = 2)\n[[1, [2, [3]]]].flat(Infinity);   // [1, 2, 3]    (all depths)\n\n// flatMap = map + flat(1)\n[1, 2, 3].flatMap(x => [x, x * 10]);\n// [1, 10, 2, 20, 3, 30]",
+          "label": "flat & flatMap — flatten nested arrays"
+        }
+      ]
+    },
+    {
+      "id": "arr-immutable",
+      "n": "9",
+      "title": "Update an array immutably",
+      "badge": null,
+      "group": "Arrays",
+      "blocks": [
+        {
+          "t": "p",
+          "html": "Same rule as objects — return a NEW array instead of mutating."
+        },
+        {
+          "t": "code",
+          "code": "const newArr = [...arr, newItem];        // add to end\nconst newArr = [newItem, ...arr];        // add to start",
+          "label": "Add to end / start"
+        },
+        {
+          "t": "code",
+          "code": "const newArr = [\n  ...arr.slice(0, index),\n  newItem,\n  ...arr.slice(index)\n];",
+          "label": "Insert at index"
+        },
+        {
+          "t": "code",
+          "code": "const newArr = arr.filter(item => item !== toRemove);",
+          "label": "Remove by value"
+        },
+        {
+          "t": "code",
+          "code": "const newArr = [\n  ...arr.slice(0, index),\n  ...arr.slice(index + 1)\n];\n\n// Or filter by index:\nconst newArr = arr.filter((_, i) => i !== index);",
+          "label": "Remove by index"
+        },
+        {
+          "t": "code",
+          "code": "const newArr = arr.map(item =>\n  item.id === targetId\n    ? { ...item, name: \"New name\" }   // update this one\n    : item                             // keep others as-is\n);",
+          "label": "Update an object inside an array"
+        },
+        {
+          "t": "callout",
+          "kind": "warn",
+          "html": "<strong>⚠️ These mutate — avoid in React:</strong> <code>push</code>, <code>pop</code>, <code>shift</code>, <code>unshift</code>, <code>splice</code>, <code>sort</code>, <code>reverse</code>, <code>fill</code>. <br><br><strong>These return new arrays:</strong> <code>map</code>, <code>filter</code>, <code>slice</code>, <code>concat</code>, <code>flat</code>, <code>flatMap</code>, spread."
+        }
+      ]
+    },
+    {
+      "id": "arr-dedupe",
+      "n": "10",
+      "title": "Dedupe & Set tricks",
+      "badge": null,
+      "group": "Arrays",
+      "blocks": [
+        {
+          "t": "code",
+          "code": "const unique = [...new Set([1, 2, 2, 3, 3, 4])];\n// [1, 2, 3, 4]",
+          "label": "Remove duplicates from primitive array (one-liner)"
+        },
+        {
+          "t": "code",
+          "code": "const uniqueUsers = [...new Map(\n  users.map(u => [u.id, u])\n).values()];\n// Keeps last occurrence of each id.",
+          "label": "Dedupe array of objects by a key"
+        },
+        {
+          "t": "code",
+          "code": "const common = a.filter(x => b.includes(x));\n// For large arrays, convert `b` to a Set first for speed:\nconst setB = new Set(b);\nconst common = a.filter(x => setB.has(x));",
+          "label": "Get intersection of two arrays"
+        },
+        {
+          "t": "code",
+          "code": "const onlyInA = a.filter(x => !b.includes(x));",
+          "label": "Get difference"
+        },
+        {
+          "t": "code",
+          "code": "const arr = [...mySet];\n// or\nconst arr = Array.from(mySet);",
+          "label": "Convert Set back to array"
+        }
+      ]
+    },
+    {
+      "id": "arr-sort",
+      "n": "11",
+      "title": "Sort recipes — memorize these 6",
+      "badge": null,
+      "group": "Arrays",
+      "blocks": [
+        {
+          "t": "p",
+          "html": "<strong>Rule:</strong> <code>sort()</code> takes a comparator <code>(a, b) =&gt; number</code>. <br>Return <strong>negative</strong> → a comes first. <strong>Positive</strong> → b comes first. <strong>0</strong> → equal. <br><strong>⚠️ It MUTATES.</strong> Copy first with <code>[...arr]</code> or <code>arr.slice()</code>."
+        },
+        {
+          "t": "code",
+          "code": "[3, 1, 5, 2].sort((a, b) => a - b);\n// [1, 2, 3, 5]",
+          "label": "1. Numbers — ascending"
+        },
+        {
+          "t": "code",
+          "code": "[3, 1, 5, 2].sort((a, b) => b - a);\n// [5, 3, 2, 1]",
+          "label": "2. Numbers — descending"
+        },
+        {
+          "t": "code",
+          "code": "[\"banana\", \"apple\", \"cherry\"].sort((a, b) => a.localeCompare(b));\n// [\"apple\", \"banana\", \"cherry\"]",
+          "label": "3. Strings — alphabetical"
+        },
+        {
+          "t": "code",
+          "code": "users.sort((a, b) => a.age - b.age);        // ascending age\nusers.sort((a, b) => b.totalSpent - a.totalSpent);  // descending spend",
+          "label": "4. Objects — by numeric field"
+        },
+        {
+          "t": "code",
+          "code": "users.sort((a, b) => a.name.localeCompare(b.name));",
+          "label": "5. Objects — by string field"
+        },
+        {
+          "t": "code",
+          "code": "items.sort((a, b) => {\n  if (a.rating === null) return 1;      // a goes after\n  if (b.rating === null) return -1;     // a goes before\n  return b.rating - a.rating;            // both non-null: descending\n});",
+          "label": "6. Nulls go LAST (the pattern from Task 9)"
+        },
+        {
+          "t": "code",
+          "code": "users.sort((a, b) =>\n  a.dept.localeCompare(b.dept) ||    // primary sort\n  a.name.localeCompare(b.name)       // tiebreaker\n);\n// Trick: || returns the first non-zero result.",
+          "label": "Bonus: multi-field sort (sort by dept, then by name)"
+        },
+        {
+          "t": "callout",
+          "kind": "tip",
+          "html": "<strong>💡 Avoid mutation with:</strong> <code>[...users].sort(...)</code> or the modern <code>users.toSorted(...)</code> (ES2023)."
+        }
+      ]
+    },
+    {
+      "id": "str-essentials",
+      "n": "12",
+      "title": "String essentials",
+      "badge": null,
+      "group": "Strings",
+      "blocks": [
+        {
+          "t": "table",
+          "head": [
+            "Method",
+            "Example",
+            "Result"
+          ],
+          "rows": [
+            [
+              "<code>length</code>",
+              "<code>\"Parth\".length</code>",
+              "5"
+            ],
+            [
+              "<code>toLowerCase</code>",
+              "<code>\"PARTH\".toLowerCase()</code>",
+              "<code>\"parth\"</code>"
+            ],
+            [
+              "<code>toUpperCase</code>",
+              "<code>\"parth\".toUpperCase()</code>",
+              "<code>\"PARTH\"</code>"
+            ],
+            [
+              "<code>trim</code>",
+              "<code>\" hi \".trim()</code>",
+              "<code>\"hi\"</code>"
+            ],
+            [
+              "<code>includes</code>",
+              "<code>\"hello\".includes(\"ell\")</code>",
+              "<code>true</code>"
+            ],
+            [
+              "<code>startsWith</code>",
+              "<code>\"hello\".startsWith(\"he\")</code>",
+              "<code>true</code>"
+            ],
+            [
+              "<code>endsWith</code>",
+              "<code>\"hello\".endsWith(\"lo\")</code>",
+              "<code>true</code>"
+            ],
+            [
+              "<code>slice</code>",
+              "<code>\"hello\".slice(1, 4)</code>",
+              "<code>\"ell\"</code>"
+            ],
+            [
+              "<code>indexOf</code>",
+              "<code>\"hello\".indexOf(\"l\")</code>",
+              "2 (first occurrence)"
+            ],
+            [
+              "<code>repeat</code>",
+              "<code>\"ab\".repeat(3)</code>",
+              "<code>\"ababab\"</code>"
+            ],
+            [
+              "<code>padStart</code>",
+              "<code>\"5\".padStart(3, \"0\")</code>",
+              "<code>\"005\"</code>"
+            ]
+          ]
+        },
+        {
+          "t": "code",
+          "code": "const q = query.toLowerCase();\nstr.toLowerCase().includes(q);   // true if str contains q, ignoring case",
+          "label": "Case-insensitive contains — the classic pattern"
+        },
+        {
+          "t": "callout",
+          "kind": "warn",
+          "html": "<strong>⚠️ Strings are immutable.</strong> All methods return NEW strings; the original is never changed."
+        }
+      ]
+    },
+    {
+      "id": "str-splitjoin",
+      "n": "13",
+      "title": "Split & join",
+      "badge": null,
+      "group": "Strings",
+      "blocks": [
+        {
+          "t": "code",
+          "code": "\"a,b,c\".split(\",\");          // [\"a\", \"b\", \"c\"]\n\"hello world\".split(\" \");    // [\"hello\", \"world\"]\n\"abc\".split(\"\");             // [\"a\", \"b\", \"c\"]   ← split into characters\n\"a,b,c\".split(\",\", 2);       // [\"a\", \"b\"]        ← limit result",
+          "label": "Split a string into an array"
+        },
+        {
+          "t": "code",
+          "code": "[\"a\", \"b\", \"c\"].join(\",\");     // \"a,b,c\"\n[\"a\", \"b\", \"c\"].join(\" - \");   // \"a - b - c\"\n[\"a\", \"b\", \"c\"].join(\"\");      // \"abc\"",
+          "label": "Join an array into a string"
+        },
+        {
+          "t": "code",
+          "code": "\"hello\".split(\"\").reverse().join(\"\");    // \"olleh\"",
+          "label": "Reverse a string (classic trick)"
+        },
+        {
+          "t": "code",
+          "code": "\"hello world how are you\".split(\" \").length;   // 5\n\n// Handle multiple spaces:\n\"hello   world\".split(/\\s+/).filter(Boolean).length;   // 2",
+          "label": "Count words"
+        }
+      ]
+    },
+    {
+      "id": "str-replace",
+      "n": "14",
+      "title": "Replace & basic regex",
+      "badge": null,
+      "group": "Strings",
+      "blocks": [
+        {
+          "t": "code",
+          "code": "\"hello world\".replace(\"world\", \"there\");\n// \"hello there\"",
+          "label": "Replace one occurrence"
+        },
+        {
+          "t": "code",
+          "code": "// Modern (ES2021):\n\"a-b-c\".replaceAll(\"-\", \"_\");        // \"a_b_c\"\n\n// Regex with /g flag:\n\"a-b-c\".replace(/-/g, \"_\");          // \"a_b_c\"\n\n// Split + join trick (works everywhere):\n\"a-b-c\".split(\"-\").join(\"_\");        // \"a_b_c\"",
+          "label": "Replace ALL occurrences — 3 ways"
+        },
+        {
+          "t": "code",
+          "code": "/hello/         // literal\n/hello/i        // case-insensitive\n/hello/g        // global (find all)\n/\\d+/           // one or more digits\n/\\s+/           // one or more whitespace\n/^hi/           // starts with \"hi\"\n/end$/          // ends with \"end\"\n/[abc]/         // any one of a, b, c\n/[^abc]/        // NOT any of a, b, c\n/./             // any single char",
+          "label": "Common regex patterns (just enough to be useful)"
+        },
+        {
+          "t": "code",
+          "code": "// Test if match exists:\n/\\d/.test(\"abc123\");                 // true\n\n// Extract all matches:\n\"call 123 or 456\".match(/\\d+/g);     // [\"123\", \"456\"]\n\n// Replace with a function (dynamic):\n\"a1 b2\".replace(/\\d/g, d => d * 2);  // \"a2 b4\"",
+          "label": "Useful regex examples"
+        }
+      ]
+    },
+    {
+      "id": "str-template",
+      "n": "15",
+      "title": "Template literals",
+      "badge": null,
+      "group": "Strings",
+      "blocks": [
+        {
+          "t": "code",
+          "code": "const name = \"Parth\";\nconst age  = 25;\n\n// Old way:\n\"Hello, my name is \" + name + \" and I am \" + age + \" years old.\";\n\n// Template literal:\n`Hello, my name is ${name} and I am ${age} years old.`;",
+          "label": "The basic backtick syntax"
+        },
+        {
+          "t": "code",
+          "code": "const html = `\n  <div>\n    <h1>${title}</h1>\n    <p>${content}</p>\n  </div>\n`;\n// No need for \\n or string concatenation.",
+          "label": "Multi-line strings"
+        },
+        {
+          "t": "code",
+          "code": "`2 + 2 = ${2 + 2}`;               // \"2 + 2 = 4\"\n`Total: ${items.length} items`;    // Total: 5 items\n`${age >= 18 ? \"adult\" : \"minor\"}`; // ternary works",
+          "label": "Expressions inside ${...}"
+        }
+      ]
+    },
+    {
+      "id": "null-patterns",
+      "n": "16",
+      "title": "Nullish coalescing (??), Optional chaining (?.), Logical OR (||)",
+      "badge": null,
+      "group": "Null & Truthy",
+      "blocks": [
+        {
+          "t": "code",
+          "code": "const name = user.name || \"Guest\";\n// Falls back to \"Guest\" if user.name is: undefined, null, \"\", 0, false, NaN",
+          "label": "|| — logical OR: falls back on ANY falsy value"
+        },
+        {
+          "t": "code",
+          "code": "const count = user.count ?? 10;\n// Falls back to 10 ONLY if user.count is null or undefined\n// If user.count is 0, it STAYS 0 (unlike ||)",
+          "label": "?? — nullish coalescing: falls back ONLY on null/undefined"
+        },
+        {
+          "t": "callout",
+          "kind": "warn",
+          "html": "<strong>⚠️ The classic <code>||</code> bug:</strong> <code>const qty = input.qty || 1;</code> <br>If user enters 0 as quantity, this becomes 1! Because <code>0 || 1</code> = <code>1</code>. <br>Fix: use <code>??</code>. <code>0?? 1</code> = <code>0</code>. ✅"
+        },
+        {
+          "t": "code",
+          "code": "const city = user?.address?.city;\n// If user is null/undefined → returns undefined (no error)\n// If address is null/undefined → returns undefined\n// Otherwise → returns city",
+          "label": "?. — optional chaining: safely access nested properties"
+        },
+        {
+          "t": "code",
+          "code": "user?.getFullName?.();       // safely call method if it exists\nusers?.[0]?.name;            // safely access array item\ncallback?.();                // call callback only if it's defined",
+          "label": "Optional chaining with method calls & arrays"
+        },
+        {
+          "t": "code",
+          "code": "const city = user?.address?.city ?? \"Unknown\";\n// Safely walk the chain, fallback to \"Unknown\" if anything is null/undefined.",
+          "label": "Combine?. and?? — the \"safe default\" pattern"
+        },
+        {
+          "t": "code",
+          "code": "acc[key] ??= [];   // if acc[key] is null/undefined, set to []\nacc[key].push(item);\n\n// Equivalent to:\nif (acc[key] == null) acc[key] = [];",
+          "label": "??= — assign only if nullish (ES2021)"
+        }
+      ]
+    },
+    {
+      "id": "falsy-table",
+      "n": "17",
+      "title": "Truthy / Falsy values — memorize this",
+      "badge": null,
+      "group": "Null & Truthy",
+      "blocks": [
+        {
+          "t": "callout",
+          "kind": "tip",
+          "html": "<strong>Only 6 values are FALSY in JavaScript.</strong> Everything else is truthy — including <code>\"0\"</code>, <code>\"false\"</code>, <code>[]</code>, and <code>{}</code>."
+        },
+        {
+          "t": "table",
+          "head": [
+            "Falsy value",
+            "Notes"
+          ],
+          "rows": [
+            [
+              "<code>false</code>",
+              "The boolean itself"
+            ],
+            [
+              "<code>0</code>, <code>-0</code>, <code>0n</code>",
+              "Numeric zero (and BigInt zero)"
+            ],
+            [
+              "<code>\"\"</code> (empty string)",
+              "Also <code>''</code> and <code>``</code>"
+            ],
+            [
+              "<code>null</code>",
+              "Intentional absence of value"
+            ],
+            [
+              "<code>undefined</code>",
+              "Variable exists but no value"
+            ],
+            [
+              "<code>NaN</code>",
+              "\"Not a Number\" (from bad math)"
+            ]
+          ]
+        },
+        {
+          "t": "code",
+          "code": "Boolean([]);          // true   ← empty array is truthy!\nBoolean({});          // true   ← empty object is truthy!\nBoolean(\"0\");         // true   ← string \"0\" is truthy!\nBoolean(\"false\");     // true   ← string \"false\" is truthy!\nBoolean(null);        // false\nBoolean(0);           // false\nBoolean(\"\");          // false",
+          "label": "Common surprises"
+        },
+        {
+          "t": "code",
+          "code": "[0, 1, \"\", \"hi\", null, \"foo\", undefined].filter(Boolean);\n// [1, \"hi\", \"foo\"]",
+          "label": "The Boolean filter trick — remove falsy values from array"
+        }
+      ]
+    },
+    {
+      "id": "num-parsing",
+      "n": "18",
+      "title": "Parse & format numbers",
+      "badge": null,
+      "group": "Numbers",
+      "blocks": [
+        {
+          "t": "code",
+          "code": "Number(\"42\");          // 42\nNumber(\"4.5\");         // 4.5\nNumber(\"\");            // 0    ⚠️ surprise\nNumber(\"abc\");         // NaN\n\nparseInt(\"42\");        // 42\nparseInt(\"4.9\");       // 4    ⚠️ truncates decimals!\nparseInt(\"42px\");      // 42   ← stops at non-numeric\n\nparseFloat(\"4.9px\");   // 4.9\nparseFloat(\"abc\");     // NaN\n\n+\"42\";                 // 42   ← the unary + trick, shortest form\n+\"4.5\";                // 4.5",
+          "label": "String → Number"
+        },
+        {
+          "t": "code",
+          "code": "String(42);           // \"42\"\n(42).toString();      // \"42\"\n`${42}`;              // \"42\"    ← template literal\n\n(3.14159).toFixed(2); // \"3.14\"   ⚠️ returns STRING, not number!\n+(3.14159).toFixed(2); // 3.14    ← back to number\nparseFloat((3.14159).toFixed(2)); // 3.14",
+          "label": "Number → String"
+        },
+        {
+          "t": "code",
+          "code": "Number.isNaN(NaN);          // true  (safest)\nNumber.isNaN(\"abc\");        // false ← the string isn't NaN, it's a string\n\nisNaN(\"abc\");               // true  ⚠️ coerces first, be careful",
+          "label": "Check for NaN"
+        },
+        {
+          "t": "callout",
+          "kind": "warn",
+          "html": "<strong>⚠️ Common bugs:</strong> <br>• <code>parseInt(4.7)</code> = 4 (truncates) <br>• <code>Number(\"\")</code> = 0 (not NaN) <br>• <code>.toFixed()</code> returns a string, not a number <br>• <code>0.1 + 0.2 === 0.3</code> → <strong>false</strong> (floating point). Use a tolerance: <code>Math.abs(sum - 0.3) &lt; 0.001</code>"
+        }
+      ]
+    },
+    {
+      "id": "num-math",
+      "n": "19",
+      "title": "Math methods you'll actually use",
+      "badge": null,
+      "group": "Numbers",
+      "blocks": [
+        {
+          "t": "code",
+          "code": "Math.round(4.4);     // 4     (nearest)\nMath.round(4.5);     // 5\nMath.floor(4.9);     // 4     (down)\nMath.ceil(4.1);      // 5     (up)\nMath.trunc(4.9);     // 4     (remove decimals, keep sign)\nMath.trunc(-4.9);    // -4",
+          "label": "Rounding"
+        },
+        {
+          "t": "code",
+          "code": "Math.max(1, 5, 3);              // 5\nMath.min(1, 5, 3);              // 1\n\n// From an array:\nMath.max(...[1, 5, 3]);         // 5\nMath.min(...[1, 5, 3]);         // 1",
+          "label": "Min / Max"
+        },
+        {
+          "t": "code",
+          "code": "Math.random();                       // 0 to less than 1\nMath.floor(Math.random() * 10);      // 0 to 9\n\n// Random integer in range [min, max]:\nconst rand = (min, max) =>\n  Math.floor(Math.random() * (max - min + 1)) + min;\nrand(1, 6);   // dice roll (1 to 6)",
+          "label": "Random"
+        },
+        {
+          "t": "code",
+          "code": "Math.abs(-5);       // 5\nMath.pow(2, 3);     // 8   (2^3)\n2 ** 3;             // 8   (modern equivalent)\nMath.sqrt(16);      // 4",
+          "label": "Absolute value, power, sqrt"
+        }
+      ]
+    },
+    {
+      "id": "pat-common",
+      "n": "20",
+      "title": "Common patterns — steal these",
+      "badge": null,
+      "group": "Patterns",
+      "blocks": [
+        {
+          "t": "code",
+          "code": "const grouped = arr.reduce((acc, item) => {\n  const key = item.category;\n  acc[key] ??= [];\n  acc[key].push(item);\n  return acc;\n}, {});",
+          "label": "Group by key"
+        },
+        {
+          "t": "code",
+          "code": "const count = arr.reduce((acc, item) => {\n  acc[item] = (acc[item] || 0) + 1;\n  return acc;\n}, {});\n// [\"a\",\"b\",\"a\",\"c\",\"a\"] → { a: 3, b: 1, c: 1 }",
+          "label": "Count occurrences"
+        },
+        {
+          "t": "code",
+          "code": "const total = items.reduce((sum, i) => sum + i.price, 0);",
+          "label": "Sum a numeric field"
+        },
+        {
+          "t": "code",
+          "code": "const oldest = users.reduce(\n  (max, u) => u.age > max.age ? u : max,\n  users[0]\n);",
+          "label": "Find max/min by field"
+        },
+        {
+          "t": "code",
+          "code": "const byId = users.reduce((acc, u) => {\n  acc[u.id] = u;\n  return acc;\n}, {});\n// { u1: {...}, u2: {...}, ... }\n// Now you can look up any user in O(1) by id.",
+          "label": "Convert array of objects → object indexed by key"
+        },
+        {
+          "t": "code",
+          "code": "const names = [\"a\", \"b\", \"c\"];\nconst ages  = [25, 30, 35];\n\nconst zipped = names.map((n, i) => [n, ages[i]]);\n// [[\"a\",25], [\"b\",30], [\"c\",35]]",
+          "label": "Zip two arrays into pairs"
+        },
+        {
+          "t": "code",
+          "code": "function chunk(arr, size) {\n  const result = [];\n  for (let i = 0; i < arr.length; i += size) {\n    result.push(arr.slice(i, i + size));\n  }\n  return result;\n}\nchunk([1,2,3,4,5,6,7], 3);   // [[1,2,3], [4,5,6], [7]]",
+          "label": "Chunk an array into groups of N"
+        },
+        {
+          "t": "code",
+          "code": "Array.from({ length: 5 }, (_, i) => i);\n// [0, 1, 2, 3, 4]\n\nArray.from({ length: 5 }, (_, i) => i * 2);\n// [0, 2, 4, 6, 8]",
+          "label": "Range 0..n-1"
+        },
+        {
+          "t": "code",
+          "code": "const merged = Object.assign({}, obj1, obj2, obj3);\n// or\nconst merged = { ...obj1, ...obj2, ...obj3 };\n// Later objects override earlier ones on conflicts.",
+          "label": "Merge multiple objects"
+        },
+        {
+          "t": "code",
+          "code": "function pick(obj, keys) {\n  return keys.reduce((acc, key) => {\n    if (key in obj) acc[key] = obj[key];\n    return acc;\n  }, {});\n}\npick(user, [\"name\", \"email\"]);\n// { name: \"Parth\", email: \"...\" }",
+          "label": "Pick specific keys from an object"
+        },
+        {
+          "t": "code",
+          "code": "function omit(obj, keys) {\n  return Object.fromEntries(\n    Object.entries(obj).filter(([k]) => !keys.includes(k))\n  );\n}\nomit(user, [\"password\"]);",
+          "label": "Omit specific keys from an object"
+        }
+      ]
+    },
+    {
+      "id": "pat-debug",
+      "n": "21",
+      "title": "Debugging shortcuts",
+      "badge": null,
+      "group": "Patterns",
+      "blocks": [
+        {
+          "t": "code",
+          "code": "console.log(x);            // basic\nconsole.log({ x, y, z });  // labels automatically!  { x: 1, y: 2, z: 3 }\nconsole.table(arr);        // pretty-print arrays/objects as a table\nconsole.error(\"Broken\");   // red output\nconsole.warn(\"Careful\");   // yellow output\nconsole.time(\"op\");        // start timer\n// ... code ...\nconsole.timeEnd(\"op\");     // \"op: 42ms\"",
+          "label": "Console tricks"
+        },
+        {
+          "t": "code",
+          "code": "console.log(JSON.stringify(deepObj, null, 2));\n// Pretty-prints with 2-space indent.",
+          "label": "JSON printing (see the full structure)"
+        },
+        {
+          "t": "code",
+          "code": "debugger;   // pauses execution when DevTools is open",
+          "label": "Quick throwaway breakpoint"
+        },
+        {
+          "t": "code",
+          "code": "typeof x;                        // \"string\", \"number\", etc.\nArray.isArray(x);                // true if array\nx instanceof Date;               // true if Date\nObject.prototype.toString.call(x);  // \"[object Array]\", \"[object Null]\", etc.",
+          "label": "Check the type quickly"
+        }
+      ]
+    },
+    {
+      "id": "method-approach",
+      "n": "22",
+      "title": "Problem-solving method — 5 steps before you code",
+      "badge": null,
+      "group": "Method",
+      "blocks": [
+        {
+          "t": "callout",
+          "kind": "tip",
+          "html": "<strong>Don't touch the keyboard until Step 3 is done.</strong> This is the single biggest skill separating rushed hacky code from clean solutions."
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Step 1 — Say the input and output in one sentence"
+        },
+        {
+          "t": "p",
+          "html": "<em>\"I have X, I need to return Y in the shape of Z.\"</em> <br>Doing this in English slows your brain enough to catch what you don't understand."
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Step 2 — Draw the output shape"
+        },
+        {
+          "t": "code",
+          "code": "// Output:\n// [\n//   { id, name, reviewCount, avgRating },  // avgRating null if no reviews\n//   ...\n// ]\n// Sorted by avgRating desc, nulls last",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Step 3 — Break into independent sub-problems"
+        },
+        {
+          "t": "code",
+          "code": "// A: For each product, find its reviews.\n// B: Compute reviewCount + avgRating for each.\n// C: Handle \"no reviews\" case.\n// D: Sort with null-last.",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Step 4 — For each sub-problem, ask \"which HOF fits?\""
+        },
+        {
+          "t": "table",
+          "head": [
+            "Task",
+            "Tool"
+          ],
+          "rows": [
+            [
+              "Same length transform",
+              "<code>map</code>"
+            ],
+            [
+              "Keep some, drop others",
+              "<code>filter</code>"
+            ],
+            [
+              "Collapse to one value",
+              "<code>reduce</code>"
+            ],
+            [
+              "Side effect only",
+              "<code>forEach</code>"
+            ],
+            [
+              "Find one",
+              "<code>find</code>"
+            ],
+            [
+              "Any/all check",
+              "<code>some</code>/<code>every</code>"
+            ]
+          ]
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Step 5 — Now write code"
+        },
+        {
+          "t": "p",
+          "html": "The code becomes translation, not thinking-while-typing. Each sub-problem = one small block."
+        },
+        {
+          "t": "callout",
+          "kind": "note",
+          "html": "<strong>💡 The bridge trick:</strong> Write the sub-problems as <em>comments first</em>, then fill in the code under each. This way, \"planning\" and \"typing\" don't fight for your attention at the same time."
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "The bigger point"
+        },
+        {
+          "t": "p",
+          "html": "You'll feel dumb comparing your first draft to someone else's final draft. That's not a fair comparison. Every experienced dev writes messy code first, then refactors. The difference isn't intelligence — it's <strong>exposure</strong>. You've written this pattern 3 times; they've written it 300. Speed and elegance come with reps."
+        }
+      ]
+    }
+  ]
+}

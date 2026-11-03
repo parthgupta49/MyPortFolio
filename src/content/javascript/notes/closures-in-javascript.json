@@ -1,0 +1,1241 @@
+{
+  "subject": "javascript",
+  "slug": "closures-in-javascript",
+  "title": "Closures in JavaScript",
+  "chapterLabel": "Chapter 3",
+  "summary": "With embedded interactive demos, engine-level depth, and interview patterns",
+  "tags": [
+    "closures",
+    "scope",
+    "async",
+    "functions",
+    "memory"
+  ],
+  "video": null,
+  "groups": [
+    {
+      "label": "Core Concepts",
+      "sectionIds": [
+        "sec1",
+        "sec2",
+        "sec3",
+        "sec4",
+        "sec5"
+      ]
+    },
+    {
+      "label": "Deep Dives",
+      "sectionIds": [
+        "sec6",
+        "sec7",
+        "sec8",
+        "sec9",
+        "sec10"
+      ]
+    },
+    {
+      "label": "Practical",
+      "sectionIds": [
+        "sec11",
+        "sec12",
+        "sec13"
+      ]
+    },
+    {
+      "label": "Revision",
+      "sectionIds": [
+        "sec14",
+        "sec15"
+      ]
+    },
+    {
+      "label": "Practice",
+      "sectionIds": [
+        "sec16",
+        "sec17"
+      ]
+    }
+  ],
+  "sections": [
+    {
+      "id": "sec1",
+      "n": "1",
+      "title": "What is a Closure? — The Formal Definition",
+      "badge": null,
+      "group": "Core Concepts",
+      "blocks": [
+        {
+          "t": "callout",
+          "kind": "danger",
+          "html": "<strong>A closure is a function bundled together (enclosed) with its lexical environment.</strong><br><br>In simpler terms: A closure is when an inner function has access to the outer (enclosing) function's variables — even after the outer function has completely finished executing and its Execution Context has been destroyed."
+        },
+        {
+          "t": "p",
+          "html": "From MDN: <em>\"A closure is the combination of a function and the lexical environment within which that function was declared.\"</em>"
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "The Simplest Closure:"
+        },
+        {
+          "t": "code",
+          "code": "function outer() {\n  let a = 7;\n\n  function inner() {\n    console.log(a);   // inner \"closes over\" variable a\n  }\n\n  return inner;\n}\n\nlet z = outer();   // outer() executes, returns inner, then outer's EC is DESTROYED\nz();               // Output: 7 — But how? outer is long gone!",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "What just happened?"
+        },
+        {
+          "t": "list",
+          "ordered": true,
+          "items": [
+            "We called <code>outer()</code>. It declared <code>a = 7</code> and returned the function <code>inner</code>.",
+            "Once <code>outer()</code> finished, its Execution Context was entirely <strong>destroyed</strong> and removed from the Call Stack.",
+            "We later invoked <code>z()</code> (which holds <code>inner</code>).",
+            "Even though <code>outer</code> is long gone, <code>z()</code> perfectly prints <code>7</code>."
+          ]
+        },
+        {
+          "t": "callout",
+          "kind": "info",
+          "html": "<strong>🔑 Why?</strong> Because when functions are returned in JavaScript, they are <strong>not returned alone</strong>. They are returned along with their <strong>lexical scope</strong>. When <code>inner</code> was <strong>born</strong> (defined) inside <code>outer</code>, the JS engine attached a hidden reference — <code>inner.[[Scope]]</code> — pointing to <code>outer</code>'s lexical environment. When <code>inner</code> was returned and <code>outer</code> died, that reference kept the variables alive. This hidden reference IS the closure."
+        }
+      ]
+    },
+    {
+      "id": "sec2",
+      "n": "2",
+      "title": "The Two Conditions for a Closure",
+      "badge": null,
+      "group": "Core Concepts",
+      "blocks": [
+        {
+          "t": "callout",
+          "kind": "key",
+          "html": "<strong>🧠 \"When exactly IS a closure formed?\" — This section answers the most common confusion.</strong>"
+        },
+        {
+          "t": "p",
+          "html": "A closure is formed when <strong>BOTH</strong> of these conditions are true:"
+        },
+        {
+          "t": "table",
+          "head": [
+            "#",
+            "Condition",
+            "What It Means"
+          ],
+          "rows": [
+            [
+              "<strong>1</strong>",
+              "A function is <strong>defined inside</strong> another scope",
+              "The inner function is physically written inside an outer function/block"
+            ],
+            [
+              "<strong>2</strong>",
+              "It <strong>references variables</strong> from that outer scope",
+              "The inner function actually USES a variable that's not in its own local memory"
+            ]
+          ]
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "✅ Closure — Both conditions met:"
+        },
+        {
+          "t": "code",
+          "code": "function outer() {\n  let a = 7;              // outer's variable\n\n  function inner() {\n    console.log(a);       // ✅ references outer's variable\n  }\n\n  return inner;\n}\n// Condition 1: inner defined inside outer ✅\n// Condition 2: inner uses 'a' from outer ✅\n// → CLOSURE: YES",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "❌ NOT a closure — Condition 2 missing:"
+        },
+        {
+          "t": "code",
+          "code": "function outer() {\n  let a = 7;\n\n  function inner() {\n    console.log(\"Hello\"); // ❌ does NOT use any outer variable\n  }\n\n  return inner;\n}\n// Condition 1: inner defined inside outer ✅\n// Condition 2: inner doesn't use any outer variable ❌\n// → CLOSURE: NO (nothing meaningful to close over)",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "✅ Closure — Even without return:"
+        },
+        {
+          "t": "code",
+          "code": "function outer() {\n  let a = 7;\n\n  function inner() {\n    console.log(a);       // ✅ uses outer's variable\n  }\n\n  inner();                // called directly, NOT returned\n}\n// Condition 1 ✅, Condition 2 ✅ → CLOSURE: YES (return is irrelevant)",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "✅ Closure — setTimeout callback:"
+        },
+        {
+          "t": "code",
+          "code": "function outer() {\n  let a = 7;\n\n  setTimeout(function() {\n    console.log(a);       // ✅ anonymous fn uses outer's variable\n  }, 1000);\n}\n// Condition 1: anonymous fn defined inside outer ✅\n// Condition 2: it uses 'a' from outer ✅\n// → CLOSURE: YES",
+          "label": null
+        },
+        {
+          "t": "callout",
+          "kind": "info",
+          "html": "<strong>💡 The simplest way to check:</strong> Does your function use a variable that it <strong>didn't create itself</strong>? And is that variable in a <strong>parent scope</strong> (not its own local memory)? If yes to both → that's a closure."
+        }
+      ]
+    },
+    {
+      "id": "sec3",
+      "n": "3",
+      "title": "First-Class Functions — Why Closures Are Possible",
+      "badge": null,
+      "group": "Core Concepts",
+      "blocks": [
+        {
+          "t": "p",
+          "html": "Closures exist because JavaScript treats functions as <strong>first-class citizens</strong>:"
+        },
+        {
+          "t": "list",
+          "ordered": false,
+          "items": [
+            "Functions can be <strong>assigned to variables</strong>: <code>const fn = function() {}</code>",
+            "Functions can be <strong>passed as arguments</strong> to other functions",
+            "Functions can be <strong>returned from</strong> other functions"
+          ]
+        },
+        {
+          "t": "p",
+          "html": "All three of these allow a function to \"travel\" outside its birthplace — carrying its closure with it."
+        },
+        {
+          "t": "code",
+          "code": "// Passing a function as an argument (callback pattern)\nfunction execute(fn) {\n  fn();\n}\n\nfunction greet() {\n  let msg = \"Hello\";\n  execute(function() {\n    console.log(msg);   // Closure! This anonymous fn closes over msg\n  });\n}\n\ngreet();   // \"Hello\"",
+          "label": null
+        }
+      ]
+    },
+    {
+      "id": "sec4",
+      "n": "4",
+      "title": "How Closures Work — Step-by-Step Engine Trace",
+      "badge": null,
+      "group": "Core Concepts",
+      "blocks": [
+        {
+          "t": "code",
+          "code": "function outer() {\n  let a = 7;\n\n  function inner() {\n    console.log(a);\n  }\n\n  return inner;\n}\n\nlet z = outer();\nz();",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Phase 1: <code>outer()</code> is called"
+        },
+        {
+          "t": "code",
+          "code": "Call Stack:\n┌──────────┐\n│  outer() │  ← EC created: { a: undefined, inner: fn }\n├──────────┤     Phase 2 of EC: a = 7\n│   GEC    │     inner is created → engine attaches inner.[[Scope]] = outer's lexical env\n└──────────┘     return inner → inner is sent out WITH its [[Scope]] reference",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Phase 2: <code>outer()</code> finishes → EC destroyed"
+        },
+        {
+          "t": "code",
+          "code": "Call Stack:\n┌──────────┐\n│   GEC    │     z now holds: inner function + closure over { a: 7 }\n└──────────┘     outer's EC is GONE from the call stack.\n                 But 'a' survives in the closure.",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Phase 3: <code>z()</code> is called"
+        },
+        {
+          "t": "code",
+          "code": "Call Stack:\n┌──────────┐\n│   z()    │  ← EC created for inner. Needs 'a'.\n├──────────┤     Looks in own memory → not found.\n│   GEC    │     Looks in CLOSURE (outer) → finds a = 7 ✅\n└──────────┘     Prints 7.",
+          "label": null
+        },
+        {
+          "t": "callout",
+          "kind": "info",
+          "html": "<strong>🧠 Chrome DevTools Proof:</strong> If you put a breakpoint inside <code>z()</code> and check the Scope panel, you'll see a special scope called <strong>\"Closure (outer)\"</strong> — this is the preserved lexical environment from the dead <code>outer()</code> function. The variables live there, not in any active EC.<br><br><code>Local: { }</code> ← inner's own memory (empty)<br><code>Closure (outer): { a: 7 }</code> ← preserved variables from dead outer()<br><code>Global: { z: f,... }</code>"
+        }
+      ]
+    },
+    {
+      "id": "sec5",
+      "n": "5",
+      "title": "Closures Capture References, Not Snapshots",
+      "badge": null,
+      "group": "Core Concepts",
+      "blocks": [
+        {
+          "t": "callout",
+          "kind": "danger",
+          "html": "<strong>Critical Rule:</strong> A closure does NOT store a <strong>snapshot</strong> of the value at the exact moment the function is declared. Instead, closures store the <strong>memory reference to the variables</strong>. By the time the closure is executed, it looks up the <strong>current value</strong> at that memory reference."
+        },
+        {
+          "t": "code",
+          "code": "function create() {\n  let a = 10;\n\n  function modify() {\n    a = 100;\n  }\n\n  function read() {\n    console.log(a);\n  }\n\n  modify();       // a is changed to 100\n  return read;    // read closes over the REFERENCE to a\n}\n\nconst reader = create();\nreader();   // 100 (NOT 10!)\n// The closure sees the CURRENT value of a, not the value when read was defined.",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "This also means closures see changes made AFTER they're created:"
+        },
+        {
+          "t": "code",
+          "code": "function counter() {\n  let count = 0;\n\n  return function() {\n    count++;              // modifies the same variable via reference\n    console.log(count);\n  };\n}\n\nconst fn = counter();\nfn();   // 1\nfn();   // 2 (not 1 again! count persists because it's a reference)\nfn();   // 3",
+          "label": null
+        },
+        {
+          "t": "callout",
+          "kind": "warn",
+          "html": "<strong>⚠️ Why this matters:</strong> This \"reference not snapshot\" behavior is exactly what causes the famous <code>setTimeout</code> + loop bug. The closure captures the <em>reference</em> to <code>var i</code>, and by the time the setTimeout fires, <code>i</code> has already been mutated to its final value."
+        }
+      ]
+    },
+    {
+      "id": "sec6",
+      "n": "6",
+      "title": "Closures Beyond return — Callbacks, setTimeout, Event Handlers",
+      "badge": null,
+      "group": "Deep Dives",
+      "blocks": [
+        {
+          "t": "callout",
+          "kind": "danger",
+          "html": "<strong>🔴 The #1 misconception about closures:</strong> Many people think closures only happen when you <code>return</code> a function. This is WRONG. <code>return</code> doesn't create the closure — it just makes it visible outside. <strong>The closure is formed the moment the inner function is DEFINED.</strong>"
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "A closure is formed whenever a function is <em>defined</em> inside another scope and references that scope's variables. The delivery method is irrelevant:"
+        },
+        {
+          "t": "table",
+          "head": [
+            "Delivery Method",
+            "Example",
+            "Closure?"
+          ],
+          "rows": [
+            [
+              "📦 <strong>Returned</strong>",
+              "<code>return inner;</code>",
+              "✅ YES"
+            ],
+            [
+              "📬 <strong>Passed as callback</strong>",
+              "<code>setTimeout(inner, 1000);</code>",
+              "✅ YES"
+            ],
+            [
+              "🔔 <strong>Event handler</strong>",
+              "<code>btn.addEventListener('click', inner);</code>",
+              "✅ YES"
+            ],
+            [
+              "📌 <strong>Assigned to outer var</strong>",
+              "<code>globalVar = inner;</code>",
+              "✅ YES"
+            ],
+            [
+              "▶️ <strong>Called directly</strong>",
+              "<code>inner();</code>",
+              "✅ YES (if it references outer vars)"
+            ]
+          ]
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Proof — No <code>return</code>, still a closure:"
+        },
+        {
+          "t": "code",
+          "code": "function outer() {\n  let count = 0;\n\n  function inner() {\n    count++;\n    console.log(count);\n  }\n\n  inner();   // ← called directly, NOT returned\n  inner();\n}\n\nouter();   // Output: 1, 2\n// inner accessed count from outer's scope. That's a closure.\n// No return was needed.",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Proof — Passing to setTimeout, still a closure:"
+        },
+        {
+          "t": "code",
+          "code": "function setup() {\n  let message = \"Hello\";\n\n  setTimeout(function() {       // anonymous function DEFINED inside setup\n    console.log(message);       // REFERENCES setup's variable\n  }, 1000);                     // PASSED to setTimeout (not returned)\n}\n\nsetup();   // setup() finishes instantly. EC destroyed.\n// After 1 second: \"Hello\" — closure kept message alive!",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Proof — Event handler, still a closure:"
+        },
+        {
+          "t": "code",
+          "code": "function attachHandler() {\n  let clickCount = 0;\n\n  document.getElementById(\"btn\").addEventListener(\"click\", function() {\n    clickCount++;                      // references outer variable\n    console.log(\"Clicked \" + clickCount + \" times\");\n  });\n}\n\nattachHandler();   // finishes instantly. But clickCount lives on via closure.\n// Click 1: \"Clicked 1 times\"\n// Click 2: \"Clicked 2 times\"\n// Click 3: \"Clicked 3 times\"",
+          "label": null
+        },
+        {
+          "t": "callout",
+          "kind": "note",
+          "html": "<strong>🎯 The rule:</strong> The closure exists from the moment the function is <strong>born</strong>. How it \"leaves\" (return, callback, event handler, direct call) is irrelevant. The <code>[[Scope]]</code> reference is attached at creation time."
+        },
+        {
+          "t": "p",
+          "html": "<strong>Stage 1: The pattern you know — outer returns inner.</strong><br>Your comfort zone. <code>outer()</code> creates a variable, defines an inner function that uses it, and returns that inner function. The inner function carries a closure over <code>secret</code>."
+        },
+        {
+          "t": "code",
+          "code": "function outer() {\n  let secret = \"Parth\";        // outer's variable\n\n  function inner() {            // inner function\n    console.log(secret);        // accesses outer's variable\n  }\n\n  return inner;                 // delivery method: RETURN\n}\n\nconst fn = outer();\nfn();   // \"Parth\"",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "<strong>Stage 2: Instead of returning, PASS the inner function to someone else.</strong><br>The closure is identical. The only thing that changed is the \"delivery method\" — we're handing the function to <code>executeItLater()</code> instead of returning it."
+        },
+        {
+          "t": "code",
+          "code": "function outer() {\n  let secret = \"Parth\";\n\n  function inner() {\n    console.log(secret);        // still accesses outer's variable!\n  }\n\n  executeItLater(inner);        // delivery method: PASS AS ARGUMENT\n}\n\nfunction executeItLater(callback) {\n  callback();   // \"Parth\" — closure still works!\n}\n\nouter();",
+          "label": null
+        },
+        {
+          "t": "callout",
+          "kind": "note",
+          "html": "<strong>Same closure, different delivery.</strong> Whether you <code>return</code> it or <code>pass</code> it — the function still remembers its birthplace."
+        },
+        {
+          "t": "p",
+          "html": "<strong>Stage 3: What if \"executeItLater\" is... <code>setTimeout</code>?</strong><br><code>setTimeout</code> is just a function that takes a callback and calls it later. It's EXACTLY like <code>executeItLater</code> from Stage 2."
+        },
+        {
+          "t": "code",
+          "code": "function outer() {\n  let secret = \"Parth\";\n\n  function inner() {\n    console.log(secret);\n  }\n\n  setTimeout(inner, 1000);     // delivery method: PASS TO setTimeout\n}\n\nouter();\n// After 1 second: \"Parth\"",
+          "label": null
+        },
+        {
+          "t": "callout",
+          "kind": "key",
+          "html": "<strong>🔑 setTimeout is just another function that receives your callback.</strong> It's not magic. The closure was already formed when inner was defined."
+        },
+        {
+          "t": "p",
+          "html": "<strong>Stage 4: Use an anonymous function inline.</strong><br>Instead of defining <code>inner</code> separately, define it directly inside the <code>setTimeout</code> call. Same closure."
+        },
+        {
+          "t": "code",
+          "code": "function outer() {\n  let secret = \"Parth\";\n\n  setTimeout(function() {       // anonymous fn defined RIGHT HERE\n    console.log(secret);        // still accesses outer's variable!\n  }, 1000);\n}\n\nouter();\n// After 1 second: \"Parth\"\n// Identical to Stage 3. Just no name for the inner function.",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "<strong>Stage 5: Replace \"outer\" with a for loop. THIS is the setTimeout + loop code.</strong><br>The loop body is the \"outer scope\". The callback is the \"inner function\". The loop variable is the \"variable being closed over\". <strong>Same pattern as Stage 1.</strong>"
+        },
+        {
+          "t": "code",
+          "code": "// The \"outer\" is now the for loop body\n// The \"inner\" is the anonymous callback inside setTimeout\n// The \"secret\" is the loop variable i\n\nfor (var i = 1; i <= 3; i++) {\n  setTimeout(function() {       // THIS is the \"inner function\"\n    console.log(i);             // THIS is accessing the \"outer variable\"\n  }, i * 1000);                 // THIS is \"passing to someone else\"\n}\n\n// The anonymous function inside setTimeout is defined inside the loop body.\n// It references 'i' from the outer scope. That's a CLOSURE.",
+          "label": null
+        },
+        {
+          "t": "callout",
+          "kind": "danger",
+          "html": "<strong>🔴 var:</strong> ONE i shared → all callbacks see final value (4)<br><strong>🟢 let:</strong> NEW i per iteration → each callback sees its own value (1,2,3)"
+        }
+      ]
+    },
+    {
+      "id": "sec7",
+      "n": "7",
+      "title": "Scope Chain vs Closure — The Key Distinction",
+      "badge": "gear",
+      "group": "Deep Dives",
+      "blocks": [
+        {
+          "t": "callout",
+          "kind": "danger",
+          "html": "<strong>They're NOT two different mechanisms. Closure IS the scope chain... that survives death.</strong>"
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Example 1 — Scope Chain (parent ALIVE):"
+        },
+        {
+          "t": "code",
+          "code": "function outer() {\n  let a = 10;\n\n  function inner() {\n    console.log(a);    // a is not in inner's local memory\n  }\n\n  inner();   // called while outer is STILL RUNNING\n}\nouter();",
+          "label": null
+        },
+        {
+          "t": "code",
+          "code": "Call Stack when inner() runs:\n┌──────────┐\n│  inner() │  ← currently running. Needs 'a'. Not in local memory.\n├──────────┤\n│  outer() │  ← STILL ALIVE on the stack! Has a = 10 in its memory.\n├──────────┤\n│   GEC    │\n└──────────┘\n\n→ Engine walks up scope chain → finds a = 10 in living parent → done.\n→ Nothing special. Just normal scope chain lookup. Parent is alive.",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Example 2 — Closure (parent DEAD):"
+        },
+        {
+          "t": "code",
+          "code": "function outer() {\n  let a = 10;\n\n  function inner() {\n    console.log(a);\n  }\n\n  return inner;   // inner leaves, outer is about to die\n}\n\nconst fn = outer();   // outer finishes → EC DESTROYED\nfn();                  // calling inner... but outer is DEAD!",
+          "label": null
+        },
+        {
+          "t": "code",
+          "code": "Call Stack when fn() runs:\n┌──────────┐\n│   fn()   │  ← currently running. Needs 'a'. Not in local memory.\n├──────────┤\n│   GEC    │  ← outer() is NOT HERE. It's dead. Gone. Popped off.\n└──────────┘\n\nWhere is outer()? NOWHERE. Its EC was destroyed.\nIts local memory (where a = 10 lived) should be GONE.\n\nBut fn() still prints 10. HOW?!\n\nBecause fn has a hidden [[Scope]] reference:\nfn.[[Scope]] → { a: 10 }   ← THIS is the CLOSURE\n                              outer's variables, preserved after death",
+          "label": null
+        },
+        {
+          "t": "callout",
+          "kind": "info",
+          "html": "<strong>🧠 The Summary:</strong><br><br><strong>Scope Chain</strong> = the <strong>mechanism</strong> — \"if variable not here, look at parent, then grandparent, etc.\"<br><br><strong>Closure</strong> = the <strong>preservation</strong> — \"even if the parent is dead, the inner function keeps its variables alive through a hidden <code>[[Scope]]</code> reference\"<br><br>Without closures, the scope chain only works while the parent is alive on the Call Stack. With closures, the scope chain works <strong>forever</strong> — even after the parent is dead and gone. <strong>They're the same mechanism. Closure just extends it beyond death.</strong>"
+        },
+        {
+          "t": "code",
+          "code": "Analogy:\n\n  Scope Chain = the ROAD between your house and the store.\n                You walk the road to get groceries.\n\n  Closure     = the store was supposed to be DEMOLISHED (parent EC destroyed),\n                but because you still need groceries (inner fn references variables),\n                the store was PRESERVED just for you.\n\n                The road (scope chain) still exists.\n                The store (parent's variables) was kept alive BY the closure.\n                Without the closure, the store would be gone and the road\n                would lead to nothing (ReferenceError).",
+          "label": null
+        }
+      ]
+    },
+    {
+      "id": "sec8",
+      "n": "8",
+      "title": "Independent Closures — Same Factory, Different Memory",
+      "badge": null,
+      "group": "Deep Dives",
+      "blocks": [
+        {
+          "t": "code",
+          "code": "function counter() {\n  let count = 0;\n  return function() {\n    count++;\n    return count;\n  };\n}\n\nconst counterA = counter();   // Fresh EC → fresh count = 0\nconst counterB = counter();   // Another fresh EC → another fresh count = 0\n\nconsole.log(counterA());   // 1\nconsole.log(counterA());   // 2\nconsole.log(counterB());   // 1 (NOT 3! — counterB has its own count)\nconsole.log(counterA());   // 3",
+          "label": null
+        },
+        {
+          "t": "callout",
+          "kind": "info",
+          "html": "<strong>🔑 Rule:</strong> Each invocation of the factory function creates a <strong>completely new Execution Context</strong> with its own <strong>separate variables</strong>. The returned closures close over <strong>different</strong> memory locations. <code>counterA</code> and <code>counterB</code> do NOT share the same <code>count</code>."
+        }
+      ]
+    },
+    {
+      "id": "sec9",
+      "n": "9",
+      "title": "The Classic Interview Question — setTimeout + Loop",
+      "badge": "star",
+      "group": "Deep Dives",
+      "blocks": [
+        {
+          "t": "callout",
+          "kind": "key",
+          "html": "<strong>⭐ THE most famous closure interview question in JavaScript. Master this.</strong>"
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "The Bug:"
+        },
+        {
+          "t": "code",
+          "code": "for (var i = 1; i <= 3; i++) {\n  setTimeout(function() {\n    console.log(i);\n  }, i * 1000);\n}\n\n// Output (after 1s, 2s, 3s):\n// 4\n// 4\n// 4",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Why 4, 4, 4?"
+        },
+        {
+          "t": "list",
+          "ordered": true,
+          "items": [
+            "<code>var i</code> is <strong>function/global scoped</strong> — there is only ONE <code>i</code> in memory for all 3 iterations.",
+            "The <code>setTimeout</code> callbacks are registered but don't execute immediately — they wait in the callback queue.",
+            "By the time the loop finishes, <code>i</code> has been incremented to <strong>4</strong> (the value that fails the <code>i &lt;= 3</code> check).",
+            "When the callbacks finally execute, they all look up the <strong>same reference</strong> to <code>i</code> → all see 4.",
+            "Three <code>setTimeout</code> calls were made (i=1, 2, 3), so <strong>three outputs</strong> of 4."
+          ]
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Fix 1 — IIFE (Immediately Invoked Function Expression):"
+        },
+        {
+          "t": "code",
+          "code": "for (var i = 1; i <= 3; i++) {\n  (function(j) {                    // IIFE creates a NEW scope each iteration\n    setTimeout(function() {\n      console.log(j);               // j is a SEPARATE variable per iteration\n    }, j * 1000);\n  })(i);                            // Pass current i as argument → becomes j\n}\n\n// Output: 1, 2, 3 ✅",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "<strong>Why it works:</strong> Each IIFE invocation creates a <strong>new Execution Context</strong> with its own parameter <code>j</code>. The setTimeout callback closes over <code>j</code> (not <code>i</code>). Each <code>j</code> is a different variable holding a different value (1, 2, 3)."
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Fix 2 — Just use <code>let</code> (The Modern Way):"
+        },
+        {
+          "t": "code",
+          "code": "for (let i = 1; i <= 3; i++) {\n  setTimeout(function() {\n    console.log(i);\n  }, i * 1000);\n}\n\n// Output: 1, 2, 3 ✅",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "<strong>Why it works:</strong> <code>let</code> is <strong>block-scoped</strong>. The JS spec has special behavior for <code>let</code> in <code>for</code> loops: each iteration creates a <strong>completely new variable</strong> (new block scope, new binding). Each callback closes over its iteration's own <code>i</code>."
+        },
+        {
+          "t": "callout",
+          "kind": "note",
+          "html": "<strong>🎯 Interview Tip:</strong> Explain the bug first, then offer BOTH fixes. Show the IIFE to demonstrate closure understanding, then mention <code>let</code> as the modern solution. This shows depth AND practical knowledge."
+        }
+      ]
+    },
+    {
+      "id": "sec10",
+      "n": "10",
+      "title": "Closures vs this — The Collision",
+      "badge": null,
+      "group": "Deep Dives",
+      "blocks": [
+        {
+          "t": "callout",
+          "kind": "danger",
+          "html": "<strong>🧠 This is an advanced concept most developers get wrong.</strong>"
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "The Rule:"
+        },
+        {
+          "t": "list",
+          "ordered": false,
+          "items": [
+            "<strong>Closures capture VARIABLES</strong> (like <code>let count</code>, <code>const name</code>) from the lexical environment.",
+            "<strong>Closures DO NOT capture the <code>this</code> keyword.</strong> Every regular function call generates a brand new <code>this</code>."
+          ]
+        },
+        {
+          "t": "code",
+          "code": "const user = {\n  name: \"Parth\",\n  greet: function() {\n    const name = \"Inner\";     // a regular variable\n\n    return function() {\n      console.log(this.name); // this → determined by HOW this fn is called\n      console.log(name);      // name → captured by closure from greet's scope\n    };\n  }\n};\n\nconst fn = user.greet();\nfn();   // Non-strict mode\n\n// Output 1: \"\"        ← this = window, window.name = \"\" (browser quirk)\n// Output 2: \"Inner\"   ← closure captured the variable 'name' from greet()",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "The Three Fixes for the \"Lost <code>this</code>\" Problem:"
+        },
+        {
+          "t": "code",
+          "code": "// Fix 1: The self trick (Pre-2015)\ngreet: function() {\n  const self = this;           // Save this into a VARIABLE\n  return function() {\n    console.log(self.name);    // Closure captures 'self' ✅\n  };\n}\n\n// Fix 2: Arrow function (Post-2015)\ngreet: function() {\n  return () => {\n    console.log(this.name);    // Arrow fn has no this → uses greet's this ✅\n  };\n}\n\n// Fix 3: bind()\ngreet: function() {\n  return function() {\n    console.log(this.name);\n  }.bind(this);                // Permanently bind this ✅\n}",
+          "label": null
+        },
+        {
+          "t": "table",
+          "head": [
+            "Mechanism",
+            "Captured by Closure?",
+            "How It's Resolved"
+          ],
+          "rows": [
+            [
+              "Regular variables (<code>let</code>, <code>const</code>, <code>var</code>)",
+              "✅ YES",
+              "Scope chain lookup (lexical)"
+            ],
+            [
+              "<code>this</code> keyword",
+              "❌ NO",
+              "Determined at call-time (runtime binding)"
+            ],
+            [
+              "<code>arguments</code> object",
+              "❌ NO (in regular fn)",
+              "Fresh one created per function call"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sec11",
+      "n": "11",
+      "title": "Real-World Use Cases of Closures",
+      "badge": null,
+      "group": "Practical",
+      "blocks": [
+        {
+          "t": "h",
+          "level": 2,
+          "html": "Use Case 1: Data Encapsulation / Privacy (Module Pattern)"
+        },
+        {
+          "t": "code",
+          "code": "function createBank() {\n  let balance = 1000;    // Private! Cannot be accessed directly.\n\n  return {\n    deposit(amount)   { balance += amount; },\n    withdraw(amount)  { balance -= amount; },\n    getBalance()      { return balance; }\n  };\n}\n\nconst account = createBank();\naccount.deposit(500);\naccount.withdraw(200);\nconsole.log(account.getBalance());   // 1300\nconsole.log(account.balance);        // undefined — balance is PRIVATE!",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "The <code>balance</code> variable is completely inaccessible from outside. Only the returned methods (which form closures over <code>balance</code>) can read or modify it."
+        },
+        {
+          "t": "h",
+          "level": 2,
+          "html": "Use Case 2: Function Currying"
+        },
+        {
+          "t": "code",
+          "code": "function multiply(x) {\n  return function(y) {\n    return x * y;\n  };\n}\n\nconst double = multiply(2);    // x = 2 is \"remembered\"\nconst triple = multiply(3);    // x = 3 is \"remembered\"\n\nconsole.log(double(5));   // 10\nconsole.log(triple(5));   // 15",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 2,
+          "html": "Use Case 3: Memoization (Caching)"
+        },
+        {
+          "t": "code",
+          "code": "function memoize(fn) {\n  const cache = {};                    // Persists via closure\n\n  return function(n) {\n    if (cache[n] !== undefined) {\n      console.log(\"From cache\");\n      return cache[n];\n    }\n    const result = fn(n);\n    cache[n] = result;                 // Store in cache\n    return result;\n  };\n}\n\nconst factorial = memoize(function(n) {\n  return n <= 1 ? 1 : n * factorial(n - 1);\n});\n\nconsole.log(factorial(5));   // Computes: 120\nconsole.log(factorial(5));   // From cache: 120",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 2,
+          "html": "Use Case 4: <code>once()</code> — Run Only Once"
+        },
+        {
+          "t": "code",
+          "code": "function once(fn) {\n  let called = false;\n  let result;\n\n  return function(...args) {\n    if (!called) {\n      called = true;\n      result = fn(...args);\n    }\n    return result;\n  };\n}\n\nconst initialize = once(() => {\n  console.log(\"Initialized!\");\n  return 42;\n});\n\ninitialize();   // \"Initialized!\" → 42\ninitialize();   // (nothing logged) → 42 (cached result)\ninitialize();   // (nothing logged) → 42",
+          "label": null
+        }
+      ]
+    },
+    {
+      "id": "sec12",
+      "n": "12",
+      "title": "Closures & Garbage Collection",
+      "badge": null,
+      "group": "Practical",
+      "blocks": [
+        {
+          "t": "p",
+          "html": "Normally, when a function finishes executing, its EC is deleted and variables are garbage collected. But <strong>closures prevent this</strong> for variables that are still referenced."
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "When IS the closed-over variable garbage collected?"
+        },
+        {
+          "t": "code",
+          "code": "function outer() {\n  let secret = \"hidden\";\n  return function() { console.log(secret); };\n}\n\nlet fn = outer();    // secret persists — closure holds a reference\nfn();                // \"hidden\"\nfn = null;           // NOW secret can be garbage collected\n                     // Because no closure references it anymore",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Smart Engines Optimize — V8's Closure Pruning:"
+        },
+        {
+          "t": "code",
+          "code": "function heavy() {\n  let bigArray = new Array(1000000).fill(\"data\");   // 1 million items\n  let smallVar = \"hello\";\n\n  return function() {\n    console.log(smallVar);    // Only references smallVar, NOT bigArray\n  };\n}\n\nconst fn = heavy();",
+          "label": null
+        },
+        {
+          "t": "table",
+          "head": [
+            "Engine",
+            "<code>bigArray</code> Garbage Collected?",
+            "Why"
+          ],
+          "rows": [
+            [
+              "<strong>V8 (Chrome/Node)</strong>",
+              "✅ YES",
+              "V8 analyzes the closure and prunes unreferenced variables"
+            ],
+            [
+              "<strong>Older engines</strong>",
+              "❌ Might persist",
+              "Some engines keep the entire lexical environment"
+            ]
+          ]
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "⚠️ setInterval Does NOT Overflow the Call Stack:"
+        },
+        {
+          "t": "code",
+          "code": "function setup() {\n  let count = 0;\n\n  setInterval(function() {\n    count++;\n    console.log(count);   // 1, 2, 3, 4... forever\n  }, 1000);\n}\n\nsetup();",
+          "label": null
+        },
+        {
+          "t": "callout",
+          "kind": "warn",
+          "html": "<strong>Common misconception:</strong> \"setInterval will overflow the call stack.\" <strong>WRONG.</strong><br><br>Each callback <strong>runs, completes, and is popped off</strong> the stack before the next one arrives. They don't pile up. The stack never overflows.<br><br><strong>But</strong> <code>count</code> is never garbage collected because the setInterval callback holds a closure over it forever. To release it, call <code>clearInterval(intervalId)</code>."
+        }
+      ]
+    },
+    {
+      "id": "sec13",
+      "n": "13",
+      "title": "Common Gotchas & Pitfalls",
+      "badge": null,
+      "group": "Practical",
+      "blocks": [
+        {
+          "t": "h",
+          "level": 2,
+          "html": "Gotcha A: The <code>setTimeout</code> + <code>var</code> Loop (Most Famous Bug)"
+        },
+        {
+          "t": "p",
+          "html": "Covered in detail in <a href=\"#sec9\">Section 9</a>. Remember: <code>var</code> creates ONE shared variable → all callbacks see the final value. Fix with IIFE or <code>let</code>."
+        },
+        {
+          "t": "h",
+          "level": 2,
+          "html": "Gotcha B: Closures Don't Capture <code>this</code>"
+        },
+        {
+          "t": "p",
+          "html": "Covered in <a href=\"#sec10\">Section 10</a>. Regular functions get a fresh <code>this</code> every call. Use <code>self</code> trick, arrow functions, or <code>.bind()</code>."
+        },
+        {
+          "t": "h",
+          "level": 2,
+          "html": "Gotcha C: Stale Closures in React (Preview)"
+        },
+        {
+          "t": "code",
+          "code": "// This is a common React bug — you'll encounter it in your React journey:\nfunction Counter() {\n  const [count, setCount] = useState(0);\n\n  useEffect(() => {\n    const id = setInterval(() => {\n      console.log(count);     // Always logs 0! Stale closure.\n    }, 1000);\n    return () => clearInterval(id);\n  }, []);   // Empty dependency array = closure captures count = 0 forever\n}",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "The <code>setInterval</code> callback closes over the <strong>initial</strong> <code>count</code> (0). Even as <code>count</code> changes via state updates, the closure still references the old value. This is called a <strong>\"stale closure\"</strong>."
+        },
+        {
+          "t": "h",
+          "level": 2,
+          "html": "Gotcha D: Closures in a Loop Without Proper Scoping"
+        },
+        {
+          "t": "code",
+          "code": "var funcs = [];\nfor (var i = 0; i < 3; i++) {\n  funcs.push(function() { console.log(i); });\n}\n\nfuncs[0]();   // 3 (not 0!)\nfuncs[1]();   // 3 (not 1!)\nfuncs[2]();   // 3 (not 2!)",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "Same bug as setTimeout — all three functions close over the SAME <code>var i</code>, which is 3 when the loop ends."
+        }
+      ]
+    },
+    {
+      "id": "sec14",
+      "n": "14",
+      "title": "Master Cheat Sheet",
+      "badge": null,
+      "group": "Revision",
+      "blocks": [
+        {
+          "t": "table",
+          "head": [
+            "Concept",
+            "Key Point"
+          ],
+          "rows": [
+            [
+              "Definition",
+              "A function bundled together with its lexical environment"
+            ],
+            [
+              "Two conditions",
+              "1) Function defined inside another scope, 2) References that scope's variables"
+            ],
+            [
+              "When formed?",
+              "At function <strong>creation</strong> (definition) time — NOT at return/call time"
+            ],
+            [
+              "Needs <code>return</code>?",
+              "NO. Works with return, callbacks, event handlers, setTimeout, direct calls"
+            ],
+            [
+              "What it captures",
+              "<strong>References</strong> to variables (not snapshots of values)"
+            ],
+            [
+              "What it doesn't capture",
+              "<code>this</code> keyword and <code>arguments</code> object"
+            ],
+            [
+              "Scope Chain vs Closure",
+              "Same mechanism. Closure = scope chain that <strong>survives parent's death</strong>"
+            ],
+            [
+              "Independent closures",
+              "Each factory call = new EC = separate variables"
+            ],
+            [
+              "setTimeout + var loop",
+              "All callbacks share ONE var i → fix with IIFE or <code>let</code>"
+            ],
+            [
+              "GC",
+              "Closed-over vars persist until closure is released. V8 prunes unreferenced vars."
+            ],
+            [
+              "setInterval",
+              "Does NOT overflow stack. Each callback completes before next fires."
+            ],
+            [
+              "Use Cases",
+              "Data encapsulation, currying, memoization, once(), event handlers, callbacks"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sec15",
+      "n": "15",
+      "title": "Interview Answer Templates",
+      "badge": null,
+      "group": "Revision",
+      "blocks": [
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Q: \"What is a Closure in JavaScript?\""
+        },
+        {
+          "t": "callout",
+          "kind": "note",
+          "html": "<em>\"A closure is a function bundled together with its lexical scope. It allows an inner function to remember and access the variables of its outer function, even after the outer function has finished executing. Closures capture <strong>references</strong> to variables, not snapshots, meaning the inner function will see the updated value. They are formed at function definition time — not when the function is returned or called.\"</em>"
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Q: \"Do closures only work with <code>return</code>?\""
+        },
+        {
+          "t": "callout",
+          "kind": "note",
+          "html": "<em>\"No. A closure is formed whenever a function is defined inside another scope and references that scope's variables. The function can be returned, passed as a callback to setTimeout, used as an event handler, or called directly. The <code>return</code> keyword doesn't create the closure — it just makes it visible to the outside world. The closure exists from the moment the function is born.\"</em>"
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Q: \"How is the scope chain different from a closure?\""
+        },
+        {
+          "t": "callout",
+          "kind": "note",
+          "html": "<em>\"The scope chain is the mechanism — when a variable isn't found in the current scope, the engine walks up to the parent scope. A closure is what makes this mechanism work even after the parent function has finished executing. Normally, when a function's EC is destroyed, its variables are garbage collected. But if an inner function still references them, the closure preserves those variables so the scope chain still has something to walk up to. They're the same mechanism — closure just extends it beyond the parent's death.\"</em>"
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Q: \"Explain the setTimeout + loop problem and how to fix it.\""
+        },
+        {
+          "t": "callout",
+          "kind": "note",
+          "html": "<em>\"When you use <code>var</code> in a for loop with setTimeout, all callbacks share the same variable reference. By the time the callbacks fire, the loop has finished and the variable holds the final value. You can fix it two ways: using an IIFE to create a new scope per iteration, capturing the current value as a parameter, or simply using <code>let</code> which creates a new block-scoped binding per iteration.\"</em>"
+        }
+      ]
+    },
+    {
+      "id": "sec16",
+      "n": "16",
+      "title": "Practice Sheet — 10 Questions",
+      "badge": null,
+      "group": "Practice",
+      "blocks": [
+        {
+          "t": "p",
+          "html": "<strong>📝 Instructions:</strong> Predict exact output. State whether it's scope chain (parent alive) or closure (parent dead). Each question links to its answer."
+        },
+        {
+          "t": "question",
+          "n": 1,
+          "difficulty": "easy",
+          "html": "Is This a Closure?<br><strong>1)</strong> Output? <strong>2)</strong> Is sayHi forming a closure? Why or why not?",
+          "code": "function greet() {\n  let name = \"Parth\";\n  function sayHi() {\n    let greeting = \"Hello\";\n    console.log(greeting);\n  }\n  sayHi();\n}\ngreet();"
+        },
+        {
+          "t": "question",
+          "n": 2,
+          "difficulty": "easy",
+          "html": "Scope Chain or Closure?<br><strong>1)</strong> Output? <strong>2)</strong> Is outer() alive or dead when inner() accesses x?",
+          "code": "function outer() {\n  let x = 10;\n  function inner() { console.log(x); }\n  inner();\n}\nouter();"
+        },
+        {
+          "t": "question",
+          "n": 3,
+          "difficulty": "easy",
+          "html": "Now Make It a Real Closure<br><strong>1)</strong> Output? <strong>2)</strong> Is outer() alive when fn() runs? Where does x come from?",
+          "code": "function outer() {\n  let x = 10;\n  function inner() { console.log(x); }\n  return inner;\n}\nconst fn = outer();\nfn();"
+        },
+        {
+          "t": "question",
+          "n": 4,
+          "difficulty": "medium",
+          "html": "Passed, Not Returned<br><strong>1)</strong> Output at 1s, 2s, 3s? <strong>2)</strong> How is count accessible? <strong>3)</strong> Will the stack overflow?",
+          "code": "function setup() {\n  let count = 0;\n  setInterval(function() {\n    count++;\n    console.log(count);\n  }, 1000);\n}\nsetup();"
+        },
+        {
+          "t": "question",
+          "n": 5,
+          "difficulty": "medium",
+          "html": "Two Functions, One Variable",
+          "code": "function createPair() {\n  let secret = \"initial\";\n  function writer(val) { secret = val; }\n  function reader() { console.log(secret); }\n  return { writer, reader };\n}\nconst pair = createPair();\npair.reader();\npair.writer(\"updated\");\npair.reader();\npair.writer(\"final\");\npair.reader();"
+        },
+        {
+          "t": "question",
+          "n": 6,
+          "difficulty": "medium",
+          "html": "Reference, Not Snapshot<br><strong>1)</strong> Output after 2s? <strong>2)</strong> Is test() alive? <strong>3)</strong> Reference or snapshot?",
+          "code": "function test() {\n  let a = 1;\n  setTimeout(function() { console.log(a); }, 2000);\n  a = 100;\n}\ntest();"
+        },
+        {
+          "t": "question",
+          "n": 7,
+          "difficulty": "hard",
+          "html": "Closure + this Collision",
+          "code": "const obj = {\n  value: 42,\n  createFn: function() {\n    const value = 99;\n    return function() {\n      console.log(\"A:\", this.value);\n      console.log(\"B:\", value);\n    };\n  }\n};\nconst fn = obj.createFn();\nfn();   // non-strict mode"
+        },
+        {
+          "t": "question",
+          "n": 8,
+          "difficulty": "hard",
+          "html": "Event Handler Closure<br><strong>1)</strong> Is clickCount dead? <strong>2)</strong> Output after 3 clicks? <strong>3)</strong> Map the closure: outer, inner, variable.",
+          "code": "function attachHandler() {\n  let clickCount = 0;\n  document.getElementById(\"btn\").addEventListener(\"click\", function() {\n    clickCount++;\n    console.log(\"Clicked \" + clickCount + \" times\");\n  });\n}\nattachHandler();"
+        },
+        {
+          "t": "question",
+          "n": 9,
+          "difficulty": "expert",
+          "html": "Everything Combined<br><strong>1)</strong> All 4 outputs chronologically? <strong>2)</strong> Same count for all 3 functions?",
+          "code": "function buildCounter(name) {\n  let count = 0;\n  setTimeout(function() { count++; console.log(name+\": \"+count); }, 1000);\n  setTimeout(function() { count++; console.log(name+\": \"+count); }, 2000);\n  return function() { count++; console.log(name+\": \"+count); };\n}\nconst fn = buildCounter(\"Timer\");\nfn();\nfn();"
+        },
+        {
+          "t": "question",
+          "n": 10,
+          "difficulty": "expert",
+          "html": "Nested Closure Chain<br><strong>1)</strong> Two outputs? <strong>2)</strong> Trace the closure chain.",
+          "code": "function createMultiplier(x) {\n  return function(y) {\n    return function(z) {\n      console.log(x * y * z);\n    };\n  };\n}\nconst step1 = createMultiplier(2);\nconst step2 = step1(3);\nstep2(4);\ncreateMultiplier(5)(10)(2);"
+        }
+      ]
+    },
+    {
+      "id": "sec17",
+      "n": "17",
+      "title": "Answer Key",
+      "badge": null,
+      "group": "Practice",
+      "blocks": [
+        {
+          "t": "answer",
+          "n": 1,
+          "html": "Q1"
+        },
+        {
+          "t": "code",
+          "code": "\"Hello\"",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "<strong>NOT a closure.</strong> <code>sayHi</code> is defined inside <code>greet</code> (condition 1 ✅), but it only uses its OWN variable <code>greeting</code> — it never references <code>name</code> from <code>greet</code> (condition 2 ❌). No closure formed."
+        },
+        {
+          "t": "hr"
+        },
+        {
+          "t": "answer",
+          "n": 2,
+          "html": "Q2"
+        },
+        {
+          "t": "code",
+          "code": "10",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "<code>outer()</code> is <strong>still alive</strong> on the Call Stack when <code>inner()</code> runs. This is just <strong>normal scope chain lookup</strong> — the engine walks up and finds <code>x = 10</code> in the living parent. The closure reference exists but the parent is alive — nothing special needed."
+        },
+        {
+          "t": "hr"
+        },
+        {
+          "t": "answer",
+          "n": 3,
+          "html": "Q3"
+        },
+        {
+          "t": "code",
+          "code": "10",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "<code>outer()</code> is <strong>dead</strong> when <code>fn()</code> runs — its EC was destroyed after returning. <code>x</code> comes from the <strong>closure</strong> — the preserved <code>[[Scope]]</code> reference that <code>inner</code> carries. This is the \"scope chain surviving death\" in action."
+        },
+        {
+          "t": "hr"
+        },
+        {
+          "t": "answer",
+          "n": 4,
+          "html": "Q4"
+        },
+        {
+          "t": "code",
+          "code": "1 (at 1s), 2 (at 2s), 3 (at 3s)... forever",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "<code>setup()</code> finishes instantly. <code>count</code> survives via closure. Each callback runs, increments, logs, and <strong>completes</strong> before the next one fires. <strong>No stack overflow.</strong> To stop and allow GC: <code>clearInterval()</code>."
+        },
+        {
+          "t": "hr"
+        },
+        {
+          "t": "answer",
+          "n": 5,
+          "html": "Q5"
+        },
+        {
+          "t": "code",
+          "code": "\"initial\"\n\"updated\"\n\"final\"",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "Both <code>writer</code> and <code>reader</code> close over the <strong>same</strong> <code>secret</code> variable (same closure, same reference). <code>writer</code> modifies it, <code>reader</code> reads the updated value."
+        },
+        {
+          "t": "hr"
+        },
+        {
+          "t": "answer",
+          "n": 6,
+          "html": "Q6"
+        },
+        {
+          "t": "code",
+          "code": "100",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "<code>test()</code> is <strong>dead</strong> when the callback fires after 2 seconds. The callback accesses <code>a</code> through its closure. Closures capture <strong>references</strong>, not snapshots. <code>a</code> was updated to 100 synchronously before <code>test()</code> even finished. The callback sees 100."
+        },
+        {
+          "t": "hr"
+        },
+        {
+          "t": "answer",
+          "n": 7,
+          "html": "Q7"
+        },
+        {
+          "t": "code",
+          "code": "A: undefined\nB: 99",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "<code>this.value</code>: naked call → <code>this</code> = <code>window</code> → <code>window.value</code> doesn't exist → <code>undefined</code>. <code>value</code> (without <code>this</code>): closure captures the local variable <code>value = 99</code> from <code>createFn</code>'s scope. Closures capture variables, NOT <code>this</code>."
+        },
+        {
+          "t": "hr"
+        },
+        {
+          "t": "answer",
+          "n": 8,
+          "html": "Q8"
+        },
+        {
+          "t": "code",
+          "code": "\"Clicked 1 times\"\n\"Clicked 2 times\"\n\"Clicked 3 times\"",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "<code>clickCount</code> is NOT dead — the event handler callback holds a closure over it. <strong>Outer scope:</strong> <code>attachHandler</code>. <strong>Inner fn:</strong> anonymous click handler. <strong>Variable closed over:</strong> <code>clickCount</code>."
+        },
+        {
+          "t": "hr"
+        },
+        {
+          "t": "answer",
+          "n": 9,
+          "html": "Q9"
+        },
+        {
+          "t": "code",
+          "code": "Timer: 1     ← fn() call 1 (immediate)\nTimer: 2     ← fn() call 2 (immediate)\nTimer: 3     ← setTimeout #1 (after 1s)\nTimer: 4     ← setTimeout #2 (after 2s)",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "All 3 functions (returned fn + 2 setTimeout callbacks) close over the <strong>same</strong> <code>count</code> and <code>name</code>. They share one variable and increment it sequentially."
+        },
+        {
+          "t": "hr"
+        },
+        {
+          "t": "answer",
+          "n": 10,
+          "html": "Q10"
+        },
+        {
+          "t": "code",
+          "code": "24\n100",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "<code>createMultiplier(2)</code> → remembers <code>x = 2</code>. <code>step1(3)</code> → remembers <code>x = 2</code> AND <code>y = 3</code>. <code>step2(4)</code> → <code>2 × 3 × 4 = 24</code>. <code>createMultiplier(5)(10)(2)</code> → <code>5 × 10 × 2 = 100</code>. Each nested function forms a closure over all parent variables in its chain."
+        },
+        {
+          "t": "hr"
+        },
+        {
+          "t": "p",
+          "html": "Key Mental Models:"
+        },
+        {
+          "t": "p",
+          "html": "🔹 Two conditions: defined inside + references outer variable"
+        },
+        {
+          "t": "p",
+          "html": "🔹 Formed at birth. Delivery method (return/callback/setTimeout) is irrelevant."
+        },
+        {
+          "t": "p",
+          "html": "🔹 Closure = Scope Chain that survives parent's death"
+        },
+        {
+          "t": "p",
+          "html": "🔹 Captures REFERENCES, not snapshots. Captures variables, NOT <code>this</code>."
+        }
+      ]
+    }
+  ]
+}

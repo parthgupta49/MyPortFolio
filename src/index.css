@@ -1,4 +1,338 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+@import '@fontsource-variable/inter';
 
+/* Theme is driven by data-theme on <html>, resolved before first paint by the
+   inline script in index.html. This variant lets us write dark:* where a token
+   genuinely can't express the difference. */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+/* ────────────────────────────────────────────────────────────────
+   Palette
+   One accent. Everything else is a neutral or a semantic callout
+   colour the notes content actually requires.
+   ──────────────────────────────────────────────────────────────── */
+
+:root,
+[data-theme='dark'] {
+  --bg: #08090c;
+  --bg-soft: #0c0e13;
+  --surface: #101319;
+  --surface-2: #161a22;
+  --surface-3: #1c212b;
+
+  --border: #1f242e;
+  --border-strong: #2c333f;
+
+  --text: #e9ebef;
+  --text-muted: #99a1af;
+  /* Faint is still small text, so it must clear WCAG AA 4.5:1 on every
+     surface it sits on (bg, surface, surface-2). #7c8492 is 4.6:1 at worst. */
+  --text-faint: #7c8492;
+
+  --accent: #6ea8fe;
+  --accent-soft: #1b2b45;
+  --accent-text: #a8c9ff;
+
+  --info: #6ea8fe;
+  --tip: #4fd1b5;
+  --warn: #e3b341;
+  --danger: #f4776c;
+  --key: #b18cf0;
+  --note: #8c94a3;
+  --bonus: #e879b9;
+
+  --easy: #4fd1b5;
+  --medium: #e3b341;
+  --hard: #f4776c;
+  --expert: #b18cf0;
+
+  --code-bg: #0c0f15;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.5), 0 8px 24px -12px rgb(0 0 0 / 0.7);
+  --grain-opacity: 0.035;
+}
+
+[data-theme='light'] {
+  --bg: #fbfbfa;
+  --bg-soft: #f5f5f3;
+  --surface: #ffffff;
+  --surface-2: #f7f7f5;
+  --surface-3: #efefec;
+
+  --border: #e4e4e0;
+  --border-strong: #d2d2cc;
+
+  --text: #16181d;
+  --text-muted: #5c636f;
+  /* Same rule as dark: #69707c is 4.65:1 on surface-2, the worst case. */
+  --text-faint: #69707c;
+
+  --accent: #1560d4;
+  --accent-soft: #e8f0ff;
+  --accent-text: #0f4ba8;
+
+  --info: #1560d4;
+  --tip: #0f8a72;
+  --warn: #9a6700;
+  --danger: #c4392c;
+  --key: #7645c7;
+  --note: #656c78;
+  --bonus: #b03a86;
+
+  --easy: #0f8a72;
+  --medium: #9a6700;
+  --hard: #c4392c;
+  --expert: #7645c7;
+
+  --code-bg: #f7f7f5;
+  --shadow: 0 1px 2px rgb(16 18 23 / 0.04), 0 8px 24px -12px rgb(16 18 23 / 0.12);
+  --grain-opacity: 0.02;
+}
+
+/* Expose the tokens to Tailwind. `inline` keeps them as var() references so
+   they re-resolve when the theme flips, instead of being baked in at build. */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-soft: var(--bg-soft);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+
+  --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
+
+  --color-ink: var(--text);
+  --color-muted: var(--text-muted);
+  --color-faint: var(--text-faint);
+
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-text: var(--accent-text);
+
+  --color-info: var(--info);
+  --color-tip: var(--tip);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+  --color-key: var(--key);
+  --color-note: var(--note);
+  --color-bonus: var(--bonus);
+
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+
+  /* Fluid scale — no breakpoint jumps between phone and desktop. */
+  --text-display: clamp(2.6rem, 1.6rem + 4.6vw, 5.5rem);
+  --text-h1: clamp(2rem, 1.4rem + 2.6vw, 3.25rem);
+  --text-h2: clamp(1.4rem, 1.15rem + 1.1vw, 1.95rem);
+  --text-h3: clamp(1.12rem, 1.02rem + 0.45vw, 1.35rem);
+  --text-lead: clamp(1.05rem, 0.98rem + 0.36vw, 1.25rem);
+
+  --radius-card: 14px;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ────────────────────────────────────────────────────────────────
+   Base
+   ──────────────────────────────────────────────────────────────── */
+
+@layer base {
+  * {
+    min-width: 0;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    /* Sticky chapter nav must not cover the heading we jump to. */
+    scroll-padding-top: 6rem;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-synthesis-weight: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    overflow-wrap: break-word;
+  }
+
+  /* Whole-page grain. One fixed layer, painted once, never repainted on
+     scroll — much cheaper than the blurred gradient stack it replaces. */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: var(--grain-opacity);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* Browsers don't give <button> a pointer cursor, and Tailwind's preflight
+     doesn't add one. Set it once here so every button on the site agrees —
+     theme toggle, menu, tag filters, copy buttons, collapsibles. */
+  button:not(:disabled),
+  summary,
+  [role='button'] {
+    cursor: pointer;
+  }
+
+  ::selection {
+    background: var(--accent);
+    color: var(--bg);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 3px;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    letter-spacing: -0.022em;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  code,
+  pre {
+    font-family: var(--font-mono);
+    font-variant-ligatures: none;
+  }
+
+  /* Honour the OS setting — animation is decoration, never information. */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────
+   Utilities
+   ──────────────────────────────────────────────────────────────── */
+
+@layer utilities {
+  .shell {
+    width: min(100% - 2.5rem, 68rem);
+    margin-inline: auto;
+  }
+
+  .shell-wide {
+    width: min(100% - 2.5rem, 84rem);
+    margin-inline: auto;
+  }
+
+  .above-grain {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Scroll-triggered reveal. Starts hidden only when JS is there to
+     un-hide it, so a JS failure can never leave the page blank. */
+  .reveal {
+    opacity: 0;
+    transform: translateY(14px);
+    transition:
+      opacity 0.7s var(--ease-out),
+      transform 0.7s var(--ease-out);
+  }
+
+  .reveal.is-in {
+    opacity: 1;
+    transform: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* The dot beside the wordmark. A soft opacity pulse rather than a hard
+     on/off blink — a true blink reads as a rendering fault, and rapid
+     flashing is an accessibility problem. Animating opacity only keeps it on
+     the compositor, so it costs nothing while scrolling.
+     The reduced-motion rule in the base layer stops it automatically. */
+  .pulse {
+    animation: pulse 2.4s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.25;
+    }
+  }
+
+  /* Role rotator — the old build used a typing library for this. Pure CSS
+     instead: no JS, no re-renders, and it can't shift layout because every
+     line is stacked in the same grid cell. */
+  .rotator {
+    display: inline-grid;
+  }
+
+  .rotator > span {
+    grid-area: 1 / 1;
+    opacity: 0;
+    animation: rotate-role var(--rotator-duration, 10.5s) infinite;
+  }
+
+  .rotator > span:nth-child(2) {
+    animation-delay: calc(var(--rotator-duration, 10.5s) / 3);
+  }
+
+  .rotator > span:nth-child(3) {
+    animation-delay: calc(var(--rotator-duration, 10.5s) / 3 * 2);
+  }
+
+  /* Three roles, each delayed by a third of the cycle, so the visible window
+     must be a full third plus a slight overlap — otherwise the line reads
+     "I build" with nothing after it in the gaps. */
+  @keyframes rotate-role {
+    0% {
+      opacity: 0;
+      transform: translateY(0.35em);
+    }
+    3%,
+    31% {
+      opacity: 1;
+      transform: none;
+    }
+    36%,
+    100% {
+      opacity: 0;
+      transform: translateY(-0.35em);
+    }
+  }
+
+  /* One line only, always visible, when motion is unwelcome. */
+  @media (prefers-reduced-motion: reduce) {
+    .rotator > span {
+      animation: none;
+      opacity: 0;
+    }
+    .rotator > span:first-child {
+      opacity: 1;
+    }
+  }
+}

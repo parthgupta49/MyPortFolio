@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Currying &amp; Partial Application — Complete Notes</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Calibri, Arial, sans-serif; color: #1a1a1a; line-height: 1.7; background: #fff; }
+
+  .sidebar-toggle { position: fixed; top: 12px; left: 12px; z-index: 1001; background: #0078D4; color: #fff; border: none; width: 40px; height: 40px; border-radius: 8px; font-size: 1.4em; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+  .sidebar-toggle:hover { background: #106ebe; }
+  .sidebar { position: fixed; top: 0; left: 0; width: 290px; height: 100vh; background: #f0f4ff; border-right: 2px solid #0078D4; overflow-y: auto; z-index: 1000; transform: translateX(0); transition: transform 0.3s ease; padding: 60px 15px 20px 15px; }
+  .sidebar.collapsed { transform: translateX(-290px); }
+  .sidebar h3 { color: #0078D4; font-size: 1em; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 2px solid #0078D4; }
+  .sidebar a { display: block; padding: 5px 8px; color: #2b579a; text-decoration: none; font-size: 0.85em; border-radius: 4px; margin-bottom: 2px; }
+  .sidebar a:hover { background: #dce6f7; }
+  .sidebar .group-label { color: #555; font-weight: bold; font-size: 0.78em; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 12px; margin-bottom: 4px; padding-left: 8px; }
+
+  .main { margin-left: 290px; padding: 20px 30px 40px 30px; max-width: 990px; transition: margin-left 0.3s ease; }
+  .main.full { margin-left: 0; }
+
+  .title-block { text-align: center; padding: 25px 0; border-bottom: 4px solid #0078D4; margin-bottom: 25px; }
+  .title-block h1 { color: #0078D4; font-size: 2em; border: none; margin: 0; padding: 0; }
+  .title-block p { color: #555; font-size: 0.95em; margin: 3px 0; }
+
+  h1 { color: #0078D4; border-bottom: 3px solid #0078D4; padding-bottom: 8px; margin-top: 35px; font-size: 1.6em; }
+  h2 { color: #2b579a; margin-top: 25px; font-size: 1.3em; }
+  h3 { color: #444; margin-top: 18px; font-size: 1.1em; }
+  p { margin: 8px 0; }
+  ul, ol { padding-left: 24px; margin: 8px 0; }
+  li { margin-bottom: 6px; }
+
+  .section-header { cursor: pointer; display: flex; align-items: center; justify-content: space-between; padding: 10px 0; user-select: none; }
+  .section-header:hover h1 { color: #106ebe; }
+  .section-header .toggle-icon { font-size: 1.2em; color: #0078D4; transition: transform 0.3s; min-width: 24px; text-align: center; }
+  .section-header .toggle-icon.collapsed { transform: rotate(-90deg); }
+  .section-content { overflow: hidden; transition: max-height 0.4s ease; }
+  .section-content.collapsed { max-height: 0 !important; overflow: hidden; }
+
+  pre { background: #f5f5f5; border: 1px solid #ddd; border-left: 4px solid #0078D4; padding: 14px 18px; font-family: 'Consolas', 'Courier New', monospace; font-size: 0.92em; overflow-x: auto; border-radius: 4px; white-space: pre-wrap; margin: 12px 0; }
+  code { font-family: 'Consolas', monospace; background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-size: 0.88em; }
+
+  table { border-collapse: collapse; width: 100%; margin: 14px 0; }
+  th { background: #0078D4; color: #fff; padding: 10px 14px; text-align: left; font-size: 0.92em; }
+  td { border: 1px solid #ccc; padding: 9px 14px; font-size: 0.9em; vertical-align: top; }
+  tr:nth-child(even) { background: #f9f9f9; }
+
+  .note-box { background: #e8f4e8; border-left: 4px solid #2e7d32; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+  .note-box strong { color: #2e7d32; }
+  .warn-box { background: #fff3e0; border-left: 4px solid #e65100; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+  .warn-box strong { color: #e65100; }
+  .danger-box { background: #fce4ec; border-left: 4px solid #c62828; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+  .danger-box strong { color: #c62828; }
+  .blue-box { background: #e3f2fd; border-left: 4px solid #1565c0; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+  .blue-box strong { color: #1565c0; }
+  .purple-box { background: #f3e5f5; border-left: 4px solid #7b1fa2; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+  .purple-box strong { color: #7b1fa2; }
+
+  .question-block { background: #fafafa; border: 1px solid #e0e0e0; padding: 16px 20px; margin: 18px 0; border-radius: 6px; }
+  .question-block h2 { margin-top: 0; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.78em; font-weight: bold; margin-left: 5px; }
+  .tag-easy { background: #e8f5e9; color: #2e7d32; }
+  .tag-medium { background: #fff8e1; color: #f57f17; }
+  .tag-hard { background: #fce4ec; color: #c62828; }
+  .nav-link { display: inline-block; margin-top: 8px; font-size: 0.85em; color: #7b1fa2; text-decoration: none; font-weight: bold; }
+  .nav-link:hover { text-decoration: underline; }
+  .nav-link.back { color: #0078D4; }
+  .page-break { margin-top: 50px; border-top: 3px double #0078D4; padding-top: 20px; }
+
+  @media (max-width: 768px) {
+    .sidebar { width: 250px; }
+    .main { margin-left: 0; padding: 15px; }
+    .sidebar.collapsed { transform: translateX(-250px); }
+  }
+</style>
+</head>
+<body>
+
+<button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+
+<nav class="sidebar" id="sidebar">
+  <h3>📑 Currying — Navigation</h3>
+  <div class="group-label">📖 Core</div>
+  <a href="#sec1" onclick="scrollTo(event,'sec1')">1. What is Currying?</a>
+  <a href="#sec2" onclick="scrollTo(event,'sec2')">2. It's Just Closures</a>
+  <a href="#sec3" onclick="scrollTo(event,'sec3')">3. Two Ways: Closures &amp; bind()</a>
+  <a href="#sec4" onclick="scrollTo(event,'sec4')">4. Partial Application</a>
+  <div class="group-label">💡 Reality Check</div>
+  <a href="#sec5" onclick="scrollTo(event,'sec5')">5. ⚠️ When Currying Is USELESS</a>
+  <a href="#sec6" onclick="scrollTo(event,'sec6')">6. ✅ When It's Actually Useful</a>
+  <a href="#sec7" onclick="scrollTo(event,'sec7')">7. Currying in React</a>
+  <div class="group-label">📝 Revision</div>
+  <a href="#sec8" onclick="scrollTo(event,'sec8')">8. Cheat Sheet</a>
+  <a href="#sec9" onclick="scrollTo(event,'sec9')">9. Interview Answers</a>
+  <div class="group-label">🧪 Practice</div>
+  <a href="#sec10" onclick="scrollTo(event,'sec10')">10. Practice (6 Qs)</a>
+  <a href="#sec11" onclick="scrollTo(event,'sec11')">11. Answer Key</a>
+</nav>
+
+<div class="main" id="mainContent">
+
+<div class="title-block">
+  <h1>Currying &amp; Partial Application</h1>
+  <p><strong>Complete Revision Notes + Practice Sheet</strong></p>
+  <p>Chapter 6.5 — The JavaScript Codex | Week 1</p>
+  <p><em>Honest take: it's closures wearing a fancy name. Useful in a few real places, overused everywhere else.</em></p>
+</div>
+
+<!-- SEC 1 -->
+<div id="sec1">
+  <div class="section-header" onclick="toggleSection('c1')">
+    <h1 style="border:none;margin:0;padding:0;">1. What is Currying?</h1>
+    <span class="toggle-icon" id="icon-c1">▼</span>
+  </div>
+  <div class="section-content" id="c1">
+    <div class="danger-box">
+      <strong>Definition:</strong> Currying is a technique that transforms a function taking <strong>multiple arguments</strong> into a <strong>sequence of nested functions, each taking a single argument</strong> (or a subset). Instead of calling <code>fn(a, b, c)</code>, you call <code>fn(a)(b)(c)</code>.
+    </div>
+
+    <h3>Normal vs Curried — Side by Side:</h3>
+    <pre>// NORMAL — all arguments at once
+function multiply(a, b, c) {
+  return a * b * c;
+}
+multiply(2, 3, 4);      // 24
+
+// CURRIED — one argument at a time
+function curriedMultiply(a) {
+  return function(b) {
+    return function(c) {
+      return a * b * c;
+    };
+  };
+}
+curriedMultiply(2)(3)(4);   // 24</pre>
+
+    <h3>The Same Thing With Arrow Functions:</h3>
+    <pre>const curriedMultiply = a =&gt; b =&gt; c =&gt; a * b * c;
+
+curriedMultiply(2)(3)(4);   // 24</pre>
+
+    <p>Read the arrows left-to-right: <em>"take <code>a</code>, return a function that takes <code>b</code>, which returns a function that takes <code>c</code>, which returns <code>a * b * c</code>."</em></p>
+
+    <div class="blue-box">
+      <strong>🔑 The key difference:</strong> With a normal function you must supply ALL arguments at once. With a curried function, you can supply them <strong>one at a time, across separate calls</strong>, and the function "remembers" the earlier ones until it has everything it needs.
+    </div>
+  </div>
+</div>
+
+<!-- SEC 2 -->
+<div id="sec2">
+  <div class="section-header" onclick="toggleSection('c2')">
+    <h1 style="border:none;margin:0;padding:0;">2. It's Just Closures (Don't Overthink It)</h1>
+    <span class="toggle-icon" id="icon-c2">▼</span>
+  </div>
+  <div class="section-content" id="c2">
+    <div class="purple-box">
+      <strong>🧠 The honest truth:</strong> Currying is not some deep new concept. It is <strong>closures, used one level deeper</strong>. If you understand closures (Chapter 3), you already understand currying. The only "new" thing is the syntax.
+    </div>
+
+    <h3>Why It Works — The Closure Chain:</h3>
+    <pre>const add = a =&gt; b =&gt; a + b;
+
+const add5 = add(5);   // add(5) runs, `a` is set to 5
+                       // it returns the inner fn: b =&gt; 5 + b
+                       // the inner fn CLOSES OVER a = 5
+
+add5(3);   // 8   — inner fn remembers a=5 via closure, adds b=3</pre>
+
+    <h3>Step-by-Step Memory Trace:</h3>
+    <pre>const add5 = add(5);
+
+// 1. add(5) executes. `a = 5` in its scope.
+// 2. It returns `b =&gt; a + b`.
+// 3. add()'s execution context is DESTROYED...
+//    ...but the returned function kept a CLOSURE over `a = 5`.
+
+CLOSURE OF add5:
+┌──────────────┐
+│  a: 5        │  ← preserved from add's dead scope
+└──────────────┘
+       ↑
+     add5  ── when called with 3 → returns 5 + 3 = 8</pre>
+
+    <div class="note-box">
+      <strong>💡 If someone asks "how does currying work?"</strong> — the answer is one word: <strong>closures</strong>. Each returned function closes over the arguments passed to the functions before it.
+    </div>
+  </div>
+</div>
+
+<!-- SEC 3 -->
+<div id="sec3">
+  <div class="section-header" onclick="toggleSection('c3')">
+    <h1 style="border:none;margin:0;padding:0;">3. Two Ways to Curry — Closures &amp; bind()</h1>
+    <span class="toggle-icon" id="icon-c3">▼</span>
+  </div>
+  <div class="section-content" id="c3">
+    <p>There are two ways. Both achieve the same thing.</p>
+
+    <h2>Method 1 — Closures (the common way)</h2>
+    <pre>const multiply = x =&gt; y =&gt; x * y;
+
+const multiplyByTwo = multiply(2);    // x locked to 2 via closure
+multiplyByTwo(5);                      // 10
+
+const multiplyByThree = multiply(3);
+multiplyByThree(10);                   // 30</pre>
+
+    <h2>Method 2 — Using <code>bind()</code></h2>
+    <p>Remember <code>bind() from Chapter 4? It returns a NEW function with some arguments pre-set. That's currying too.</p>
+
+    <pre>const multiply = function(x, y) {
+  return x * y;
+};
+
+// bind(this, 2) pre-sets the FIRST argument (x) to 2:
+const multiplyByTwo = multiply.bind(this, 2);
+
+multiplyByTwo(5);   // 10  — 5 becomes y, x is already 2</pre>
+
+    <h3>bind() Edge Cases (worth knowing):</h3>
+    <table>
+      <tr><th>Code</th><th>Result</th><th>Why</th></tr>
+      <tr><td><code>multiply.bind(this, 2)(5)</code></td><td>10</td><td>x=2 preset, y=5 at call</td></tr>
+      <tr><td><code>multiply.bind(this, 2, 3)(5)</code></td><td>6</td><td>Both x=2, y=3 preset. The 5 is <strong>ignored</strong>.</td></tr>
+      <tr><td><code>multiply.bind(this)(2, 3)</code></td><td>6</td><td>Nothing preset, both passed at call</td></tr>
+    </table>
+
+    <h3>Comparison:</h3>
+    <table>
+      <tr><th></th><th>Closure method</th><th>bind() method</th></tr>
+      <tr><td>Mechanism</td><td>Nested functions + scope</td><td>Engine pre-sets arguments</td></tr>
+      <tr><td>Call style</td><td><code>fn(2)(5)</code></td><td><code>fn.bind(this, 2)(5)</code></td></tr>
+      <tr><td>Readability</td><td>Cleaner</td><td>More verbose</td></tr>
+      <tr><td>Most common?</td><td>✅ Yes</td><td>Rare in practice</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- SEC 4 -->
+<div id="sec4">
+  <div class="section-header" onclick="toggleSection('c4')">
+    <h1 style="border:none;margin:0;padding:0;">4. Partial Application (Cousin of Currying)</h1>
+    <span class="toggle-icon" id="icon-c4">▼</span>
+  </div>
+  <div class="section-content" id="c4">
+    <p>These two terms get confused constantly. Here's the honest, simple distinction:</p>
+
+    <table>
+      <tr><th>Term</th><th>Meaning</th></tr>
+      <tr><td><strong>Currying</strong></td><td>Transform <code>fn(a, b, c)</code> into <code>fn(a)(b)(c)</code> — one arg per call, strictly</td></tr>
+      <tr><td><strong>Partial Application</strong></td><td>Pre-fill SOME arguments now, supply the REST later. <code>fn(a, b)</code> then <code>partial(c)</code></td></tr>
+    </table>
+
+    <pre>// PARTIAL APPLICATION — pre-fill some, supply rest later
+function greet(greeting, name) {
+  return `${greeting}, ${name}!`;
+}
+
+const sayHello = greet.bind(this, "Hello");   // pre-fill greeting
+sayHello("Parth");     // "Hello, Parth!"
+sayHello("Deepika");   // "Hello, Deepika!"</pre>
+
+    <div class="note-box">
+      <strong>💡 Don't stress the distinction.</strong> In everyday conversation, people use "currying" loosely to mean both. The practical idea is the same: <strong>lock in some arguments now, provide the rest later, and reuse the specialized function.</strong>
+    </div>
+  </div>
+</div>
+
+<!-- SEC 5 -->
+<div id="sec5">
+  <div class="section-header" onclick="toggleSection('c5')">
+    <h1 style="border:none;margin:0;padding:0;">⚠️ 5. When Currying Is USELESS (Trust Your Instinct)</h1>
+    <span class="toggle-icon" id="icon-c5">▼</span>
+  </div>
+  <div class="section-content" id="c5">
+    <div class="danger-box">
+      <strong>Your skepticism is valid engineering taste.</strong> Most tutorials oversell currying. Here's when it's genuinely pointless — and rejecting it in these cases makes you a BETTER engineer, not a worse one.
+    </div>
+
+    <h3>❌ Useless Case 1 — Currying just to show off</h3>
+    <pre>// Pointless. Just write add(1, 2, 3).
+const add = a =&gt; b =&gt; c =&gt; a + b + c;
+add(1)(2)(3);   // 6
+
+// If you always have all 3 arguments at call-time,
+// currying adds NOTHING but confusion. Use a normal function.</pre>
+
+    <h3>❌ Useless Case 2 — When you never reuse the partial</h3>
+    <pre>// If you only ever call it once with all args, currying is wasted:
+const multiply = x =&gt; y =&gt; x * y;
+multiply(4)(5);   // 20  — why not just multiply(4, 5)?
+
+// Currying only pays off if you REUSE the intermediate function.</pre>
+
+    <div class="warn-box">
+      <strong>🎯 The rule:</strong> If you're going to supply all arguments at the same moment, and you won't reuse a partially-applied version — <strong>do NOT curry.</strong> A normal function is clearer, faster to read, and easier to debug. Choosing the simpler tool is a sign of maturity, not ignorance.
+    </div>
+  </div>
+</div>
+
+<!-- SEC 6 -->
+<div id="sec6">
+  <div class="section-header" onclick="toggleSection('c6')">
+    <h1 style="border:none;margin:0;padding:0;">✅ 6. When Currying Is ACTUALLY Useful</h1>
+    <span class="toggle-icon" id="icon-c6">▼</span>
+  </div>
+  <div class="section-content" id="c6">
+    <p>Three real cases where currying earns its place. Notice the common thread: <strong>you create a specialized function once, then reuse it.</strong></p>
+
+    <h3>✅ Use Case 1 — Specialized reusable functions</h3>
+    <pre>const isDivisibleBy = divisor =&gt; num =&gt; num % divisor === 0;
+
+const isEven = isDivisibleBy(2);        // reusable!
+const isMultipleOf5 = isDivisibleBy(5);
+
+[1,2,3,4,5,6].filter(isEven);           // [2, 4, 6]
+[5,10,12,15,20].filter(isMultipleOf5);  // [5, 10, 15, 20]
+
+// Cleaner than writing `n =&gt; n % 2 === 0` over and over.</pre>
+
+    <h3>✅ Use Case 2 — Reusable filters (your build task!)</h3>
+    <pre>const filterBy = key =&gt; value =&gt; arr =&gt;
+  arr.filter(item =&gt; item?.[key] === value);
+
+const filterEngineers = filterBy("role")("engineer");
+const filterManagers  = filterBy("role")("manager");
+
+filterEngineers(users);   // all engineers
+filterManagers(users);    // all managers
+
+// You built the filter logic once. Now spin up specialized
+// filters on demand. This is currying doing real work.</pre>
+
+    <h3>✅ Use Case 3 — Configuration set once, reused many times</h3>
+    <pre>const createLogger = prefix =&gt; message =&gt;
+  console.log(`[${prefix}] ${message}`);
+
+const errorLog = createLogger("ERROR");
+const infoLog  = createLogger("INFO");
+
+errorLog("Database down");    // [ERROR] Database down
+infoLog("Server started");    // [INFO] Server started</pre>
+
+    <div class="blue-box">
+      <strong>🔑 The common thread:</strong> In every useful case, you <strong>lock in a configuration once</strong> (the divisor, the key, the prefix) and <strong>reuse the specialized function many times</strong>. That reuse is what justifies currying. No reuse = don't curry.
+    </div>
+  </div>
+</div>
+
+<!-- SEC 7 -->
+<div id="sec7">
+  <div class="section-header" onclick="toggleSection('c7')">
+    <h1 style="border:none;margin:0;padding:0;">7. Currying in React (Where You'll Actually Meet It)</h1>
+    <span class="toggle-icon" id="icon-c7">▼</span>
+  </div>
+  <div class="section-content" id="c7">
+    <div class="purple-box">
+      <strong>⭐ THIS is the moment currying will click for you</strong> — not in a contrived <code>add(1)(2)(3)</code>, but in real React code. When you reach Week 5-7 of your roadmap, you'll write this pattern without even thinking about it.
+    </div>
+
+    <h3>The Classic React Pattern — Event Handler With an Argument:</h3>
+    <pre>// A curried event handler:
+const handleDelete = (id) =&gt; (event) =&gt; {
+  console.log("Deleting item", id);
+  // ...delete logic
+};
+
+// In JSX — rendering a list of delete buttons:
+{items.map(item =&gt; (
+  &lt;button onClick={handleDelete(item.id)}&gt;
+    Delete
+  &lt;/button&gt;
+))}</pre>
+
+    <h3>Why Currying Is Needed Here:</h3>
+    <p>The <code>onClick</code> handler automatically receives the <code>event</code> object. But you ALSO need to know WHICH item's button was clicked (the <code>id</code>).</p>
+
+    <ul>
+      <li><code>handleDelete(item.id)</code> runs during render — it locks in the <code>id</code> and returns the actual handler.</li>
+      <li>When the button is clicked later, React calls that returned handler with the <code>event</code>.</li>
+      <li>The returned handler remembers <code>id</code> via closure. 🎯</li>
+    </ul>
+
+    <div class="warn-box">
+      <strong>⚠️ Common beginner mistake:</strong>
+      <pre>// ❌ WRONG — calls handleDelete IMMEDIATELY during render:
+&lt;button onClick={handleDelete(item.id)}&gt;   // only works if curried!
+
+// ❌ WRONG — passing args the naive way runs it on every render:
+&lt;button onClick={handleDelete(item.id, event)}&gt;   // event undefined here
+
+// ✅ RIGHT — either curry (above) or wrap in arrow:
+&lt;button onClick={(e) =&gt; handleDelete(item.id, e)}&gt;</pre>
+      Both the curried version and the arrow-wrap version work. You'll see both in real codebases.
+    </div>
+
+    <div class="note-box">
+      <strong>💡 Bottom line:</strong> You don't need to force currying into your own code now. But when React hands you this event-handler situation, you'll recognize it — and it'll finally feel useful instead of academic.
+    </div>
+  </div>
+</div>
+
+<!-- SEC 8 -->
+<div id="sec8">
+  <div class="section-header" onclick="toggleSection('c8')">
+    <h1 style="border:none;margin:0;padding:0;">8. Master Cheat Sheet</h1>
+    <span class="toggle-icon" id="icon-c8">▼</span>
+  </div>
+  <div class="section-content" id="c8">
+    <table>
+      <tr><th>Concept</th><th>Key Point</th></tr>
+      <tr><td>Currying</td><td>Transform <code>fn(a,b,c)</code> → <code>fn(a)(b)(c)</code>. One arg per call.</td></tr>
+      <tr><td>How it works</td><td>Closures. Each returned function remembers earlier arguments.</td></tr>
+      <tr><td>Two ways</td><td>Nested closures (common) OR <code>bind()</code> (rare)</td></tr>
+      <tr><td>Arrow syntax</td><td><code>a =&gt; b =&gt; c =&gt; a + b + c</code></td></tr>
+      <tr><td>Partial application</td><td>Pre-fill SOME args, supply rest later (e.g. via <code>bind</code>)</td></tr>
+      <tr><td>When USELESS</td><td>All args available at once + no reuse → use a normal function</td></tr>
+      <tr><td>When USEFUL</td><td>Lock config once, reuse specialized fn many times</td></tr>
+      <tr><td>Real cases</td><td>Reusable filters/predicates, loggers, React event handlers</td></tr>
+      <tr><td>The honest truth</td><td>It's closures with fancier syntax. Don't overuse it.</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- SEC 9 -->
+<div id="sec9">
+  <div class="section-header" onclick="toggleSection('c9')">
+    <h1 style="border:none;margin:0;padding:0;">9. Interview Answer Templates</h1>
+    <span class="toggle-icon" id="icon-c9">▼</span>
+  </div>
+  <div class="section-content" id="c9">
+    <h3>Q: "What is currying?"</h3>
+    <div class="note-box" style="line-height:1.8;">
+      <em>"Currying is a technique that transforms a function taking multiple arguments into a sequence of functions that each take a single argument. So instead of <code>fn(a, b, c)</code>, you call <code>fn(a)(b)(c)</code>. It works entirely through closures — each returned function remembers the arguments passed to the functions before it. You can implement it with nested functions or using <code>bind()</code>."</em>
+    </div>
+
+    <h3>Q: "How does currying work under the hood?"</h3>
+    <div class="note-box" style="line-height:1.8;">
+      <em>"Through closures. When the outer function is called with the first argument, it returns an inner function that closes over that argument. Even after the outer function's execution context is destroyed, the inner function retains access to that argument via the closure. This chains all the way down until all arguments are collected and the final result is computed."</em>
+    </div>
+
+    <h3>Q: "When would you actually use currying?"</h3>
+    <div class="note-box" style="line-height:1.8;">
+      <em>"When I want to create specialized, reusable functions by locking in some configuration up front. For example, a <code>filterBy(key)(value)</code> function lets me build specific filters like 'filter by role engineer' once and reuse them. In React, curried event handlers are common — like <code>onClick={handleDelete(id)}</code> — where I lock in the item id and the handler receives the event later. But I wouldn't curry if I always have all arguments at once and won't reuse the partial — a normal function is clearer there."</em>
+    </div>
+
+    <div class="warn-box">
+      <strong>🎯 Interview power move:</strong> Mentioning that you know <em>when NOT to curry</em> signals maturity. Junior devs overuse patterns; senior devs know the tradeoffs. Saying "I wouldn't curry here because there's no reuse" is more impressive than blindly currying everything.
+    </div>
+  </div>
+</div>
+
+<!-- SEC 10: PRACTICE -->
+<div class="page-break" id="sec10">
+  <div class="section-header" onclick="toggleSection('c10')">
+    <h1 style="border:none;margin:0;padding:0;">10. Practice Sheet — 6 Questions</h1>
+    <span class="toggle-icon" id="icon-c10">▼</span>
+  </div>
+  <div class="section-content" id="c10">
+    <p><strong>📝 Instructions:</strong> Predict outputs and answer the reasoning questions.</p>
+
+<div class="question-block" id="q1">
+<h2>Q1 — Basic Trace <span class="tag tag-easy">Easy</span></h2>
+<pre>const add = a =&gt; b =&gt; a + b;
+
+console.log(add(3)(4));
+const add10 = add(10);
+console.log(add10(5));
+console.log(typeof add10);</pre>
+<p><strong>1)</strong> All 3 outputs?</p>
+<a class="nav-link" href="#ans1">→ See Answer</a>
+</div>
+
+<div class="question-block" id="q2">
+<h2>Q2 — Three Levels <span class="tag tag-easy">Easy</span></h2>
+<pre>const vol = l =&gt; w =&gt; h =&gt; l * w * h;
+
+console.log(vol(2)(3)(4));
+const base = vol(5)(5);
+console.log(base(2));
+console.log(typeof base);</pre>
+<p><strong>1)</strong> All 3 outputs?</p>
+<p><strong>2)</strong> What is <code>base</code>?</p>
+<a class="nav-link" href="#ans2">→ See Answer</a>
+</div>
+
+<div class="question-block" id="q3">
+<h2>Q3 — bind() Currying <span class="tag tag-medium">Medium</span></h2>
+<pre>function multiply(x, y) {
+  return x * y;
+}
+
+const double = multiply.bind(this, 2);
+const preset = multiply.bind(this, 4, 5);
+
+console.log(double(10));
+console.log(preset(99));</pre>
+<p><strong>1)</strong> Both outputs?</p>
+<p><strong>2)</strong> Why does the <code>99</code> not matter in the second one?</p>
+<a class="nav-link" href="#ans3">→ See Answer</a>
+</div>
+
+<div class="question-block" id="q4">
+<h2>Q4 — Useful or Useless? <span class="tag tag-medium">Medium</span></h2>
+<p>For each snippet, say whether currying is <strong>justified</strong> or <strong>pointless</strong>, and why:</p>
+<pre>// Snippet A
+const sum = a =&gt; b =&gt; a + b;
+console.log(sum(3)(4));   // called once, all args available
+
+// Snippet B
+const greaterThan = min =&gt; n =&gt; n &gt; min;
+const over18 = greaterThan(18);
+[15, 20, 25, 10].filter(over18);</pre>
+<a class="nav-link" href="#ans4">→ See Answer</a>
+</div>
+
+<div class="question-block" id="q5">
+<h2>Q5 — Build a Curried Filter <span class="tag tag-medium">Medium</span></h2>
+<p>Write a curried <code>filterBy</code> that takes a <code>key</code>, then a <code>value</code>, then an <code>array</code>, and returns matching objects.</p>
+<pre>const filterBy = /* your code */;
+
+const users = [
+  { name: "Parth", role: "engineer" },
+  { name: "Deepika", role: "manager" },
+  { name: "Rahul", role: "engineer" }
+];
+
+const engineers = filterBy("role")("engineer");
+console.log(engineers(users));
+// [{ name: "Parth", ... }, { name: "Rahul", ... }]</pre>
+<a class="nav-link" href="#ans5">→ See Answer</a>
+</div>
+
+<div class="question-block" id="q6">
+<h2>Q6 — React Handler <span class="tag tag-hard">Hard</span></h2>
+<p>Conceptual — no running needed.</p>
+<pre>const handleClick = (id) =&gt; (event) =&gt; {
+  console.log("Clicked:", id);
+};
+
+// In JSX:
+&lt;button onClick={handleClick(42)}&gt;Click&lt;/button&gt;</pre>
+<p><strong>1)</strong> When does <code>handleClick(42)</code> run — during render, or on click?</p>
+<p><strong>2)</strong> When does the inner function (the one logging) run?</p>
+<p><strong>3)</strong> How does the inner function know <code>id</code> is 42?</p>
+<a class="nav-link" href="#ans6">→ See Answer</a>
+</div>
+
+  </div>
+</div>
+
+<!-- SEC 11: ANSWERS -->
+<div class="page-break" id="sec11">
+  <div class="section-header" onclick="toggleSection('c11')">
+    <h1 style="border:none;margin:0;padding:0;">11. Answer Key</h1>
+    <span class="toggle-icon" id="icon-c11">▼</span>
+  </div>
+  <div class="section-content" id="c11">
+
+<h2 id="ans1">Q1 — Answer</h2>
+<pre>7
+15
+"function"</pre>
+<p><strong>Explanation:</strong> <code>add(3)(4)</code> → 3+4 = 7. <code>add(10)</code> returns a function (closing over a=10), stored in <code>add10</code>. <code>add10(5)</code> → 10+5 = 15. <code>add10</code> is a function, not a number — it's the inner <code>b =&gt; a + b</code> waiting for its second argument.</p>
+<a class="nav-link back" href="#q1">← Back to Question 1</a><hr>
+
+<h2 id="ans2">Q2 — Answer</h2>
+<pre>24
+50
+"function"</pre>
+<p><strong>Explanation:</strong> <code>vol(2)(3)(4)</code> → 2×3×4 = 24. <code>vol(5)(5)</code> locks l=5 and w=5, returns a function waiting for h — that's <code>base</code>. <code>base(2)</code> → 5×5×2 = 50. <code>base</code> is a function (the innermost <code>h =&gt; l * w * h</code> with l and w already closed over).</p>
+<a class="nav-link back" href="#q2">← Back to Question 2</a><hr>
+
+<h2 id="ans3">Q3 — Answer</h2>
+<pre>20
+20</pre>
+<p><strong>Explanation:</strong> <code>double = multiply.bind(this, 2)</code> presets x=2. <code>double(10)</code> → 2×10 = 20. <code>preset = multiply.bind(this, 4, 5)</code> presets BOTH x=4 and y=5. So <code>preset(99)</code> → 4×5 = 20. The <strong>99 is ignored</strong> because both parameters were already filled by bind — there's no third parameter for 99 to land in.</p>
+<a class="nav-link back" href="#q3">← Back to Question 3</a><hr>
+
+<h2 id="ans4">Q4 — Answer</h2>
+<p><strong>Snippet A — POINTLESS.</strong> All arguments are available at call time (<code>sum(3)(4)</code>), and the result is used once with no reuse of a partial. This should just be <code>const sum = (a, b) =&gt; a + b; sum(3, 4);</code>. Currying adds only confusion here.</p>
+<p><strong>Snippet B — JUSTIFIED.</strong> <code>greaterThan(18)</code> creates a reusable <code>over18</code> predicate that reads cleanly and could be reused across multiple filters. Locking in the config (18) and reusing the specialized function is exactly when currying earns its place.</p>
+<a class="nav-link back" href="#q4">← Back to Question 4</a><hr>
+
+<h2 id="ans5">Q5 — Answer</h2>
+<pre>// Readable version:
+const filterBy = function(key) {
+  return function(value) {
+    return function(arr) {
+      return arr.filter(item =&gt; item?.[key] === value);
+    };
+  };
+};
+
+// Arrow version (same thing):
+const filterBy = key =&gt; value =&gt; arr =&gt;
+  arr.filter(item =&gt; item?.[key] === value);</pre>
+<p><strong>Explanation:</strong> Three nested functions. <code>filterBy("role")</code> locks the key, <code>("engineer")</code> locks the value, and the final call receives the array and does the filtering. The <code>?.[key]</code> optional chaining safely handles objects missing that key. This is currying doing genuine work — you can now build <code>filterEngineers</code>, <code>filterManagers</code>, etc. and reuse them.</p>
+<a class="nav-link back" href="#q5">← Back to Question 5</a><hr>
+
+<h2 id="ans6">Q6 — Answer</h2>
+<p><strong>1)</strong> <code>handleClick(42)</code> runs <strong>during render</strong> — React evaluates it while building the JSX. It locks in <code>id = 42</code> and returns the inner function.</p>
+<p><strong>2)</strong> The inner function (the one that logs) runs <strong>on click</strong> — React stores it as the click handler and calls it with the <code>event</code> when the user clicks.</p>
+<p><strong>3)</strong> Via <strong>closure</strong>. When <code>handleClick(42)</code> ran, the returned inner function closed over <code>id = 42</code>. Even though <code>handleClick</code>'s execution finished during render, the inner function preserved <code>id</code> and can access it whenever the click eventually fires.</p>
+<a class="nav-link back" href="#q6">← Back to Question 6</a>
+
+<hr>
+<div style="text-align:center;margin-top:25px;padding:18px;background:#e3f2fd;border-radius:8px;">
+  <p style="font-size:1.15em;font-weight:bold;color:#0078D4;">Key Mental Models:</p>
+  <p style="font-weight:bold;">🔹 Currying = closures with fancier syntax. Nothing more.</p>
+  <p style="font-weight:bold;">🔹 fn(a)(b)(c) — each call locks one arg via closure</p>
+  <p style="font-weight:bold;">🔹 USELESS if all args available + no reuse → use a normal function</p>
+  <p style="font-weight:bold;">🔹 USEFUL for reusable specialized functions (filters, loggers, React handlers)</p>
+  <p style="font-weight:bold;">🔹 Knowing when NOT to curry = engineering maturity</p>
+</div>
+
+  </div>
+</div>
+
+</div><!-- end main -->
+
+<script>
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('collapsed');
+  document.getElementById('mainContent').classList.toggle('full');
+}
+function scrollTo(e, id) {
+  e.preventDefault();
+  const el = document.getElementById(id);
+  if (el) {
+    const cId = 'c' + id.replace('sec','');
+    const c = document.getElementById(cId);
+    if (c && c.classList.contains('collapsed')) toggleSection(cId);
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  if (window.innerWidth <= 768) {
+    document.getElementById('sidebar').classList.add('collapsed');
+    document.getElementById('mainContent').classList.add('full');
+  }
+}
+function toggleSection(id) {
+  const el = document.getElementById(id);
+  const icon = document.getElementById('icon-' + id);
+  if (el.classList.contains('collapsed')) {
+    el.classList.remove('collapsed');
+    el.style.maxHeight = el.scrollHeight + 10000 + 'px';
+    if (icon) icon.classList.remove('collapsed');
+  } else {
+    el.classList.add('collapsed');
+    el.style.maxHeight = '0px';
+    if (icon) icon.classList.add('collapsed');
+  }
+}
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.section-content').forEach(el => {
+    el.style.maxHeight = el.scrollHeight + 10000 + 'px';
+  });
+});
+</script>
+</body>
+</html>

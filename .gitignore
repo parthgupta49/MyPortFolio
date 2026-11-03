@@ -1,0 +1,25 @@
+node_modules/
+dist/
+build/
+
+.DS_Store
+*.local
+.env
+.env.*
+!.env.example
+
+.vite/
+*.log
+npm-debug.log*
+
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Personal documents dropped into the project root (certificates, résumés).
+# The site links to hosted copies; the files themselves must never be committed.
+/*.pdf
+
+# Terms the content guard keeps out of the site (scripts/build-notes.mjs, section 1).
+# Local only, so the repository never names them.
+content/.blocklist

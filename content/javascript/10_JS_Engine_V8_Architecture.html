@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JS Engine &amp; V8 Architecture — Complete Notes</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Calibri, Arial, sans-serif; color: #1a1a1a; line-height: 1.7; background: #fff; }
+  .sidebar-toggle { position: fixed; top: 12px; left: 12px; z-index: 1001; background: #0078D4; color: #fff; border: none; width: 40px; height: 40px; border-radius: 8px; font-size: 1.4em; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+  .sidebar-toggle:hover { background: #106ebe; }
+  .sidebar { position: fixed; top: 0; left: 0; width: 300px; height: 100vh; background: #f0f4ff; border-right: 2px solid #0078D4; overflow-y: auto; z-index: 1000; transform: translateX(0); transition: transform 0.3s ease; padding: 60px 15px 20px 15px; }
+  .sidebar.collapsed { transform: translateX(-300px); }
+  .sidebar h3 { color: #0078D4; font-size: 1em; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 2px solid #0078D4; }
+  .sidebar a { display: block; padding: 5px 8px; color: #2b579a; text-decoration: none; font-size: 0.85em; border-radius: 4px; margin-bottom: 2px; }
+  .sidebar a:hover { background: #dce6f7; }
+  .sidebar .group-label { color: #555; font-weight: bold; font-size: 0.78em; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 12px; margin-bottom: 4px; padding-left: 8px; }
+  .main { margin-left: 300px; padding: 20px 30px 40px 30px; max-width: 990px; transition: margin-left 0.3s ease; }
+  .main.full { margin-left: 0; }
+  .title-block { text-align: center; padding: 25px 0; border-bottom: 4px solid #0078D4; margin-bottom: 25px; }
+  .title-block h1 { color: #0078D4; font-size: 2em; border: none; margin: 0; padding: 0; }
+  .title-block p { color: #555; font-size: 0.95em; margin: 3px 0; }
+  h1 { color: #0078D4; border-bottom: 3px solid #0078D4; padding-bottom: 8px; margin-top: 35px; font-size: 1.6em; }
+  h2 { color: #2b579a; margin-top: 25px; font-size: 1.3em; }
+  h3 { color: #444; margin-top: 18px; font-size: 1.1em; }
+  p { margin: 8px 0; }
+  ul, ol { padding-left: 24px; margin: 8px 0; }
+  li { margin-bottom: 6px; }
+  .section-header { cursor: pointer; display: flex; align-items: center; justify-content: space-between; padding: 10px 0; user-select: none; }
+  .section-header:hover h1 { color: #106ebe; }
+  .section-header .toggle-icon { font-size: 1.2em; color: #0078D4; transition: transform 0.3s; min-width: 24px; text-align: center; }
+  .section-header .toggle-icon.collapsed { transform: rotate(-90deg); }
+  .section-content { overflow: hidden; transition: max-height 0.4s ease; }
+  .section-content.collapsed { max-height: 0 !important; overflow: hidden; }
+  pre { background: #f5f5f5; border: 1px solid #ddd; border-left: 4px solid #0078D4; padding: 14px 18px; font-family: 'Consolas', 'Courier New', monospace; font-size: 0.9em; overflow-x: auto; border-radius: 4px; white-space: pre-wrap; margin: 12px 0; line-height: 1.55; }
+  code { font-family: 'Consolas', monospace; background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-size: 0.88em; }
+  table { border-collapse: collapse; width: 100%; margin: 14px 0; }
+  th { background: #0078D4; color: #fff; padding: 10px 14px; text-align: left; font-size: 0.92em; }
+  td { border: 1px solid #ccc; padding: 9px 14px; font-size: 0.9em; vertical-align: top; }
+  tr:nth-child(even) { background: #f9f9f9; }
+  .note-box { background: #e8f4e8; border-left: 4px solid #2e7d32; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+  .note-box strong { color: #2e7d32; }
+  .warn-box { background: #fff3e0; border-left: 4px solid #e65100; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+  .warn-box strong { color: #e65100; }
+  .danger-box { background: #fce4ec; border-left: 4px solid #c62828; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+  .danger-box strong { color: #c62828; }
+  .blue-box { background: #e3f2fd; border-left: 4px solid #1565c0; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+  .blue-box strong { color: #1565c0; }
+  .purple-box { background: #f3e5f5; border-left: 4px solid #7b1fa2; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+  .purple-box strong { color: #7b1fa2; }
+  .bonus-box { background: #fffde7; border: 2px dashed #f9a825; padding: 12px 16px; margin: 12px 0; border-radius: 6px; }
+  .bonus-box strong { color: #f57f17; }
+  .question-block { background: #fafafa; border: 1px solid #e0e0e0; padding: 16px 20px; margin: 18px 0; border-radius: 6px; }
+  .question-block h2 { margin-top: 0; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.78em; font-weight: bold; margin-left: 5px; }
+  .tag-easy { background: #e8f5e9; color: #2e7d32; }
+  .tag-medium { background: #fff8e1; color: #f57f17; }
+  .tag-hard { background: #fce4ec; color: #c62828; }
+  .tag-bonus { background: #fffde7; color: #f57f17; border: 1px solid #f9a825; }
+  .nav-link { display: inline-block; margin-top: 8px; font-size: 0.85em; color: #7b1fa2; text-decoration: none; font-weight: bold; }
+  .nav-link:hover { text-decoration: underline; }
+  .nav-link.back { color: #0078D4; }
+  .page-break { margin-top: 50px; border-top: 3px double #0078D4; padding-top: 20px; }
+  @media (max-width: 768px) { .sidebar { width: 260px; } .main { margin-left: 0; padding: 15px; } .sidebar.collapsed { transform: translateX(-260px); } }
+</style>
+</head>
+<body>
+<button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+<nav class="sidebar" id="sidebar">
+  <h3>📑 JS Engine &amp; V8 — Nav</h3>
+  <div class="group-label">📖 The Big Picture</div>
+  <a href="#sec1" onclick="scrollTo(event,'sec1')">1. Runtime Environment</a>
+  <a href="#sec2" onclick="scrollTo(event,'sec2')">2. Browser vs Node vs Others</a>
+  <a href="#sec3" onclick="scrollTo(event,'sec3')">3. What IS a JS Engine?</a>
+  <a href="#sec4" onclick="scrollTo(event,'sec4')">4. ECMAScript &amp; The Engines</a>
+  <div class="group-label">⚙️ Inside the Engine</div>
+  <a href="#sec5" onclick="scrollTo(event,'sec5')">5. ⭐ The 3 Steps</a>
+  <a href="#sec6" onclick="scrollTo(event,'sec6')">6. Step 1 — Parsing (AST)</a>
+  <a href="#sec7" onclick="scrollTo(event,'sec7')">7. Interpreter vs Compiler</a>
+  <a href="#sec8" onclick="scrollTo(event,'sec8')">8. ⭐ Step 2 — JIT Compilation</a>
+  <a href="#sec9" onclick="scrollTo(event,'sec9')">9. Step 3 — Execution</a>
+  <a href="#sec10" onclick="scrollTo(event,'sec10')">10. Garbage Collection</a>
+  <a href="#sec11" onclick="scrollTo(event,'sec11')">11. Why Browsers Compete</a>
+  <div class="group-label">🎁 Bonus / Advanced</div>
+  <a href="#sec11a" onclick="scrollTo(event,'sec11a')">11a. ⚡ V8 Optimizations</a>
+  <a href="#sec11b" onclick="scrollTo(event,'sec11b')">11b. 🏷️ V8 Codenames (Trivia)</a>
+  <div class="group-label">📝 Revision</div>
+  <a href="#sec12" onclick="scrollTo(event,'sec12')">12. Cheat Sheet</a>
+  <a href="#sec13" onclick="scrollTo(event,'sec13')">13. Interview Answers</a>
+  <div class="group-label">🧪 Practice</div>
+  <a href="#sec14" onclick="scrollTo(event,'sec14')">14. Practice (8 Qs)</a>
+  <a href="#sec15" onclick="scrollTo(event,'sec15')">15. Answer Key</a>
+</nav>
+<div class="main" id="mainContent">
+<div class="title-block">
+  <h1>JS Engine &amp; V8 Architecture</h1>
+  <p><strong>Complete Revision Notes + Practice Sheet</strong></p>
+  <p>Companion to Chapter 7 — The JavaScript Codex | Week 2</p>
+  <p><em>What's actually inside the engine that runs your code — parsing, JIT compilation, execution, garbage collection, and V8's optimizations.</em></p>
+  <p><em>🔗 Companion file: The Event Loop (how the engine schedules async work)</em></p>
+</div>
+
+<!-- SEC 1 -->
+<div id="sec1">
+  <div class="section-header" onclick="toggleSection('c1')"><h1 style="border:none;margin:0;padding:0;">1. The JavaScript Runtime Environment</h1><span class="toggle-icon" id="icon-c1">▼</span></div>
+  <div class="section-content" id="c1">
+    <div class="danger-box"><strong>Big idea:</strong> "JavaScript runs everywhere" — browsers, servers, smart watches, robots, IoT devices, even lightbulbs. That's only possible because each of those places provides a <strong>JavaScript Runtime Environment (JRE)</strong>. The JRE is the <strong>big container</strong> that has everything needed to run JS code. Without it, JS cannot run.</div>
+    <h3>What's inside a Runtime Environment?</h3>
+    <table>
+      <tr><th>Component</th><th>Role</th></tr>
+      <tr><td><strong>JS Engine</strong></td><td>The "heart" — actually runs the code (e.g. V8)</td></tr>
+      <tr><td><strong>Web APIs / APIs</strong></td><td>Superpowers connecting to the outer world: timers, fetch, DOM, localStorage, or custom hardware APIs</td></tr>
+      <tr><td><strong>Event Loop</strong></td><td>Coordinates async callbacks (see companion notes)</td></tr>
+      <tr><td><strong>Callback &amp; Microtask Queues</strong></td><td>Where waiting callbacks sit</td></tr>
+    </table>
+    <div class="note-box"><strong>💡 Custom device example:</strong> To run JS on a smart water cooler, you just install a JRE on it and provide the necessary APIs — e.g. a <code>getWaterLevel()</code> API. The engine runs the JS; the environment provides the device-specific superpowers.</div>
+    <div class="blue-box"><strong>🔑 The key insight:</strong> The JS <strong>Engine</strong> alone can't do much — it can only run pure JavaScript logic. It's the surrounding <strong>Runtime Environment</strong> that gives it superpowers (like <code>setTimeout</code> or <code>fetch</code>). Different environments provide different superpowers. That's why JS behaves differently in a browser vs Node.js.</div>
+  </div>
+</div>
+
+<!-- SEC 2 -->
+<div id="sec2">
+  <div class="section-header" onclick="toggleSection('c2')"><h1 style="border:none;margin:0;padding:0;">2. Browser vs Node.js vs Other Environments</h1><span class="toggle-icon" id="icon-c2">▼</span></div>
+  <div class="section-content" id="c2">
+    <p>The most famous JRE is the <strong>browser</strong>. Every browser has a JS engine inside it. But it's not the only one.</p>
+    <table>
+      <tr><th>Environment</th><th>What makes it special</th></tr>
+      <tr><td><strong>Browser</strong></td><td>Has a JS engine + Web APIs (DOM, fetch, localStorage, timers). Runs JS on the client.</td></tr>
+      <tr><td><strong>Node.js</strong></td><td>An open-source C++ program that provides a JRE <em>outside</em> the browser (on servers). Uses Google's V8 engine, but provides different superpowers (file system, HTTP server modules) instead of the DOM.</td></tr>
+      <tr><td><strong>Others</strong></td><td>Smart watches, IoT devices, embedded systems — each with a JRE tailored to its capabilities.</td></tr>
+    </table>
+    <div class="note-box"><strong>💡 Concrete example:</strong> <code>setTimeout</code> exists in BOTH the browser and Node.js — and looks identical in your code. But <strong>internally they're implemented differently</strong>. The browser's version and Node's version are separate pieces of machinery that happen to share the same name and behavior. This is why "JS is JS everywhere" but the surrounding APIs differ.</div>
+    <div class="warn-box"><strong>⚠️ Interview clarity:</strong> Node.js is <strong>not a language</strong> and <strong>not an engine</strong>. It's a <strong>runtime environment</strong> that embeds the V8 engine and adds server-side superpowers. People often confuse this.</div>
+  </div>
+</div>
+
+<!-- SEC 3 -->
+<div id="sec3">
+  <div class="section-header" onclick="toggleSection('c3')"><h1 style="border:none;margin:0;padding:0;">3. What IS a JavaScript Engine? (Demystified)</h1><span class="toggle-icon" id="icon-c3">▼</span></div>
+  <div class="section-content" id="c3">
+    <div class="danger-box"><strong>Clearing up the biggest misconception:</strong> A JS Engine is <strong>NOT a machine</strong>. It's not some magical hardware. It's just a <strong>program</strong> — software written in a low-level language (V8 is written in C++). Its job is to take human-readable JS code and convert it into machine-level code that runs.</div>
+    <p>People new to the field imagine the "engine" as something exotic. In reality, it's a normal application, like any other program, whose <strong>job is to take your JavaScript code and run it</strong>.</p>
+    <pre>Your JS code (human-readable text)
+        │
+        ▼
+┌─────────────────────┐
+│   JS ENGINE (V8)    │   ← a program written in C++
+│  takes your code as │
+│  INPUT, and runs it │
+└─────────────────────┘
+        │
+        ▼
+   Code executes</pre>
+    <div class="blue-box"><strong>🔑 Mental model:</strong> The engine takes your code as text input, processes it through several internal steps, and produces running behavior as output. Just like a compiler or interpreter for any other language.</div>
+  </div>
+</div>
+
+<!-- SEC 4 -->
+<div id="sec4">
+  <div class="section-header" onclick="toggleSection('c4')"><h1 style="border:none;margin:0;padding:0;">4. ECMAScript &amp; The Different Engines</h1><span class="toggle-icon" id="icon-c4">▼</span></div>
+  <div class="section-content" id="c4">
+    <p><strong>ECMAScript</strong> is the <strong>governing standard</strong> (the official specification) for JavaScript. It's the rulebook that says how the language must behave. Anyone can build a JS engine — as long as it follows the ECMAScript rules.</p>
+    <div class="note-box"><strong>💡 The precise detail:</strong> "JavaScript" is actually a trademarked name. The core language is standardized by an organization called <strong>ECMA International</strong>. The specification document is called <strong>ECMA-262</strong>, and the language it defines is <strong>ECMAScript</strong>. When you hear "ES6" or "ES2015" (which brought <code>let</code>/<code>const</code>, arrow functions, etc.), that's just an update to the ECMAScript standard. V8, SpiderMonkey, and Chakra are all different companies building engines that follow the <em>exact same</em> ECMA-262 rulebook.</div>
+    <p>Because of this open standard, there are <strong>many different engines</strong>, each built by different companies:</p>
+    <table>
+      <tr><th>Engine</th><th>Built by</th><th>Used in</th></tr>
+      <tr><td><strong>V8</strong></td><td>Google</td><td>Chrome, Edge, Node.js, Deno</td></tr>
+      <tr><td><strong>SpiderMonkey</strong></td><td>Mozilla — the FIRST ever JS engine, created by <strong>Brendan Eich</strong> (JS's creator) at Netscape</td><td>Firefox</td></tr>
+      <tr><td><strong>JavaScriptCore</strong></td><td>Apple</td><td>Safari</td></tr>
+      <tr><td><strong>Chakra</strong></td><td>Microsoft</td><td>old Edge (legacy)</td></tr>
+    </table>
+    <div class="blue-box"><strong>🔑 Why this matters:</strong> Every engine must follow ECMAScript, so your JS behaves consistently across browsers. But each engine is free to <strong>implement the internals differently</strong> — different optimization strategies, different speeds. This is why the same code can run at different speeds in Chrome vs Firefox.</div>
+  </div>
+</div>
+
+<!-- SEC 5 -->
+<div id="sec5">
+  <div class="section-header" onclick="toggleSection('c5')"><h1 style="border:none;margin:0;padding:0;">⭐ 5. The 3 Steps Inside the Engine</h1><span class="toggle-icon" id="icon-c5">▼</span></div>
+  <div class="section-content" id="c5">
+    <div class="purple-box"><strong>⭐ The core of this whole topic.</strong> When your code enters the JS engine, it goes through <strong>3 major steps</strong> to become running behavior:</div>
+    <table>
+      <tr><th>Step</th><th>Name</th><th>What happens</th></tr>
+      <tr><td><strong>1</strong></td><td>Parsing</td><td>Code is broken into tokens, then turned into an AST (Abstract Syntax Tree)</td></tr>
+      <tr><td><strong>2</strong></td><td>Compilation</td><td>The AST is compiled into machine/bytecode (JIT — Just-In-Time)</td></tr>
+      <tr><td><strong>3</strong></td><td>Execution</td><td>The code actually runs, using the Call Stack + Memory Heap</td></tr>
+    </table>
+    <pre>Your JS Code
+     │
+     ▼
+┌──────────────┐
+│ 1. PARSING   │  code → tokens → AST (a tree structure)
+└──────┬───────┘
+       ▼
+┌──────────────┐
+│ 2. COMPILE   │  AST → bytecode/machine code (JIT compiler)
+└──────┬───────┘   (interpreter + compiler work together)
+       ▼
+┌──────────────┐
+│ 3. EXECUTE   │  runs the code
+│              │  ┌────────────┐  ┌──────────────┐
+│              │  │ Call Stack │  │ Memory Heap  │
+│              │  └────────────┘  └──────────────┘
+└──────────────┘</pre>
+  </div>
+</div>
+
+<!-- SEC 6 -->
+<div id="sec6">
+  <div class="section-header" onclick="toggleSection('c6')"><h1 style="border:none;margin:0;padding:0;">6. Step 1 — Parsing (Tokens &amp; the AST)</h1><span class="toggle-icon" id="icon-c6">▼</span></div>
+  <div class="section-content" id="c6">
+    <p>Parsing is the first thing the engine does. It has two sub-parts:</p>
+    <h3>Sub-step A — Tokenization (the Tokenizer / Lexer)</h3>
+    <p>The engine breaks your code into small meaningful pieces called <strong>tokens</strong>. For example:</p>
+    <pre>let a = 7;</pre>
+    <p>...is broken into these tokens:</p>
+    <pre>[ "let" ]  [ "a" ]  [ "=" ]  [ "7" ]  [ ";" ]
+   keyword   identifier  operator  value  semicolon</pre>
+    <h3>Sub-step B — Building the AST (Syntax Parser)</h3>
+    <p>The tokens are fed into a <strong>syntax parser</strong>, which converts them into an <strong>AST — Abstract Syntax Tree</strong>: a tree-structured object (like JSON) representing the structure of your code.</p>
+    <pre>let a = 7;
+
+becomes (simplified AST):
+
+VariableDeclaration
+├── kind: "let"
+└── Declaration
+    ├── Identifier: "a"
+    └── Literal (value): 7</pre>
+    <div class="note-box"><strong>💡 See it yourself:</strong> Visit <strong>astexplorer.net</strong>, paste any JS code, and watch it turn into an AST in real time.</div>
+    <div class="blue-box"><strong>🔑 Why an AST — and where you already use it:</strong> A tree is far easier to analyze and transform than raw text. This is exactly how your everyday tools work under the hood:
+    <ul>
+      <li><strong>Babel</strong> — converts modern JS → older JS by analyzing &amp; rewriting the AST</li>
+      <li><strong>ESLint</strong> — checks your code for errors by inspecting the AST</li>
+      <li><strong>Prettier</strong> — reformats your code by parsing it to an AST and re-printing it</li>
+    </ul>
+    So the AST isn't just engine trivia — it powers the tooling you'll use every day.</div>
+  </div>
+</div>
+
+<!-- SEC 7 -->
+<div id="sec7">
+  <div class="section-header" onclick="toggleSection('c7')"><h1 style="border:none;margin:0;padding:0;">7. Interpreter vs Compiler — Is JS Interpreted or Compiled?</h1><span class="toggle-icon" id="icon-c7">▼</span></div>
+  <div class="section-content" id="c7">
+    <div class="purple-box"><strong>⭐ Classic interview question:</strong> "Is JavaScript an interpreted or a compiled language?" The honest answer: <strong>both</strong> (in modern engines). Here's why.</div>
+    <table>
+      <tr><th></th><th>Interpreter</th><th>Compiler</th></tr>
+      <tr><td><strong>How it works</strong></td><td>Reads &amp; executes code line-by-line, immediately</td><td>Translates the whole code to optimized machine code first, then runs it</td></tr>
+      <tr><td><strong>Startup speed</strong></td><td>FAST — starts running right away</td><td>SLOWER to start (must compile first)</td></tr>
+      <tr><td><strong>Runtime speed</strong></td><td>Slower (no deep optimization)</td><td>FAST — optimized code runs quickly</td></tr>
+      <tr><td><strong>Analogy</strong></td><td>Translating a speech live, sentence by sentence</td><td>Translating a whole book, then handing over the polished version</td></tr>
+    </table>
+    <p>JavaScript was <strong>originally</strong> designed as an <strong>interpreted</strong> language — so it could start quickly in browsers. But interpreters are slow for heavy, repeated code.</p>
+    <div class="danger-box"><strong>🔑 The modern answer:</strong> Today, almost all modern JS engines use <strong>BOTH an interpreter AND a compiler together</strong>. This combination is called <strong>JIT (Just-In-Time) Compilation</strong>. So modern JavaScript is best described as a <strong>Just-In-Time compiled language</strong> — it gets the fast startup of an interpreter AND the runtime speed of a compiler.</div>
+  </div>
+</div>
+
+<!-- SEC 8 -->
+<div id="sec8">
+  <div class="section-header" onclick="toggleSection('c8')"><h1 style="border:none;margin:0;padding:0;">⭐ 8. Step 2 — JIT (Just-In-Time) Compilation</h1><span class="toggle-icon" id="icon-c8">▼</span></div>
+  <div class="section-content" id="c8">
+    <div class="purple-box"><strong>⭐ This is what makes modern JavaScript fast.</strong> JIT = an interpreter for fast startup + a compiler for runtime speed, working together.</div>
+    <pre>            AST
+             │
+             ▼
+    ┌──────────────────┐
+    │   INTERPRETER    │  converts AST → bytecode and executes
+    │  (fast startup)  │  IMMEDIATELY, line by line
+    └────────┬─────────┘
+             │  while running, watches for "hot" code
+             │  (code that runs many times, like loops)
+             ▼
+    ┌──────────────────┐
+    │    COMPILER      │  takes hot code and OPTIMIZES it into
+    │  (runtime speed) │  highly efficient machine code
+    └──────────────────┘
+             │
+             ▼
+   Optimized code replaces the slow version → runs super fast</pre>
+    <h3>The step-by-step story:</h3>
+    <ol>
+      <li>The <strong>interpreter</strong> takes the AST and starts producing bytecode, executing it <strong>immediately</strong> — so the program starts fast, no waiting.</li>
+      <li>While running, the engine <strong>monitors</strong> which code runs frequently ("hot" code — e.g. a loop running a million times).</li>
+      <li>The <strong>compiler</strong> kicks in <em>concurrently</em> and <strong>optimizes</strong> that hot code into fast machine code, replacing the slower bytecode.</li>
+      <li>This isn't one-time — the compiler can optimize (and even <strong>de-optimize</strong> if assumptions break) <strong>multiple times</strong> as the program runs.</li>
+    </ol>
+    <div class="note-box"><strong>💡 Why "Just-In-Time"?</strong> Because compilation happens <em>during</em> execution (just in time to run), not entirely beforehand like a traditional compiled language (e.g. C++). The engine compiles code right as it's needed.</div>
+    <div class="blue-box"><strong>🔑 The payoff:</strong> Fast startup (from the interpreter) + fast repeated execution (from the compiler optimizing hot code). Engines like V8 pour enormous engineering effort into these optimization algorithms — squeezing out microseconds.</div>
+  </div>
+</div>
+
+<!-- SEC 9 -->
+<div id="sec9">
+  <div class="section-header" onclick="toggleSection('c9')"><h1 style="border:none;margin:0;padding:0;">9. Step 3 — Execution (Call Stack + Memory Heap)</h1><span class="toggle-icon" id="icon-c9">▼</span></div>
+  <div class="section-content" id="c9">
+    <p>Execution is where the code actually runs. It's impossible without <strong>two core components</strong> (you know these from Execution Context, Ch 1, and the Event Loop notes):</p>
+    <table>
+      <tr><th>Component</th><th>Role</th></tr>
+      <tr><td><strong>Memory Heap</strong></td><td>A large block of unstructured memory where all variables, objects, and functions are stored. (Recall Ch 4: objects live in the heap.)</td></tr>
+      <tr><td><strong>Call Stack</strong></td><td>Where execution contexts are pushed and popped as functions run. One thing at a time.</td></tr>
+    </table>
+    <pre>┌───────────────────────────────────────────┐
+│              JS ENGINE                    │
+│   ┌───────────────┐    ┌───────────────┐  │
+│   │  Call Stack   │    │  Memory Heap  │  │
+│   │  (execution   │    │  (variables,  │  │
+│   │   contexts)   │    │   objects,    │  │
+│   │  one at a time│    │   functions)  │  │
+│   └───────────────┘    └───────────────┘  │
+│   ┌─────────────────────────────────────┐ │
+│   │        Garbage Collector            │ │
+│   │   (cleans up unused memory)         │ │
+│   └─────────────────────────────────────┘ │
+└───────────────────────────────────────────┘</pre>
+    <div class="note-box"><strong>💡 Connecting the dots:</strong> This is the SAME Call Stack + Memory Heap from the Execution Context notes (Ch 1) and the Event Loop notes (Ch 7). Now you know they live <em>inside the JS engine</em>, and how code got here (parsed → compiled → now executing).</div>
+  </div>
+</div>
+
+<!-- SEC 10 -->
+<div id="sec10">
+  <div class="section-header" onclick="toggleSection('c10')"><h1 style="border:none;margin:0;padding:0;">10. Garbage Collection (Mark &amp; Sweep)</h1><span class="toggle-icon" id="icon-c10">▼</span></div>
+  <div class="section-content" id="c10">
+    <p>The engine runs a <strong>Garbage Collector</strong> — a program that automatically frees up heap memory that's no longer being used, so your app doesn't run out of RAM. Memory leaks crash applications; the GC prevents that.</p>
+    <h3>The famous algorithm: Mark &amp; Sweep (two phases)</h3>
+    <pre>PHASE 1 — MARK:
+  Start at the "root" (in browsers, the `window` object).
+  Travel through every variable/object reachable from the root.
+  Mark each one as "reachable" / "active".
+
+PHASE 2 — SWEEP:
+  Scan the entire Memory Heap.
+  Anything NOT marked in Phase 1 is "unreachable" — your program
+  can no longer access it. Sweep it away and free that RAM.</pre>
+    <div class="note-box"><strong>💡 Connecting to closures (Ch 2):</strong> Remember how closures keep variables alive? That's the garbage collector <em>choosing not to sweep</em> them because the closure still references them (they're still "reachable" from the root). When you set the closure to <code>null</code>, the reference breaks, the variable becomes unreachable, and Mark &amp; Sweep finally collects it.</div>
+    <div class="blue-box"><strong>🔑 Key point:</strong> JavaScript is <strong>automatically garbage collected</strong> — unlike C/C++ where you manually free memory. "Mark &amp; Sweep" is a very common interview keyword.</div>
+  </div>
+</div>
+
+<!-- SEC 11 -->
+<div id="sec11">
+  <div class="section-header" onclick="toggleSection('c11')"><h1 style="border:none;margin:0;padding:0;">11. Why Browsers Compete on JS Speed</h1><span class="toggle-icon" id="icon-c11">▼</span></div>
+  <div class="section-content" id="c11">
+    <p>Every browser wants its JavaScript engine to be the <strong>fastest</strong>. This competition is why the web keeps getting faster.</p>
+    <ul>
+      <li>Google's V8 pioneered aggressive JIT optimization → Chrome felt lightning fast → set the bar.</li>
+      <li>Every engine team pours effort into better optimization algorithms — shaving off microseconds.</li>
+      <li>Because they all follow ECMAScript, your code behaves the same everywhere — but the <em>internal machinery</em> races to be quickest.</li>
+    </ul>
+    <div class="note-box"><strong>💡 Takeaway:</strong> The reason modern JavaScript can power heavy apps (Google Docs, Figma, VS Code) is decades of engine optimization — parsing improvements, smarter JIT compilers, and efficient garbage collectors, all competing to win.</div>
+  </div>
+</div>
+
+<!-- SEC 11a — BONUS: V8 Optimizations -->
+<div id="sec11a">
+  <div class="section-header" onclick="toggleSection('c11a')"><h1 style="border:none;margin:0;padding:0;">⚡ 11a. V8 Optimization Techniques <span class="tag tag-bonus">BONUS / ADVANCED</span></h1><span class="toggle-icon" id="icon-c11a">▼</span></div>
+  <div class="section-content" id="c11a">
+    <div class="bonus-box"><strong>🎁 Honesty note:</strong> This section is <strong>advanced</strong>. It occasionally comes up at senior / product-company interviews and shows genuine depth — but you will NOT be rejected for not knowing it. Skim it, understand the gist, don't grind on it. Prioritize the core sections above for interviews.</div>
+
+    <p>These are specific tricks the optimizing compiler uses to make hot code faster. All three are worth understanding at a "one-sentence" level.</p>
+
+    <h3>1. Inlining</h3>
+    <p>Calling a function has overhead — pushing to the call stack, creating an execution context, popping it off. For a tiny function called constantly, that overhead adds up.</p>
+    <pre>function add(a, b) { return a + b; }
+let sum = add(5, 5);
+
+// The compiler INLINES it — replaces the call directly with the body:
+let sum = 5 + 5;   // function call bypassed entirely</pre>
+    <p><strong>In one line:</strong> the compiler replaces a small function call with the function's actual code, skipping the call overhead.</p>
+
+    <h3>2. Copy Elision</h3>
+    <p>When passing objects around, computers often copy the object from one memory location to another — wasting RAM and CPU.</p>
+    <p><strong>In one line:</strong> the compiler realizes an unnecessary copy can be skipped — it lets the new variable point to the original memory instead of duplicating it. It "elides" (omits) the copy.</p>
+
+    <h3>3. Inline Caching</h3>
+    <p>JavaScript is dynamically typed, so the engine normally has to search an object's internal "dictionary" to find where a property lives — every single time.</p>
+    <pre>const user = { name: "Parth" };
+// Reading user.name repeatedly (e.g. in a loop):
+for (...) { console.log(user.name); }
+
+// Normally: search the object's memory dictionary each time.
+// With Inline Caching: remember the exact memory offset of `name`
+// after the first lookup, then grab it directly next time.</pre>
+    <p><strong>In one line:</strong> the engine caches <em>where</em> a property lives so repeated lookups skip the search.</p>
+
+    <div class="blue-box"><strong>🔑 The theme:</strong> All three optimizations remove repeated, redundant work in hot code — bypassing call overhead (inlining), skipping needless copies (copy elision), and remembering property locations (inline caching). This is the kind of thing V8's compiler does "day and night" to win the speed race.</div>
+  </div>
+</div>
+
+<!-- SEC 11b — BONUS: V8 Codenames -->
+<div id="sec11b">
+  <div class="section-header" onclick="toggleSection('c11b')"><h1 style="border:none;margin:0;padding:0;">🏷️ 11b. V8's Component Codenames <span class="tag tag-bonus">PURE TRIVIA</span></h1><span class="toggle-icon" id="icon-c11b">▼</span></div>
+  <div class="section-content" id="c11b">
+    <div class="bonus-box"><strong>🎁 Honesty note:</strong> This is <strong>pure trivia</strong>. It will NOT get you a job. But dropping one of these names in an interview can signal genuine curiosity, which some senior interviewers appreciate. Read once, don't memorize hard.</div>
+
+    <p>Google gave cool codenames to the internal parts of the V8 engine:</p>
+    <table>
+      <tr><th>V8 Component</th><th>Codename</th><th>What it is</th></tr>
+      <tr><td>Interpreter</td><td><strong>Ignition</strong></td><td>Takes the AST, produces bytecode, executes immediately (fast startup)</td></tr>
+      <tr><td>Optimizing Compiler</td><td><strong>TurboFan</strong></td><td>Optimizes hot code into fast machine code (the inlining/caching magic)</td></tr>
+      <tr><td>Garbage Collector (JS memory)</td><td><strong>Orinoco</strong></td><td>Concurrent/parallel GC — cleans memory on background threads without freezing the UI ("stop the world")</td></tr>
+      <tr><td>Garbage Collector (DOM objects)</td><td><strong>Oilpan</strong></td><td>Built for "Blink" (Chrome's rendering engine) to clean up DOM objects you delete via JS</td></tr>
+    </table>
+    <div class="note-box"><strong>💡 The one useful nugget:</strong> Older garbage collectors would "<strong>stop the world</strong>" — freeze your whole page while cleaning memory. <strong>Orinoco</strong> introduced concurrent/parallel GC that runs on background threads, so the UI doesn't freeze during cleanup. THAT concept (concurrent GC to avoid UI freezes) is the genuinely interview-worthy part; the codenames are just flair.</div>
+    <div class="blue-box"><strong>🎯 If you drop this in an interview:</strong> "V8 uses Ignition as its interpreter for fast startup and TurboFan as its optimizing compiler for hot code" — that one sentence is enough. Don't over-recite codenames; it can come across as memorized rather than understood.</div>
+  </div>
+</div>
+
+<!-- SEC 12 -->
+<div id="sec12">
+  <div class="section-header" onclick="toggleSection('c12')"><h1 style="border:none;margin:0;padding:0;">12. Master Cheat Sheet</h1><span class="toggle-icon" id="icon-c12">▼</span></div>
+  <div class="section-content" id="c12">
+    <table>
+      <tr><th>Concept</th><th>Key Point</th></tr>
+      <tr><td>Runtime Environment (JRE)</td><td>The big container: JS Engine + APIs + Event Loop + Queues. Lets JS run anywhere.</td></tr>
+      <tr><td>Browser vs Node</td><td>Both have a JS engine. Browser adds DOM/fetch; Node adds file system/server. Same setTimeout, different internals.</td></tr>
+      <tr><td>JS Engine</td><td>NOT a machine — just a program (V8 written in C++) that runs your code.</td></tr>
+      <tr><td>ECMAScript</td><td>The governing standard (spec = ECMA-262, by ECMA International) all engines follow.</td></tr>
+      <tr><td>Engines</td><td>V8 (Google/Chrome/Node), SpiderMonkey (Firefox, the first ever, by Brendan Eich), JavaScriptCore (Safari), Chakra (old Edge).</td></tr>
+      <tr><td>3 Steps</td><td>Parsing → Compilation → Execution</td></tr>
+      <tr><td>Parsing</td><td>Tokenizer breaks code into tokens → syntax parser builds the AST (tree).</td></tr>
+      <tr><td>AST</td><td>Abstract Syntax Tree. Powers Babel, ESLint, Prettier. See astexplorer.net.</td></tr>
+      <tr><td>Interpreter</td><td>Runs code line-by-line. Fast startup, slower runtime.</td></tr>
+      <tr><td>Compiler</td><td>Translates whole code to optimized machine code. Slow startup, fast runtime.</td></tr>
+      <tr><td>Is JS compiled or interpreted?</td><td>BOTH — modern engines use JIT (interpreter + compiler together).</td></tr>
+      <tr><td>JIT Compilation</td><td>Interpreter starts fast; compiler optimizes "hot" code during execution.</td></tr>
+      <tr><td>Execution</td><td>Uses Call Stack (execution contexts) + Memory Heap (variables/objects).</td></tr>
+      <tr><td>Garbage Collection</td><td>Automatic. Algorithm: Mark &amp; Sweep (mark reachable from root → sweep the rest).</td></tr>
+      <tr><td>🎁 V8 optimizations (bonus)</td><td>Inlining (skip call overhead), Copy Elision (skip needless copies), Inline Caching (remember property locations).</td></tr>
+      <tr><td>🎁 V8 codenames (trivia)</td><td>Ignition (interpreter), TurboFan (compiler), Orinoco (concurrent GC — avoids "stop the world"), Oilpan (DOM GC).</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- SEC 13 -->
+<div id="sec13">
+  <div class="section-header" onclick="toggleSection('c13')"><h1 style="border:none;margin:0;padding:0;">13. Interview Answer Templates</h1><span class="toggle-icon" id="icon-c13">▼</span></div>
+  <div class="section-content" id="c13">
+    <h3>Q: "What is a JavaScript engine?"</h3>
+    <div class="note-box" style="line-height:1.8;"><em>"A JavaScript engine is a program — not a machine — that takes your JavaScript code as input and executes it. The most famous is Google's V8, written in C++, which powers Chrome and Node.js. It works in three broad steps: parsing the code into an Abstract Syntax Tree, compiling that using Just-In-Time compilation, and executing it using the call stack and memory heap."</em></div>
+    <h3>Q: "Is JavaScript interpreted or compiled?"</h3>
+    <div class="note-box" style="line-height:1.8;"><em>"Historically it was interpreted, for fast startup in browsers. But modern engines use both an interpreter and a compiler together, called Just-In-Time (JIT) compilation. The interpreter starts executing immediately for fast startup, while the compiler optimizes frequently-run 'hot' code into fast machine code during execution. So modern JavaScript is best described as a JIT-compiled language."</em></div>
+    <h3>Q: "What is an AST?"</h3>
+    <div class="note-box" style="line-height:1.8;"><em>"An Abstract Syntax Tree is a tree-structured representation of your code that the engine builds during parsing. First a tokenizer breaks the code into tokens, then a syntax parser assembles those into the AST. It's not just engine internals — tools like Babel, ESLint, and Prettier all work by analyzing and transforming the AST."</em></div>
+    <h3>Q: "How does JavaScript manage memory?"</h3>
+    <div class="note-box" style="line-height:1.8;"><em>"JavaScript is automatically garbage collected — unlike C++ where you free memory manually. The garbage collector uses the Mark and Sweep algorithm: starting from the root, it marks all reachable objects, then sweeps away and frees everything unmarked. This is also why closures keep variables alive — the GC won't sweep something the closure still references."</em></div>
+    <h3>Q (senior): "How does V8 make JavaScript fast?"</h3>
+    <div class="note-box" style="line-height:1.8;"><em>"V8 uses JIT compilation — an interpreter called Ignition for fast startup, and an optimizing compiler called TurboFan that optimizes hot code at runtime using techniques like inlining, copy elision, and inline caching. Its garbage collector, Orinoco, runs concurrently on background threads so memory cleanup doesn't freeze the UI — avoiding the old 'stop the world' problem."</em></div>
+  </div>
+</div>
+
+<!-- SEC 14: PRACTICE -->
+<div class="page-break" id="sec14">
+  <div class="section-header" onclick="toggleSection('c14')"><h1 style="border:none;margin:0;padding:0;">14. Practice Sheet — 8 Questions</h1><span class="toggle-icon" id="icon-c14">▼</span></div>
+  <div class="section-content" id="c14">
+    <p><strong>📝 Instructions:</strong> Conceptual questions (this topic is theory). Answer in your own words, then check.</p>
+    <div class="question-block" id="q1"><h2>Q1 <span class="tag tag-easy">Easy</span></h2><p>What is the difference between a <strong>JS Engine</strong> and a <strong>JS Runtime Environment</strong>?</p><a class="nav-link" href="#ans1">→ See Answer</a></div>
+    <div class="question-block" id="q2"><h2>Q2 <span class="tag tag-easy">Easy</span></h2><p>Name at least 3 JS engines and which browser/environment each powers. Which was the first ever, and who made it?</p><a class="nav-link" href="#ans2">→ See Answer</a></div>
+    <div class="question-block" id="q3"><h2>Q3 <span class="tag tag-easy">Easy</span></h2><p>What are the 3 major steps a JS engine performs on your code?</p><a class="nav-link" href="#ans3">→ See Answer</a></div>
+    <div class="question-block" id="q4"><h2>Q4 <span class="tag tag-medium">Medium</span></h2><p>What is an AST, what are the two sub-steps of parsing that produce it, and name 3 real tools that use ASTs.</p><a class="nav-link" href="#ans4">→ See Answer</a></div>
+    <div class="question-block" id="q5"><h2>Q5 <span class="tag tag-medium">Medium</span></h2><p>Is JavaScript interpreted or compiled? Explain the modern answer.</p><a class="nav-link" href="#ans5">→ See Answer</a></div>
+    <div class="question-block" id="q6"><h2>Q6 <span class="tag tag-hard">Hard</span></h2><p>Explain how JIT compilation works — how do the interpreter and compiler cooperate, and what is "hot" code?</p><a class="nav-link" href="#ans6">→ See Answer</a></div>
+    <div class="question-block" id="q7"><h2>Q7 <span class="tag tag-hard">Hard</span></h2><p>How does JavaScript handle memory management? Name and explain the algorithm's two phases. Bonus: how does this connect to closures?</p><a class="nav-link" href="#ans7">→ See Answer</a></div>
+    <div class="question-block" id="q8"><h2>Q8 <span class="tag tag-bonus">Bonus</span></h2><p>Name V8's interpreter, its optimizing compiler, and one optimization technique. What problem did concurrent GC (Orinoco) solve?</p><a class="nav-link" href="#ans8">→ See Answer</a></div>
+  </div>
+</div>
+
+<!-- SEC 15: ANSWERS -->
+<div class="page-break" id="sec15">
+  <div class="section-header" onclick="toggleSection('c15')"><h1 style="border:none;margin:0;padding:0;">15. Answer Key</h1><span class="toggle-icon" id="icon-c15">▼</span></div>
+  <div class="section-content" id="c15">
+    <h2 id="ans1">Q1 — Answer</h2>
+    <p>The <strong>JS Engine</strong> is the program that runs your code — call stack, memory heap, parser, compiler. The <strong>Runtime Environment</strong> is the larger container wrapping the engine, adding superpowers: Web APIs (or Node APIs), the event loop, and the callback/microtask queues. The engine alone runs pure JS; the runtime gives it timers, fetch, DOM access, etc.</p>
+    <a class="nav-link back" href="#q1">← Back to Question 1</a><hr>
+    <h2 id="ans2">Q2 — Answer</h2>
+    <ul>
+      <li><strong>V8</strong> — Google — Chrome, Edge, Node.js</li>
+      <li><strong>SpiderMonkey</strong> — Mozilla — Firefox. <strong>The first ever JS engine</strong>, created by <strong>Brendan Eich</strong> (JS's creator) at Netscape.</li>
+      <li><strong>JavaScriptCore</strong> — Apple — Safari</li>
+      <li><strong>Chakra</strong> — Microsoft — old Edge (legacy)</li>
+    </ul>
+    <a class="nav-link back" href="#q2">← Back to Question 2</a><hr>
+    <h2 id="ans3">Q3 — Answer</h2>
+    <p><strong>1. Parsing</strong> (code → tokens → AST), <strong>2. Compilation</strong> (AST → bytecode/machine code via JIT), <strong>3. Execution</strong> (running via call stack + memory heap).</p>
+    <a class="nav-link back" href="#q3">← Back to Question 3</a><hr>
+    <h2 id="ans4">Q4 — Answer</h2>
+    <p>An <strong>AST (Abstract Syntax Tree)</strong> is a tree representation of code, easier to analyze than raw text. Two sub-steps: (A) <strong>Tokenization</strong> — the tokenizer breaks code into tokens; (B) <strong>Syntax parsing</strong> — the parser assembles tokens into the tree. Real tools using ASTs: <strong>Babel</strong> (transpiling), <strong>ESLint</strong> (linting), <strong>Prettier</strong> (formatting). Visualize at astexplorer.net.</p>
+    <a class="nav-link back" href="#q4">← Back to Question 4</a><hr>
+    <h2 id="ans5">Q5 — Answer</h2>
+    <p><strong>Both.</strong> Originally interpreted (fast startup for browsers). Modern engines use an interpreter AND compiler together — <strong>JIT (Just-In-Time) compilation</strong>. So the accurate modern answer: JavaScript is a <strong>JIT-compiled language</strong>, getting fast startup + fast runtime.</p>
+    <a class="nav-link back" href="#q5">← Back to Question 5</a><hr>
+    <h2 id="ans6">Q6 — Answer</h2>
+    <p>The <strong>interpreter</strong> takes the AST and executes immediately (fast startup). While running, the engine <strong>monitors</strong> which code runs frequently — <strong>"hot" code</strong> (e.g. a loop running a million times). The <strong>compiler</strong> then optimizes that hot code into efficient machine code, replacing the slower version. It can happen multiple times, and de-optimize if assumptions break. Result: fast startup AND fast repeated execution.</p>
+    <a class="nav-link back" href="#q6">← Back to Question 6</a><hr>
+    <h2 id="ans7">Q7 — Answer</h2>
+    <p>JavaScript is <strong>automatically garbage collected</strong> — no manual freeing like C/C++. Algorithm: <strong>Mark &amp; Sweep</strong>. <strong>Phase 1 (Mark):</strong> starting from the root (the <code>window</code> object in browsers), mark every reachable/referenced object as active. <strong>Phase 2 (Sweep):</strong> scan the heap and free everything not marked (unreachable). <strong>Closure connection:</strong> a closure keeps variables alive because they remain reachable/referenced by the inner function, so the GC won't sweep them. Set the closure to <code>null</code> → reference breaks → unreachable → collected.</p>
+    <a class="nav-link back" href="#q7">← Back to Question 7</a><hr>
+    <h2 id="ans8">Q8 — Answer</h2>
+    <p>V8's interpreter is <strong>Ignition</strong>; its optimizing compiler is <strong>TurboFan</strong>. Optimization techniques: <strong>Inlining</strong> (replace a small function call with its body), <strong>Copy Elision</strong> (skip unnecessary object copies), <strong>Inline Caching</strong> (remember a property's memory location to skip repeated lookups). <strong>Concurrent GC (Orinoco)</strong> solved the "<strong>stop the world</strong>" problem — older GCs froze the whole page during cleanup; Orinoco runs cleanup on background threads so the UI doesn't freeze.</p>
+    <a class="nav-link back" href="#q8">← Back to Question 8</a>
+    <hr>
+    <div style="text-align:center;margin-top:25px;padding:18px;background:#e3f2fd;border-radius:8px;">
+      <p style="font-size:1.15em;font-weight:bold;color:#0078D4;">Key Mental Models:</p>
+      <p style="font-weight:bold;">🔹 Engine = a program (V8, C++). Runtime = engine + APIs + event loop.</p>
+      <p style="font-weight:bold;">🔹 3 steps: Parse (AST) → Compile (JIT) → Execute (stack + heap)</p>
+      <p style="font-weight:bold;">🔹 JS is JIT-compiled = interpreter (fast start) + compiler (fast hot code)</p>
+      <p style="font-weight:bold;">🔹 ECMAScript (ECMA-262) = the standard all engines follow</p>
+      <p style="font-weight:bold;">🔹 Memory = auto garbage collected via Mark &amp; Sweep</p>
+      <p style="font-weight:bold;">🎁 Bonus: Ignition + TurboFan + Orinoco; inlining, copy elision, inline caching</p>
+    </div>
+  </div>
+</div>
+</div>
+<script>
+function toggleSidebar(){document.getElementById('sidebar').classList.toggle('collapsed');document.getElementById('mainContent').classList.toggle('full');}
+function scrollTo(e,id){e.preventDefault();const el=document.getElementById(id);if(el){const cId='c'+id.replace('sec','');const c=document.getElementById(cId);if(c&&c.classList.contains('collapsed'))toggleSection(cId);el.scrollIntoView({behavior:'smooth',block:'start'});}if(window.innerWidth<=768){document.getElementById('sidebar').classList.add('collapsed');document.getElementById('mainContent').classList.add('full');}}
+function toggleSection(id){const el=document.getElementById(id);const icon=document.getElementById('icon-'+id);if(el.classList.contains('collapsed')){el.classList.remove('collapsed');el.style.maxHeight=el.scrollHeight+10000+'px';if(icon)icon.classList.remove('collapsed');}else{el.classList.add('collapsed');el.style.maxHeight='0px';if(icon)icon.classList.add('collapsed');}}
+document.addEventListener('DOMContentLoaded',function(){document.querySelectorAll('.section-content').forEach(el=>{el.style.maxHeight=el.scrollHeight+10000+'px';});});
+</script>
+</body>
+</html>

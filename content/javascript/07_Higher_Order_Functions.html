@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Higher-Order Functions — Complete Notes</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Calibri, Arial, sans-serif; color: #1a1a1a; line-height: 1.7; background: #fff; }
+
+  /* SIDEBAR */
+  .sidebar-toggle { position: fixed; top: 12px; left: 12px; z-index: 1001; background: #0078D4; color: #fff; border: none; width: 40px; height: 40px; border-radius: 8px; font-size: 1.4em; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+  .sidebar-toggle:hover { background: #106ebe; }
+  .sidebar { position: fixed; top: 0; left: 0; width: 290px; height: 100vh; background: #f0f4ff; border-right: 2px solid #0078D4; overflow-y: auto; z-index: 1000; transform: translateX(0); transition: transform 0.3s ease; padding: 60px 15px 20px 15px; }
+  .sidebar.collapsed { transform: translateX(-290px); }
+  .sidebar h3 { color: #0078D4; font-size: 1em; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 2px solid #0078D4; }
+  .sidebar a { display: block; padding: 5px 8px; color: #2b579a; text-decoration: none; font-size: 0.85em; border-radius: 4px; margin-bottom: 2px; }
+  .sidebar a:hover { background: #dce6f7; }
+  .sidebar .group-label { color: #555; font-weight: bold; font-size: 0.78em; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 12px; margin-bottom: 4px; padding-left: 8px; }
+
+  /* MAIN */
+  .main { margin-left: 290px; padding: 20px 30px 40px 30px; max-width: 990px; transition: margin-left 0.3s ease; }
+  .main.full { margin-left: 0; }
+
+  /* TITLE */
+  .title-block { text-align: center; padding: 25px 0; border-bottom: 4px solid #0078D4; margin-bottom: 25px; }
+  .title-block h1 { color: #0078D4; font-size: 2em; border: none; margin: 0; padding: 0; }
+  .title-block p { color: #555; font-size: 0.95em; margin: 3px 0; }
+
+  /* HEADINGS */
+  h1 { color: #0078D4; border-bottom: 3px solid #0078D4; padding-bottom: 8px; margin-top: 35px; font-size: 1.6em; }
+  h2 { color: #2b579a; margin-top: 25px; font-size: 1.3em; }
+  h3 { color: #444; margin-top: 18px; font-size: 1.1em; }
+  p { margin: 8px 0; }
+  ul, ol { padding-left: 24px; margin: 8px 0; }
+  li { margin-bottom: 6px; }
+
+  /* COLLAPSIBLE */
+  .section-header { cursor: pointer; display: flex; align-items: center; justify-content: space-between; padding: 10px 0; user-select: none; }
+  .section-header:hover h1 { color: #106ebe; }
+  .section-header .toggle-icon { font-size: 1.2em; color: #0078D4; transition: transform 0.3s; min-width: 24px; text-align: center; }
+  .section-header .toggle-icon.collapsed { transform: rotate(-90deg); }
+  .section-content { overflow: hidden; transition: max-height 0.4s ease; }
+  .section-content.collapsed { max-height: 0 !important; overflow: hidden; }
+
+  /* CODE */
+  pre { background: #f5f5f5; border: 1px solid #ddd; border-left: 4px solid #0078D4; padding: 14px 18px; font-family: 'Consolas', 'Courier New', monospace; font-size: 0.92em; overflow-x: auto; border-radius: 4px; white-space: pre-wrap; margin: 12px 0; }
+  code { font-family: 'Consolas', monospace; background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-size: 0.88em; }
+
+  /* TABLES */
+  table { border-collapse: collapse; width: 100%; margin: 14px 0; }
+  th { background: #0078D4; color: #fff; padding: 10px 14px; text-align: center; font-size: 0.92em; }
+  td { border: 1px solid #ccc; padding: 9px 14px; text-align: center; font-size: 0.9em; }
+  tr:nth-child(even) { background: #f9f9f9; }
+
+  /* BOXES */
+  .note-box { background: #e8f4e8; border-left: 4px solid #2e7d32; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+  .note-box strong { color: #2e7d32; }
+  .warn-box { background: #fff3e0; border-left: 4px solid #e65100; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+  .warn-box strong { color: #e65100; }
+  .danger-box { background: #fce4ec; border-left: 4px solid #c62828; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+  .danger-box strong { color: #c62828; }
+  .blue-box { background: #e3f2fd; border-left: 4px solid #1565c0; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+  .blue-box strong { color: #1565c0; }
+  .purple-box { background: #f3e5f5; border-left: 4px solid #7b1fa2; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+  .purple-box strong { color: #7b1fa2; }
+
+  /* PRACTICE */
+  .question-block { background: #fafafa; border: 1px solid #e0e0e0; padding: 16px 20px; margin: 18px 0; border-radius: 6px; }
+  .question-block h2 { margin-top: 0; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.78em; font-weight: bold; margin-left: 5px; }
+  .tag-easy { background: #e8f5e9; color: #2e7d32; }
+  .tag-medium { background: #fff8e1; color: #f57f17; }
+  .tag-hard { background: #fce4ec; color: #c62828; }
+  .tag-expert { background: #4a148c; color: #fff; }
+  .nav-link { display: inline-block; margin-top: 8px; font-size: 0.85em; color: #7b1fa2; text-decoration: none; font-weight: bold; }
+  .nav-link:hover { text-decoration: underline; }
+  .nav-link.back { color: #0078D4; }
+  .page-break { margin-top: 50px; border-top: 3px double #0078D4; padding-top: 20px; }
+
+  @media (max-width: 768px) {
+    .sidebar { width: 250px; }
+    .main { margin-left: 0; padding: 15px; }
+    .sidebar.collapsed { transform: translateX(-250px); }
+  }
+</style>
+</head>
+<body>
+
+<button class="sidebar-toggle" onclick="toggleSidebar()" id="sidebarBtn">☰</button>
+
+<nav class="sidebar" id="sidebar">
+  <h3>📑 HOFs — Navigation</h3>
+  <div class="group-label">📖 Core Concepts</div>
+  <a href="#sec1" onclick="scrollTo(event,'sec1')">1. What is a HOF?</a>
+  <a href="#sec2" onclick="scrollTo(event,'sec2')">2. First-Class Functions</a>
+  <a href="#sec3" onclick="scrollTo(event,'sec3')">3. The DRY Principle</a>
+  <div class="group-label">🔬 The Big Three</div>
+  <a href="#sec4" onclick="scrollTo(event,'sec4')">4. map — Transform</a>
+  <a href="#sec5" onclick="scrollTo(event,'sec5')">5. filter — Keep matches</a>
+  <a href="#sec6" onclick="scrollTo(event,'sec6')">6. reduce — Collapse to one</a>
+  <a href="#sec7" onclick="scrollTo(event,'sec7')">7. forEach vs map</a>
+  <div class="group-label">⭐ Advanced</div>
+  <a href="#sec8" onclick="scrollTo(event,'sec8')">8. Method Chaining</a>
+  <a href="#sec9" onclick="scrollTo(event,'sec9')">9. Implementing Your Own</a>
+  <a href="#sec10" onclick="scrollTo(event,'sec10')">10. HOFs + Closures</a>
+  <div class="group-label">💼 Practical</div>
+  <a href="#sec11" onclick="scrollTo(event,'sec11')">11. Real-World Patterns</a>
+  <a href="#sec12" onclick="scrollTo(event,'sec12')">12. Common Gotchas</a>
+  <div class="group-label">📝 Revision</div>
+  <a href="#sec13" onclick="scrollTo(event,'sec13')">13. Master Cheat Sheet</a>
+  <a href="#sec14" onclick="scrollTo(event,'sec14')">14. Interview Templates</a>
+  <div class="group-label">🧪 Practice</div>
+  <a href="#sec15" onclick="scrollTo(event,'sec15')">15. Practice Sheet (10 Qs)</a>
+  <a href="#sec16" onclick="scrollTo(event,'sec16')">16. Answer Key</a>
+</nav>
+
+<div class="main" id="mainContent">
+
+<div class="title-block">
+  <h1>Higher-Order Functions &amp; Functional Patterns</h1>
+  <p><strong>Complete Revision Notes + Practice Sheet</strong></p>
+  <p>Chapter 6 — The JavaScript Codex | Week 2</p>
+  <p><em>The most beautiful part of JavaScript: functions as first-class citizens</em></p>
+</div>
+
+<!-- ===== SEC 1 ===== -->
+<div id="sec1">
+  <div class="section-header" onclick="toggleSection('c1')">
+    <h1 style="border:none;margin:0;padding:0;">1. What is a Higher-Order Function?</h1>
+    <span class="toggle-icon" id="icon-c1">▼</span>
+  </div>
+  <div class="section-content" id="c1">
+    <div class="danger-box">
+      <strong>Definition:</strong> A Higher-Order Function (HOF) is a function that does <strong>at least one</strong> of these two things:
+      <ol>
+        <li>Takes <strong>another function as an argument</strong> (a callback), OR</li>
+        <li><strong>Returns a function</strong> from itself</li>
+      </ol>
+      That's it. Any function meeting one or both of these conditions is a HOF.
+    </div>
+
+    <h3>The Simplest Example:</h3>
+    <pre>function x() {
+  console.log("Hello");
+}
+
+function y(fn) {   // y takes another function as argument
+  fn();            // and calls it
+}
+
+y(x);              // Hello
+
+// Here:
+// x → callback function (the one being passed)
+// y → higher-order function (the one accepting/calling it)</pre>
+
+    <h3>HOFs You've Been Using Already (Without Knowing):</h3>
+
+    <table>
+      <tr><th>Function</th><th>Why is it a HOF?</th></tr>
+      <tr><td><code>arr.map(fn)</code></td><td>Takes a function as argument</td></tr>
+      <tr><td><code>arr.filter(fn)</code></td><td>Takes a function as argument</td></tr>
+      <tr><td><code>arr.reduce(fn, init)</code></td><td>Takes a function as argument</td></tr>
+      <tr><td><code>arr.forEach(fn)</code></td><td>Takes a function as argument</td></tr>
+      <tr><td><code>setTimeout(fn, ms)</code></td><td>Takes a function as argument</td></tr>
+      <tr><td><code>setInterval(fn, ms)</code></td><td>Takes a function as argument</td></tr>
+      <tr><td><code>element.addEventListener(event, fn)</code></td><td>Takes a function as argument</td></tr>
+      <tr><td><code>Promise.then(fn)</code></td><td>Takes a function as argument</td></tr>
+    </table>
+
+    <h3>A HOF That Returns a Function:</h3>
+    <pre>function multiplier(factor) {
+  return function(number) {       // ← returns a function
+    return number * factor;
+  };
+}
+
+const double = multiplier(2);   // double is now a function
+const triple = multiplier(3);   // triple is now a function
+
+console.log(double(5));   // 10
+console.log(triple(5));   // 15</pre>
+
+    <p><code>multiplier</code> is a HOF because it returns a function. This is also how <strong>currying</strong> works (coming up in Ch 6.5).</p>
+
+    <div class="blue-box">
+      <strong>🔑 Why do HOFs exist?</strong> Because JavaScript treats functions as <strong>first-class citizens</strong> — you can pass them around like any other value (numbers, strings, objects). Without first-class functions, HOFs would be impossible. Not every language has this — languages like older Java don't. It's what makes functional programming in JS possible.
+    </div>
+  </div>
+</div>
+
+<!-- ===== SEC 2 ===== -->
+<div id="sec2">
+  <div class="section-header" onclick="toggleSection('c2')">
+    <h1 style="border:none;margin:0;padding:0;">2. First-Class Functions — The Foundation</h1>
+    <span class="toggle-icon" id="icon-c2">▼</span>
+  </div>
+  <div class="section-content" id="c2">
+    <p>You covered this in Chapter 3 (Closures). Quick recap because it's the foundation of every HOF:</p>
+
+    <p>Functions in JavaScript can be:</p>
+    <ul>
+      <li><strong>Assigned to a variable</strong> — <code>const fn = function() {};</code></li>
+      <li><strong>Passed as an argument</strong> — <code>setTimeout(myFn, 1000);</code></li>
+      <li><strong>Returned from another function</strong> — <code>return function() {};</code></li>
+      <li><strong>Stored inside data structures</strong> — <code>const arr = [fn1, fn2, fn3];</code></li>
+    </ul>
+
+    <p>Anywhere you can put a number, string, or object — you can put a function. This ability is what "first-class" means, and it's what enables the entire universe of HOFs.</p>
+
+    <div class="note-box">
+      <strong>🎯 Interview line:</strong> "Higher-order functions are possible in JavaScript because functions are first-class citizens — they can be passed around and returned just like any other value."
+    </div>
+  </div>
+</div>
+
+<!-- ===== SEC 3 ===== -->
+<div id="sec3">
+  <div class="section-header" onclick="toggleSection('c3')">
+    <h1 style="border:none;margin:0;padding:0;">3. Why HOFs Exist — The DRY Principle</h1>
+    <span class="toggle-icon" id="icon-c3">▼</span>
+  </div>
+  <div class="section-content" id="c3">
+    <p>The classic circle example shows exactly why HOFs matter. Suppose you have radii of circles and need area, circumference, and diameter for each.</p>
+
+    <h3>❌ The BAD Way — Copy-Paste Hell:</h3>
+    <pre>const radius = [3, 1, 2, 4];
+
+function calculateArea(radius) {
+  const output = [];
+  for (let i = 0; i &lt; radius.length; i++) {
+    output.push(Math.PI * radius[i] * radius[i]);
+  }
+  return output;
+}
+
+function calculateCircumference(radius) {
+  const output = [];
+  for (let i = 0; i &lt; radius.length; i++) {
+    output.push(2 * Math.PI * radius[i]);    // ← only the formula changed
+  }
+  return output;
+}
+
+function calculateDiameter(radius) {
+  const output = [];
+  for (let i = 0; i &lt; radius.length; i++) {
+    output.push(2 * radius[i]);              // ← again, only the formula changed
+  }
+  return output;
+}</pre>
+
+    <div class="warn-box">
+      <strong>What's wrong here?</strong> You've violated the <strong>DRY principle</strong> (Don't Repeat Yourself). ~90% of the code in these three functions is identical — only the formula inside the loop changes. If you need to add validation, error handling, or logging, you'd have to update it in 3 places.
+    </div>
+
+    <h3>✅ The GOOD Way — Extract the Logic Into a HOF:</h3>
+    <pre>const radius = [3, 1, 2, 4];
+
+// Logic functions (small, single responsibility)
+const area = (r) => Math.PI * r * r;
+const circumference = (r) => 2 * Math.PI * r;
+const diameter = (r) => 2 * r;
+
+// The HOF — accepts the "logic" as a callback
+function calculate(radius, logic) {
+  const output = [];
+  for (let i = 0; i &lt; radius.length; i++) {
+    output.push(logic(radius[i]));   // ← the logic is passed in
+  }
+  return output;
+}
+
+// Usage:
+console.log(calculate(radius, area));
+console.log(calculate(radius, circumference));
+console.log(calculate(radius, diameter));</pre>
+
+    <div class="blue-box">
+      <strong>🔑 What just happened?</strong> The iteration logic (loop, push, return) is written <strong>once</strong>. The "what to do at each element" is passed in as a function. This is <strong>abstraction through functions</strong> — and it's essentially what <code>map</code> does internally.
+    </div>
+
+    <p>In fact, <code>calculate</code> from above is basically a mini <code>map</code>. Watch:</p>
+
+    <pre>// Native map does exactly what our calculate does:
+console.log(radius.map(area));
+console.log(radius.map(circumference));
+console.log(radius.map(diameter));</pre>
+
+    <div class="purple-box">
+      <strong>🎯 The Big Insight:</strong> <code>map</code>, <code>filter</code>, and <code>reduce</code> are just well-designed HOFs that JavaScript built-in for you. Understanding <em>why</em> they exist (DRY + single responsibility) is more important than memorizing their syntax.
+    </div>
+  </div>
+</div>
+
+<!-- ===== SEC 4 ===== -->
+<div id="sec4">
+  <div class="section-header" onclick="toggleSection('c4')">
+    <h1 style="border:none;margin:0;padding:0;">4. <code>map</code> — Transform Each Element</h1>
+    <span class="toggle-icon" id="icon-c4">▼</span>
+  </div>
+  <div class="section-content" id="c4">
+    <div class="blue-box">
+      <strong>Purpose:</strong> <code>map</code> transforms every element of an array using a function you provide, and returns a <strong>NEW array</strong> of the same length. It does NOT mutate the original.
+    </div>
+
+    <h3>Syntax:</h3>
+    <pre>const newArr = originalArr.map(function(element, index, array) {
+  return /* transformed value */;
+});</pre>
+
+    <p>The callback receives up to 3 arguments — usually you only need the first (the current element).</p>
+
+    <h3>Basic Example — Double Each Value:</h3>
+    <pre>const nums = [5, 1, 3, 2, 6];
+
+const doubled = nums.map(function(x) {
+  return x * 2;
+});
+
+console.log(doubled);   // [10, 2, 6, 4, 12]
+console.log(nums);      // [5, 1, 3, 2, 6]  ← original untouched!</pre>
+
+    <h3>Shorter Syntax (Arrow Function):</h3>
+    <pre>// All three of these are IDENTICAL:
+
+// Named function
+function double(x) { return x * 2; }
+nums.map(double);
+
+// Anonymous function
+nums.map(function(x) { return x * 2; });
+
+// Arrow function (most common in modern code)
+nums.map(x => x * 2);</pre>
+
+    <h3>The Visualization:</h3>
+    <pre>Original:  [5,  1,  3,  2,  6]
+              │   │   │   │   │
+              ↓   ↓   ↓   ↓   ↓  ← map runs the fn on each element
+             ×2  ×2  ×2  ×2  ×2
+              ↓   ↓   ↓   ↓   ↓
+Result:    [10, 2,  6,  4,  12]  ← NEW array of same length</pre>
+
+    <h3>Real-World Example — Extract a Field from Objects:</h3>
+    <pre>const users = [
+  { firstName: "Alok", lastName: "Raj", age: 23 },
+  { firstName: "Donald", lastName: "Trump", age: 75 },
+  { firstName: "Elon", lastName: "Musk", age: 50 },
+  { firstName: "Deepika", lastName: "Padukone", age: 26 }
+];
+
+// Get an array of full names:
+const fullNames = users.map(user => user.firstName + " " + user.lastName);
+
+console.log(fullNames);
+// ["Alok Raj", "Donald Trump", "Elon Musk", "Deepika Padukone"]</pre>
+
+    <p>This pattern — extracting a specific field from an array of objects — is one of the most common uses of <code>map</code> in real code (especially in React, when rendering lists).</p>
+
+    <div class="warn-box">
+      <strong>⚠️ Rules of thumb for map:</strong>
+      <ul>
+        <li>The new array is <strong>always</strong> the same length as the original.</li>
+        <li>You MUST <code>return</code> a value from the callback — else you'll get <code>undefined</code> in that slot.</li>
+        <li>The original array is <strong>never mutated</strong>. It returns a new array.</li>
+        <li>Use it when you want to <strong>transform</strong> data.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SEC 5 ===== -->
+<div id="sec5">
+  <div class="section-header" onclick="toggleSection('c5')">
+    <h1 style="border:none;margin:0;padding:0;">5. <code>filter</code> — Keep Only What Matches</h1>
+    <span class="toggle-icon" id="icon-c5">▼</span>
+  </div>
+  <div class="section-content" id="c5">
+    <div class="blue-box">
+      <strong>Purpose:</strong> <code>filter</code> keeps only the elements that pass a test (a predicate function that returns <code>true</code>) and returns a <strong>NEW array</strong>. The new array may be shorter — or even empty.
+    </div>
+
+    <h3>Syntax:</h3>
+    <pre>const newArr = originalArr.filter(function(element, index, array) {
+  return /* boolean: true to keep, false to skip */;
+});</pre>
+
+    <h3>Basic Example — Keep Only Odd Numbers:</h3>
+    <pre>const nums = [5, 1, 3, 2, 6];
+
+const odds = nums.filter(x => x % 2 !== 0);
+
+console.log(odds);   // [5, 1, 3]
+console.log(nums);   // [5, 1, 3, 2, 6]  ← original untouched!</pre>
+
+    <h3>Visualization:</h3>
+    <pre>Original:  [5,   1,   3,   2,   6]
+             │    │    │    │    │
+             ↓    ↓    ↓    ↓    ↓   ← predicate runs on each
+            odd? odd? odd? odd? odd?
+             ✓    ✓    ✓    ✗    ✗
+             │    │    │
+             ↓    ↓    ↓
+Result:    [5,   1,   3]         ← only the "kept" ones</pre>
+
+    <h3>Real-World Example — Filter Objects:</h3>
+    <pre>const users = [
+  { name: "Parth", age: 25 },
+  { name: "Deepika", age: 30 },
+  { name: "Rahul", age: 17 }
+];
+
+const adults = users.filter(u => u.age &gt;= 18);
+
+console.log(adults);
+// [
+//   { name: "Parth", age: 25 },
+//   { name: "Deepika", age: 30 }
+// ]</pre>
+
+    <div class="warn-box">
+      <strong>⚠️ Rules of thumb for filter:</strong>
+      <ul>
+        <li>The callback MUST return a <strong>boolean</strong> (or something truthy/falsy).</li>
+        <li>Returned array can be <strong>any length</strong> from 0 to the original length.</li>
+        <li>Original array is never mutated.</li>
+        <li>Use it when you want to <strong>keep a subset</strong> of data.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SEC 6 ===== -->
+<div id="sec6">
+  <div class="section-header" onclick="toggleSection('c6')">
+    <h1 style="border:none;margin:0;padding:0;">6. <code>reduce</code> — Collapse an Array Into One Value</h1>
+    <span class="toggle-icon" id="icon-c6">▼</span>
+  </div>
+  <div class="section-content" id="c6">
+    <div class="danger-box">
+      <strong>The most misunderstood method of the three.</strong> The name "reduce" isn't intuitive. But once you get it, it's the most powerful HOF in JavaScript.
+    </div>
+
+    <div class="blue-box">
+      <strong>Purpose:</strong> <code>reduce</code> takes an array and boils it down to a <strong>single value</strong>. That value can be a number, string, object, or even another array.
+    </div>
+
+    <h3>Syntax:</h3>
+    <pre>const result = arr.reduce(function(accumulator, currentValue, index, array) {
+  return /* new accumulator value */;
+}, initialValue);</pre>
+
+    <h3>The Two Key Parameters:</h3>
+    <table>
+      <tr><th>Parameter</th><th>What It Represents</th></tr>
+      <tr><td><code>accumulator (acc)</code></td><td>The "running total" — carries the result forward through each iteration</td></tr>
+      <tr><td><code>currentValue (curr)</code></td><td>The current element being processed (like <code>arr[i]</code>)</td></tr>
+      <tr><td><code>initialValue</code></td><td>The starting value for <code>acc</code> (the second argument to <code>reduce</code>)</td></tr>
+    </table>
+
+    <h3>Example 1 — Sum of Numbers:</h3>
+    <pre>const nums = [5, 1, 3, 2, 6];
+
+const total = nums.reduce((acc, curr) =&gt; acc + curr, 0);
+
+console.log(total);   // 17</pre>
+
+    <h3>Step-by-Step Trace:</h3>
+    <pre>Initial:  acc = 0
+
+Iter 1:   curr = 5  →  acc + curr = 0 + 5 = 5    →  acc becomes 5
+Iter 2:   curr = 1  →  acc + curr = 5 + 1 = 6    →  acc becomes 6
+Iter 3:   curr = 3  →  acc + curr = 6 + 3 = 9    →  acc becomes 9
+Iter 4:   curr = 2  →  acc + curr = 9 + 2 = 11   →  acc becomes 11
+Iter 5:   curr = 6  →  acc + curr = 11 + 6 = 17  →  acc becomes 17
+
+Final:    17</pre>
+
+    <h3>Example 2 — Find Maximum:</h3>
+    <pre>const nums = [5, 1, 3, 2, 6];
+
+const max = nums.reduce((acc, curr) =&gt; (curr &gt; acc ? curr : acc), -Infinity);
+
+console.log(max);   // 6</pre>
+
+    <p>Here <code>acc</code> holds the "biggest number seen so far." We start with <code>-Infinity</code> so the first real number always wins.</p>
+
+    <h3>Example 3 — Building an Array (yes, reduce can do this too):</h3>
+    <pre>const nums = [1, 2, 3, 4, 5];
+
+const doubled = nums.reduce((acc, curr) =&gt; {
+  acc.push(curr * 2);
+  return acc;
+}, []);
+
+console.log(doubled);   // [2, 4, 6, 8, 10]
+
+// This is what map does internally, more or less!</pre>
+
+    <h3>Example 4 — The Interview Classic (Grouping/Counting):</h3>
+    <pre>const users = [
+  { name: "Alok", age: 26 },
+  { name: "Donald", age: 75 },
+  { name: "Elon", age: 50 },
+  { name: "Deepika", age: 26 }
+];
+
+// Count how many users of each age:
+const ageCount = users.reduce((acc, user) =&gt; {
+  if (acc[user.age]) {
+    acc[user.age] += 1;
+  } else {
+    acc[user.age] = 1;
+  }
+  return acc;
+}, {});
+
+console.log(ageCount);
+// { "26": 2, "75": 1, "50": 1 }</pre>
+
+    <p>This "collapse an array into an object of counts" is a classic reduce pattern. Once you can write this without looking, you truly understand reduce.</p>
+
+    <h3>⚠️ What Happens Without an Initial Value?</h3>
+    <pre>const nums = [5, 1, 3, 2, 6];
+
+// No initial value passed:
+const total = nums.reduce((acc, curr) =&gt; acc + curr);
+console.log(total);   // 17 — still works!
+
+// What actually happened:
+// Iteration 0: acc = nums[0] = 5 (first element becomes initial acc)
+//              curr = nums[1] = 1
+//              acc becomes 5 + 1 = 6
+// Iteration 1: curr = nums[2] = 3, etc.
+
+// ⚠️ DANGER — empty arrays throw:
+[].reduce((a, c) =&gt; a + c);         // 💥 TypeError: Reduce of empty array with no initial value
+[].reduce((a, c) =&gt; a + c, 0);      // 0 ✅ safe with initial value</pre>
+
+    <div class="warn-box">
+      <strong>🎯 Best Practice:</strong> <strong>Always pass an initial value</strong>. It makes your code safer (handles empty arrays) and makes your intent clearer.
+    </div>
+  </div>
+</div>
+
+<!-- ===== SEC 7 ===== -->
+<div id="sec7">
+  <div class="section-header" onclick="toggleSection('c7')">
+    <h1 style="border:none;margin:0;padding:0;">7. <code>forEach</code> vs <code>map</code> — The Critical Distinction</h1>
+    <span class="toggle-icon" id="icon-c7">▼</span>
+  </div>
+  <div class="section-content" id="c7">
+    <div class="danger-box">
+      <strong>Interview classic — get this wrong and it's a red flag.</strong>
+    </div>
+
+    <h3>The Fundamental Difference:</h3>
+    <table>
+      <tr><th></th><th><code>forEach</code></th><th><code>map</code></th></tr>
+      <tr><td><strong>Returns</strong></td><td><code>undefined</code></td><td>A new array</td></tr>
+      <tr><td><strong>Purpose</strong></td><td>Side effects (log, modify DOM, call API)</td><td>Transform data</td></tr>
+      <tr><td><strong>Chainable?</strong></td><td>❌ No (returns undefined)</td><td>✅ Yes (returns array)</td></tr>
+      <tr><td><strong>Original array</strong></td><td>Never mutated</td><td>Never mutated</td></tr>
+    </table>
+
+    <h3>Proof:</h3>
+    <pre>const nums = [1, 2, 3];
+
+const a = nums.forEach(n =&gt; n * 2);   // returns undefined
+const b = nums.map(n =&gt; n * 2);        // returns [2, 4, 6]
+
+console.log(a);      // undefined
+console.log(b);      // [2, 4, 6]
+console.log(nums);   // [1, 2, 3]  — unchanged either way</pre>
+
+    <h3>When to Use Which:</h3>
+
+    <p><strong>Use <code>forEach</code> when:</strong></p>
+    <ul>
+      <li>You want to do something with each element without producing a new array</li>
+      <li>Side effects: logging, updating the DOM, saving to a database, sending analytics</li>
+    </ul>
+    <pre>// Good use of forEach — side effect (logging):
+users.forEach(u =&gt; console.log(u.name));
+
+// Good use — DOM update:
+buttons.forEach(btn =&gt; btn.addEventListener("click", handler));</pre>
+
+    <p><strong>Use <code>map</code> when:</strong></p>
+    <ul>
+      <li>You want to transform the array into a new one</li>
+      <li>You want to chain more methods after</li>
+    </ul>
+    <pre>// Good use of map — transforming data:
+const names = users.map(u =&gt; u.name);
+
+// Good use — rendering in React:
+{items.map(item =&gt; &lt;Item key={item.id} data={item} /&gt;)}</pre>
+
+    <div class="warn-box">
+      <strong>⚠️ Another key difference — you can't break out of forEach:</strong>
+      <pre>// This does NOT work — return doesn't break the loop:
+[1, 2, 3, 4, 5].forEach(n =&gt; {
+  if (n === 3) return;   // ← this returns from THE CURRENT ITERATION only
+  console.log(n);        // still runs for 4 and 5!
+});
+// Output: 1, 2, 4, 5
+
+// If you need to break early, use a regular for loop or find/some/every.</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SEC 8 ===== -->
+<div id="sec8">
+  <div class="section-header" onclick="toggleSection('c8')">
+    <h1 style="border:none;margin:0;padding:0;">⭐ 8. Method Chaining — <code>filter().map().reduce()</code></h1>
+    <span class="toggle-icon" id="icon-c8">▼</span>
+  </div>
+  <div class="section-content" id="c8">
+    <div class="purple-box">
+      <strong>⭐ THE most powerful pattern in functional JavaScript.</strong> You'll write this pattern hundreds of times in real React and Node.js code. Master it.
+    </div>
+
+    <h3>The Setup — Real-World Data:</h3>
+    <pre>const users = [
+  { name: "Parth", age: 25, active: true },
+  { name: "Deepika", age: 30, active: false },
+  { name: "Rahul", age: 22, active: true },
+  { name: "Kavya", age: 28, active: true }
+];
+
+// Task: Sum the ages of only the ACTIVE users
+const totalActiveAge = users
+  .filter(u =&gt; u.active)          // keep only active
+  .map(u =&gt; u.age)                 // extract age
+  .reduce((sum, age) =&gt; sum + age, 0);  // sum them
+
+console.log(totalActiveAge);   // 75</pre>
+
+    <h3>Why This Chain Works — Trace-Through:</h3>
+
+    <p><strong>Step 1:</strong> Start with the original <code>users</code> array.</p>
+    <pre>users = [
+  { name: "Parth",   age: 25, active: true  },
+  { name: "Deepika", age: 30, active: false },
+  { name: "Rahul",   age: 22, active: true  },
+  { name: "Kavya",   age: 28, active: true  }
+]</pre>
+
+    <p><strong>Step 2:</strong> <code>.filter(u => u.active)</code> returns a NEW array with only active users.</p>
+    <pre>afterFilter = [
+  { name: "Parth", age: 25, active: true },
+  { name: "Rahul", age: 22, active: true },
+  { name: "Kavya", age: 28, active: true }
+]</pre>
+
+    <p><strong>Step 3:</strong> <code>.map(u => u.age)</code> is called on THAT new array. It returns another new array of just the ages.</p>
+    <pre>afterMap = [25, 22, 28]</pre>
+
+    <p><strong>Step 4:</strong> <code>.reduce((sum, age) => sum + age, 0)</code> is called on the map's output.</p>
+    <pre>afterReduce = 0 + 25 + 22 + 28 = 75</pre>
+
+    <div class="blue-box">
+      <strong>🔑 Why chaining works:</strong> Both <code>filter</code> and <code>map</code> return arrays. Since arrays have <code>.filter</code>, <code>.map</code>, and <code>.reduce</code> methods on their prototype (Chapter 6!), you can call the next method directly on the previous method's return value. The chain literally reads like a data pipeline.
+    </div>
+
+    <h3>Common Chain Patterns You'll Use:</h3>
+
+    <pre>// Get names of active users
+users.filter(u =&gt; u.active).map(u =&gt; u.name);
+
+// Get emails of users older than 18
+users.filter(u =&gt; u.age &gt; 18).map(u =&gt; u.email);
+
+// Sum of prices for items in stock
+items.filter(i =&gt; i.inStock).reduce((sum, i) =&gt; sum + i.price, 0);
+
+// Count of premium users
+users.filter(u =&gt; u.plan === "premium").length;</pre>
+
+    <h3>Same Result — Reduce ONLY (Advanced):</h3>
+    <p>The chain <code>filter().map().reduce()</code> can always be rewritten as a single <code>reduce()</code>. Sometimes this is more efficient (only one pass through the array) but usually less readable:</p>
+
+    <pre>// Chain version (readable):
+users.filter(u =&gt; u.active).map(u =&gt; u.age).reduce((s, a) =&gt; s + a, 0);
+
+// Single reduce version (one pass):
+users.reduce((sum, u) =&gt; u.active ? sum + u.age : sum, 0);
+
+// Both return 75. Chain wins for readability. Single reduce wins for huge arrays.</pre>
+
+    <div class="note-box">
+      <strong>🎯 Interview tip:</strong> Prefer chaining for readability. Only rewrite as a single reduce if performance profiling shows it's needed. Readable code beats clever code 9 times out of 10.
+    </div>
+  </div>
+</div>
+
+<!-- ===== SEC 9 ===== -->
+<div id="sec9">
+  <div class="section-header" onclick="toggleSection('c9')">
+    <h1 style="border:none;margin:0;padding:0;">⭐ 9. Implementing map, filter, reduce Yourself (Polyfills)</h1>
+    <span class="toggle-icon" id="icon-c9">▼</span>
+  </div>
+  <div class="section-content" id="c9">
+    <div class="purple-box">
+      <strong>⭐ Hot interview question:</strong> "Implement your own map / filter / reduce from scratch." If you can write these without looking, you truly understand HOFs. Bonus: this ties back to Chapter 6 (prototypes).
+    </div>
+
+    <h3>Implementation 1 — <code>myMap</code>:</h3>
+    <pre>Array.prototype.myMap = function(callback) {
+  const result = [];
+  for (let i = 0; i &lt; this.length; i++) {
+    result.push(callback(this[i], i, this));
+    //                    ↑        ↑    ↑
+    //                    │        │    └── the whole array
+    //                    │        └── the index
+    //                    └── the current element
+  }
+  return result;
+};
+
+// Test it:
+const nums = [1, 2, 3];
+console.log(nums.myMap(n =&gt; n * 2));   // [2, 4, 6]
+console.log(nums.myMap((n, i) =&gt; n + "_" + i));   // ["1_0", "2_1", "3_2"]</pre>
+
+    <p><strong>Why it works:</strong></p>
+    <ul>
+      <li><code>this</code> inside the method refers to the array it's called on (dot rule, remember Ch 3?).</li>
+      <li>We create a new <code>result</code> array — never mutate the original.</li>
+      <li>We call the callback with 3 args (element, index, array) — matching native map's API.</li>
+      <li>We <code>push</code> whatever the callback returns.</li>
+    </ul>
+
+    <h3>Implementation 2 — <code>myFilter</code>:</h3>
+    <pre>Array.prototype.myFilter = function(callback) {
+  const result = [];
+  for (let i = 0; i &lt; this.length; i++) {
+    if (callback(this[i], i, this)) {   // ← only push if predicate is truthy
+      result.push(this[i]);
+    }
+  }
+  return result;
+};
+
+// Test:
+console.log([1, 2, 3, 4, 5].myFilter(n =&gt; n &gt; 2));   // [3, 4, 5]</pre>
+
+    <p><strong>Key difference from map:</strong> we <code>push</code> only when the callback returns truthy. Otherwise we skip.</p>
+
+    <h3>Implementation 3 — <code>myReduce</code>:</h3>
+    <pre>Array.prototype.myReduce = function(callback, initialValue) {
+  let acc = initialValue !== undefined ? initialValue : this[0];
+  const startIdx = initialValue !== undefined ? 0 : 1;
+
+  for (let i = startIdx; i &lt; this.length; i++) {
+    acc = callback(acc, this[i], i, this);
+  }
+  return acc;
+};
+
+// Test:
+console.log([1, 2, 3, 4].myReduce((a, c) =&gt; a + c, 0));   // 10
+console.log([1, 2, 3, 4].myReduce((a, c) =&gt; a + c));       // 10 (no initial)</pre>
+
+    <p><strong>Notice the subtle handling of the initial value:</strong> if no initial is passed, we start with <code>arr[0]</code> as <code>acc</code> and begin the loop at index 1. This matches native behavior.</p>
+
+    <div class="danger-box">
+      <strong>⚠️ Why you shouldn't do this in production:</strong> Extending built-in prototypes (like <code>Array.prototype</code>) can cause naming collisions with future JS spec additions or third-party libraries. Prefix your polyfills with something unique (<code>myMap</code>, <code>__customMap</code>) or use standalone functions.
+    </div>
+
+    <h3>Bonus — Chaining Your Own Implementations:</h3>
+    <pre>const result = [1, 2, 3, 4, 5]
+  .myFilter(n =&gt; n % 2 !== 0)   // [1, 3, 5]
+  .myMap(n =&gt; n * 10)             // [10, 30, 50]
+  .myReduce((s, n) =&gt; s + n, 0);  // 90
+
+console.log(result);   // 90</pre>
+
+    <p>Because your polyfills return real arrays, they chain the same way native methods do. Prototypes in action! 🎯</p>
+  </div>
+</div>
+
+<!-- ===== SEC 10 ===== -->
+<div id="sec10">
+  <div class="section-header" onclick="toggleSection('c10')">
+    <h1 style="border:none;margin:0;padding:0;">10. HOFs + Closures — The Function Factory Pattern</h1>
+    <span class="toggle-icon" id="icon-c10">▼</span>
+  </div>
+  <div class="section-content" id="c10">
+    <p>HOFs get truly powerful when combined with closures. This is where you saw the <code>multiplier</code> pattern (Q8):</p>
+
+    <pre>function multiplier(factor) {
+  return function(number) {
+    return number * factor;   // ← closes over `factor`
+  };
+}
+
+const double = multiplier(2);
+const triple = multiplier(3);
+const times10 = multiplier(10);
+
+console.log(double(5));    // 10
+console.log(triple(5));    // 15
+console.log(times10(5));   // 50</pre>
+
+    <h3>What Just Happened — Two Concepts Combined:</h3>
+
+    <ol>
+      <li><strong>First-Class Functions:</strong> <code>multiplier</code> is a HOF because it <strong>returns a function</strong>.</li>
+      <li><strong>Closures:</strong> The returned inner function <strong>remembers</strong> the <code>factor</code> variable from its parent's scope — even after <code>multiplier()</code> has finished executing and its EC is destroyed.</li>
+    </ol>
+
+    <h3>Memory Visualization:</h3>
+    <pre>After: const double = multiplier(2);
+
+// multiplier(2) has finished executing. Its EC is destroyed.
+// But `double` is still around, and its closure holds onto `factor = 2`.
+
+CLOSURE OF double:
+┌────────────────────┐
+│ factor: 2          │  ← preserved from multiplier's dead EC
+└────────────────────┘
+         ↑
+         │
+      double  ── when called with 5, computes 5 * factor = 5 * 2 = 10</pre>
+
+    <h3>Using It With map — The Magic Combo:</h3>
+    <pre>const nums = [1, 2, 3, 4];
+
+const doubled = nums.map(double);        // [2, 4, 6, 8]
+const tripled = nums.map(triple);        // [3, 6, 9, 12]
+
+// You can even skip the intermediate variable:
+const times5 = nums.map(multiplier(5));  // [5, 10, 15, 20]</pre>
+
+    <p>Look at <code>nums.map(multiplier(5))</code> — this reads beautifully:</p>
+    <ul>
+      <li><code>multiplier(5)</code> returns a function that multiplies by 5</li>
+      <li><code>nums.map(...)</code> uses that function to transform each element</li>
+    </ul>
+
+    <div class="blue-box">
+      <strong>🔑 The Pattern's Name:</strong> This is called a <strong>Function Factory</strong> — a HOF that produces specialized functions on demand. It's the foundation of <strong>currying</strong> (which you'll formally cover in Ch 6.5).
+    </div>
+
+    <h3>Real-World Function Factory Examples:</h3>
+
+    <pre>// A "greater than X" filter factory:
+const greaterThan = (min) =&gt; (n) =&gt; n &gt; min;
+
+const nums = [1, 5, 10, 15, 20];
+nums.filter(greaterThan(10));   // [15, 20]
+nums.filter(greaterThan(5));    // [10, 15, 20]
+
+// A "field extractor" factory:
+const pick = (field) =&gt; (obj) =&gt; obj[field];
+
+const users = [{ name: "Parth" }, { name: "Deepika" }];
+users.map(pick("name"));   // ["Parth", "Deepika"]
+
+// A "prefix" factory:
+const prefix = (str) =&gt; (val) =&gt; str + val;
+
+const nums = [1, 2, 3];
+nums.map(prefix("#"));   // ["#1", "#2", "#3"]</pre>
+
+    <p>Each of these is <strong>HOFs + closures</strong> in action. You'll write these constantly in production React code.</p>
+  </div>
+</div>
+
+<!-- ===== SEC 11 ===== -->
+<div id="sec11">
+  <div class="section-header" onclick="toggleSection('c11')">
+    <h1 style="border:none;margin:0;padding:0;">11. Real-World Patterns You'll Use Every Day</h1>
+    <span class="toggle-icon" id="icon-c11">▼</span>
+  </div>
+  <div class="section-content" id="c11">
+
+    <h2>Pattern 1 — Rendering Lists in React</h2>
+    <pre>function UserList({ users }) {
+  return (
+    &lt;ul&gt;
+      {users.map(u =&gt; (
+        &lt;li key={u.id}&gt;{u.name}&lt;/li&gt;
+      ))}
+    &lt;/ul&gt;
+  );
+}
+// map is used to transform data → JSX elements. Most common HOF in React.</pre>
+
+    <h2>Pattern 2 — Search / Filter UI</h2>
+    <pre>const filteredUsers = users.filter(u =&gt;
+  u.name.toLowerCase().includes(searchQuery.toLowerCase())
+);
+// Used in every search box you've ever seen.</pre>
+
+    <h2>Pattern 3 — Total Calculation</h2>
+    <pre>const cartTotal = cartItems.reduce((sum, item) =&gt; sum + item.price * item.qty, 0);
+// Standard shopping cart pattern.</pre>
+
+    <h2>Pattern 4 — Group By</h2>
+    <pre>const users = [
+  { name: "Parth",   dept: "Cloud" },
+  { name: "Rahul",   dept: "AI" },
+  { name: "Deepika", dept: "Cloud" }
+];
+
+const grouped = users.reduce((acc, user) =&gt; {
+  if (!acc[user.dept]) acc[user.dept] = [];
+  acc[user.dept].push(user);
+  return acc;
+}, {});
+
+// {
+//   Cloud: [{ name: "Parth", ... }, { name: "Deepika", ... }],
+//   AI:    [{ name: "Rahul", ... }]
+// }</pre>
+
+    <h2>Pattern 5 — Flattening</h2>
+    <pre>const nested = [[1, 2], [3, 4], [5]];
+
+const flat = nested.reduce((acc, curr) =&gt; acc.concat(curr), []);
+console.log(flat);   // [1, 2, 3, 4, 5]
+
+// Or use the modern built-in:
+nested.flat();   // [1, 2, 3, 4, 5]</pre>
+
+    <h2>Pattern 6 — Extracting IDs for API Calls</h2>
+    <pre>const selectedIds = selectedUsers.map(u =&gt; u.id);
+await api.deleteUsers(selectedIds);</pre>
+
+    <h2>Pattern 7 — Chained Sort + Filter + Map</h2>
+    <pre>const displayNames = users
+  .filter(u =&gt; u.active)
+  .sort((a, b) =&gt; a.name.localeCompare(b.name))
+  .map(u =&gt; u.name);
+// Active users, sorted alphabetically, just their names.</pre>
+
+    <div class="note-box">
+      <strong>💡 Once you internalize these 7 patterns, you'll spot them everywhere.</strong> Real production code is 60% these patterns combined in different ways.
+    </div>
+  </div>
+</div>
+
+<!-- ===== SEC 12 ===== -->
+<div id="sec12">
+  <div class="section-header" onclick="toggleSection('c12')">
+    <h1 style="border:none;margin:0;padding:0;">12. Common Gotchas &amp; Pitfalls</h1>
+    <span class="toggle-icon" id="icon-c12">▼</span>
+  </div>
+  <div class="section-content" id="c12">
+
+    <h2>Gotcha A: Forgetting to return in map</h2>
+    <pre>const nums = [1, 2, 3];
+
+// ❌ WRONG — no return
+const doubled = nums.map(n =&gt; {
+  n * 2;   // just an expression, not returned
+});
+console.log(doubled);   // [undefined, undefined, undefined]
+
+// ✅ RIGHT
+const doubled = nums.map(n =&gt; {
+  return n * 2;
+});
+// or the concise arrow:
+const doubled = nums.map(n =&gt; n * 2);</pre>
+
+    <h2>Gotcha B: reduce on empty array without initial value</h2>
+    <pre>[].reduce((a, c) =&gt; a + c);      // 💥 TypeError: Reduce of empty array with no initial value
+[].reduce((a, c) =&gt; a + c, 0);   // ✅ 0 (safe)
+
+// Rule: ALWAYS pass an initial value to reduce.</pre>
+
+    <h2>Gotcha C: Can't break out of forEach or map</h2>
+    <pre>// You can't stop iteration mid-way:
+[1, 2, 3, 4, 5].forEach(n =&gt; {
+  if (n === 3) return;   // returns from THIS iteration, not the loop
+  console.log(n);        // prints 1, 2, 4, 5
+});
+
+// If you need early exit, use for...of, some(), every(), or find():
+for (const n of [1, 2, 3, 4, 5]) {
+  if (n === 3) break;   // ✅ this works
+  console.log(n);       // prints 1, 2
+}</pre>
+
+    <h2>Gotcha D: map when you should use forEach (or vice versa)</h2>
+    <pre>// ❌ Anti-pattern: using map when you don't use the result
+users.map(u =&gt; console.log(u.name));   // creates an array of undefineds for nothing!
+
+// ✅ Use forEach for side effects only:
+users.forEach(u =&gt; console.log(u.name));
+
+// ❌ Anti-pattern: using forEach and manually pushing
+const names = [];
+users.forEach(u =&gt; names.push(u.name));
+
+// ✅ Just use map:
+const names = users.map(u =&gt; u.name);</pre>
+
+    <h2>Gotcha E: reduce that returns nothing</h2>
+    <pre>// ❌ WRONG — forgot to return acc
+const total = nums.reduce((acc, curr) =&gt; {
+  acc + curr;   // returns undefined
+}, 0);
+// TypeError on iteration 2: undefined + curr → NaN
+
+// ✅ RIGHT
+const total = nums.reduce((acc, curr) =&gt; {
+  return acc + curr;
+}, 0);</pre>
+
+    <h2>Gotcha F: Chain order matters</h2>
+    <pre>// Different order = different result!
+
+// Filter first, then map — efficient (smaller array to map over):
+users.filter(u =&gt; u.active).map(u =&gt; u.name);
+
+// Map first, then filter — inefficient (map on ALL users first, then filter):
+users.map(u =&gt; u.name).filter(name =&gt; name.startsWith("P"));
+// (this one is fine too, just less efficient with huge arrays)
+
+// Rule: filter EARLIER to reduce work in later steps.</pre>
+  </div>
+</div>
+
+<!-- ===== SEC 13 ===== -->
+<div id="sec13">
+  <div class="section-header" onclick="toggleSection('c13')">
+    <h1 style="border:none;margin:0;padding:0;">13. Master Cheat Sheet</h1>
+    <span class="toggle-icon" id="icon-c13">▼</span>
+  </div>
+  <div class="section-content" id="c13">
+    <table>
+      <tr><th>Concept</th><th>Key Point</th></tr>
+      <tr><td>HOF Definition</td><td>Takes a function as arg OR returns a function</td></tr>
+      <tr><td>Why HOFs exist</td><td>DRY + abstraction. Extract iteration logic from business logic.</td></tr>
+      <tr><td>First-class functions</td><td>Functions can be assigned, passed, returned, stored — enables HOFs</td></tr>
+      <tr><td><code>map</code></td><td>Transform each element → NEW array of SAME length. Never mutates.</td></tr>
+      <tr><td><code>filter</code></td><td>Keep elements where predicate is truthy → NEW array of ≤ length. Never mutates.</td></tr>
+      <tr><td><code>reduce</code></td><td>Collapse array to single value using accumulator. Always pass initial value.</td></tr>
+      <tr><td><code>forEach</code></td><td>Iterate for side effects. Returns <code>undefined</code>. NOT chainable.</td></tr>
+      <tr><td>map vs forEach</td><td>map returns new array (transform). forEach returns undefined (side effects).</td></tr>
+      <tr><td>Chaining</td><td>Works because filter/map return arrays with more prototype methods on them.</td></tr>
+      <tr><td>reduce without init</td><td>First element becomes acc. Throws on empty array. Always pass init to be safe.</td></tr>
+      <tr><td>Polyfills</td><td>Add to <code>Array.prototype</code>. <code>this</code> = the array. Return new array (map/filter) or acc (reduce).</td></tr>
+      <tr><td>Function Factory</td><td>HOF that returns a function. Combined with closures = specialized functions on demand.</td></tr>
+      <tr><td>Break from forEach?</td><td>You can't. Use for...of / some() / every() / find() instead.</td></tr>
+      <tr><td>Chain order</td><td>Filter early to reduce work in later steps.</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ===== SEC 14 ===== -->
+<div id="sec14">
+  <div class="section-header" onclick="toggleSection('c14')">
+    <h1 style="border:none;margin:0;padding:0;">14. Interview Answer Templates</h1>
+    <span class="toggle-icon" id="icon-c14">▼</span>
+  </div>
+  <div class="section-content" id="c14">
+    <h3>Q: "What is a higher-order function?"</h3>
+    <div class="note-box" style="line-height:1.8;">
+      <em>"A higher-order function is a function that either takes another function as an argument or returns a function. This is possible in JavaScript because functions are first-class citizens — they can be treated like any other value. Common examples include <code>map</code>, <code>filter</code>, <code>reduce</code>, <code>setTimeout</code>, and event listeners. HOFs enable functional programming patterns like abstracting iteration logic away from business logic."</em>
+    </div>
+
+    <h3>Q: "What's the difference between map and forEach?"</h3>
+    <div class="note-box" style="line-height:1.8;">
+      <em>"Both iterate over an array without mutating it. The key difference is what they return: <code>map</code> returns a new array of transformed values, so you use it when you want to transform data. <code>forEach</code> returns <code>undefined</code>, so it's used for side effects like logging or updating the DOM. Because <code>map</code> returns an array, you can chain more methods on it. <code>forEach</code> can't be chained."</em>
+    </div>
+
+    <h3>Q: "Explain reduce."</h3>
+    <div class="note-box" style="line-height:1.8;">
+      <em>"<code>reduce</code> collapses an array into a single value. It takes a callback with two main parameters — <code>accumulator</code> and <code>currentValue</code> — plus an initial value as the second argument. The accumulator carries the result forward through each iteration. Reduce is powerful because that 'single value' can be anything: a number, a string, an object, or even a new array. Common uses include summing, finding max/min, grouping, and counting occurrences. Always pass an initial value to safely handle empty arrays."</em>
+    </div>
+
+    <h3>Q: "Implement your own map function."</h3>
+    <div class="note-box" style="line-height:1.8;">
+      <em>"I'd add it to <code>Array.prototype</code> as <code>myMap</code>. Inside, I'd create an empty result array, loop through <code>this</code> (which refers to the array the method is called on), call the callback with element, index, and array as arguments, and push whatever it returns into the result. Finally I'd return the result. This mirrors native <code>map</code>'s behavior — same length as input, never mutates the original."</em>
+    </div>
+
+    <h3>Q: "Why does <code>arr.filter().map().reduce()</code> work?"</h3>
+    <div class="note-box" style="line-height:1.8;">
+      <em>"Because <code>filter</code> and <code>map</code> both return new arrays. Arrays inherit their methods from <code>Array.prototype</code>, so the returned arrays have <code>filter</code>, <code>map</code>, and <code>reduce</code> available on them too. Each method in the chain operates on the result of the previous method. It's essentially a data pipeline: filter narrows the data, map transforms it, reduce collapses it to a final value. This is why chainable methods are so common in functional programming."</em>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SEC 15: PRACTICE ===== -->
+<div class="page-break" id="sec15">
+  <div class="section-header" onclick="toggleSection('c15')">
+    <h1 style="border:none;margin:0;padding:0;">15. Practice Sheet — 10 Questions</h1>
+    <span class="toggle-icon" id="icon-c15">▼</span>
+  </div>
+  <div class="section-content" id="c15">
+    <p><strong>📝 Instructions:</strong> Predict exact output. State whether the callback pattern is map, filter, reduce, or something else.</p>
+
+<div class="question-block" id="q1">
+<h2>Q1 — map Basics <span class="tag tag-easy">Easy</span></h2>
+<pre>const arr = [1, 2, 3, 4];
+const result = arr.map(x =&gt; x * x);
+console.log(result);
+console.log(arr);</pre>
+<p><strong>1)</strong> Both outputs?</p>
+<p><strong>2)</strong> Is <code>arr</code> mutated?</p>
+<a class="nav-link" href="#ans1">→ See Answer</a>
+</div>
+
+<div class="question-block" id="q2">
+<h2>Q2 — filter Basics <span class="tag tag-easy">Easy</span></h2>
+<pre>const arr = [1, 2, 3, 4, 5, 6];
+const result = arr.filter(x =&gt; x % 3 === 0);
+console.log(result);
+console.log(result.length);</pre>
+<p><strong>1)</strong> Both outputs?</p>
+<a class="nav-link" href="#ans2">→ See Answer</a>
+</div>
+
+<div class="question-block" id="q3">
+<h2>Q3 — Forgotten Return <span class="tag tag-easy">Easy</span></h2>
+<pre>const arr = [1, 2, 3];
+const result = arr.map(x =&gt; { x * 2 });
+console.log(result);</pre>
+<p><strong>1)</strong> Output?</p>
+<p><strong>2)</strong> Why?</p>
+<a class="nav-link" href="#ans3">→ See Answer</a>
+</div>
+
+<div class="question-block" id="q4">
+<h2>Q4 — reduce Trace <span class="tag tag-medium">Medium</span></h2>
+<pre>const arr = [1, 2, 3, 4];
+const result = arr.reduce((acc, curr) =&gt; acc * curr, 1);
+console.log(result);</pre>
+<p><strong>1)</strong> Output?</p>
+<p><strong>2)</strong> Trace each iteration.</p>
+<a class="nav-link" href="#ans4">→ See Answer</a>
+</div>
+
+<div class="question-block" id="q5">
+<h2>Q5 — Chain It <span class="tag tag-medium">Medium</span></h2>
+<pre>const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+const result = numbers
+  .filter(n =&gt; n % 2 === 0)
+  .map(n =&gt; n * n)
+  .reduce((sum, n) =&gt; sum + n, 0);
+
+console.log(result);</pre>
+<p><strong>1)</strong> Output?</p>
+<p><strong>2)</strong> What does each stage produce?</p>
+<a class="nav-link" href="#ans5">→ See Answer</a>
+</div>
+
+<div class="question-block" id="q6">
+<h2>Q6 — forEach vs map <span class="tag tag-medium">Medium</span></h2>
+<pre>const arr = [1, 2, 3];
+
+const a = arr.forEach(x =&gt; x * 2);
+const b = arr.map(x =&gt; x * 2);
+
+console.log(a);
+console.log(b);
+console.log(a === b);</pre>
+<p><strong>1)</strong> All 3 outputs?</p>
+<a class="nav-link" href="#ans6">→ See Answer</a>
+</div>
+
+<div class="question-block" id="q7">
+<h2>Q7 — Count Occurrences <span class="tag tag-hard">Hard</span></h2>
+<pre>const fruits = ["apple", "banana", "apple", "orange", "banana", "apple"];
+
+const count = fruits.reduce((acc, fruit) =&gt; {
+  acc[fruit] = (acc[fruit] || 0) + 1;
+  return acc;
+}, {});
+
+console.log(count);</pre>
+<p><strong>1)</strong> Output?</p>
+<p><strong>2)</strong> What does <code>(acc[fruit] || 0) + 1</code> do?</p>
+<a class="nav-link" href="#ans7">→ See Answer</a>
+</div>
+
+<div class="question-block" id="q8">
+<h2>Q8 — Function Factory <span class="tag tag-hard">Hard</span></h2>
+<pre>function makeAdder(x) {
+  return function(y) {
+    return x + y;
+  };
+}
+
+const add10 = makeAdder(10);
+const add100 = makeAdder(100);
+
+const nums = [1, 2, 3];
+const result1 = nums.map(add10);
+const result2 = nums.map(add100);
+
+console.log(result1);
+console.log(result2);
+console.log(nums.map(makeAdder(1000)));</pre>
+<p><strong>1)</strong> All 3 outputs?</p>
+<p><strong>2)</strong> Which 2 chapter concepts are combined here?</p>
+<a class="nav-link" href="#ans8">→ See Answer</a>
+</div>
+
+<div class="question-block" id="q9">
+<h2>Q9 — Implement myFilter <span class="tag tag-expert">Expert</span></h2>
+<p>Write your own <code>myFilter</code> polyfill without looking at the notes. It should:</p>
+<ul>
+  <li>Be added to <code>Array.prototype</code></li>
+  <li>Take a callback (predicate)</li>
+  <li>Return a new array with only the elements where the callback returns truthy</li>
+  <li>Not mutate the original array</li>
+</ul>
+<pre>Array.prototype.myFilter = function(callback) {
+  // Your code here
+};
+
+// Should work like:
+[1, 2, 3, 4, 5].myFilter(n =&gt; n &gt; 2);   // [3, 4, 5]</pre>
+<a class="nav-link" href="#ans9">→ See Answer</a>
+</div>
+
+<div class="question-block" id="q10">
+<h2>Q10 — The Final Boss <span class="tag tag-expert">Expert</span></h2>
+<pre>const orders = [
+  { user: "Parth",   items: [{ name: "book", price: 200 }, { name: "pen", price: 20 }] },
+  { user: "Deepika", items: [{ name: "bag",  price: 500 }] },
+  { user: "Parth",   items: [{ name: "chair", price: 1200 }] },
+  { user: "Rahul",   items: [{ name: "book", price: 200 }, { name: "lamp", price: 300 }] }
+];
+
+// Q10a: Total revenue across all orders
+const totalRevenue = orders.reduce((total, order) =&gt; {
+  return total + order.items.reduce((sum, item) =&gt; sum + item.price, 0);
+}, 0);
+
+// Q10b: Total spent by each user (grouped)
+const spendByUser = orders.reduce((acc, order) =&gt; {
+  const orderTotal = order.items.reduce((sum, item) =&gt; sum + item.price, 0);
+  acc[order.user] = (acc[order.user] || 0) + orderTotal;
+  return acc;
+}, {});
+
+console.log(totalRevenue);
+console.log(spendByUser);</pre>
+<p><strong>1)</strong> Both outputs?</p>
+<p><strong>2)</strong> Explain the "nested reduce" in Q10a.</p>
+<a class="nav-link" href="#ans10">→ See Answer</a>
+</div>
+
+  </div>
+</div>
+
+<!-- ===== SEC 16: ANSWERS ===== -->
+<div class="page-break" id="sec16">
+  <div class="section-header" onclick="toggleSection('c16')">
+    <h1 style="border:none;margin:0;padding:0;">16. Answer Key</h1>
+    <span class="toggle-icon" id="icon-c16">▼</span>
+  </div>
+  <div class="section-content" id="c16">
+
+<h2 id="ans1">Q1 — Answer</h2>
+<pre>[1, 4, 9, 16]
+[1, 2, 3, 4]</pre>
+<p><strong>Explanation:</strong> <code>map(x =&gt; x * x)</code> squares each element and returns a new array. The original <code>arr</code> is untouched — this is the key rule of <code>map</code>. Never mutates.</p>
+<a class="nav-link back" href="#q1">← Back to Question 1</a><hr>
+
+<h2 id="ans2">Q2 — Answer</h2>
+<pre>[3, 6]
+2</pre>
+<p><strong>Explanation:</strong> <code>filter(x =&gt; x % 3 === 0)</code> keeps only multiples of 3, which are 3 and 6. The resulting array has length 2.</p>
+<a class="nav-link back" href="#q2">← Back to Question 2</a><hr>
+
+<h2 id="ans3">Q3 — Answer</h2>
+<pre>[undefined, undefined, undefined]</pre>
+<p><strong>Explanation:</strong> The arrow function uses curly braces <code>{}</code> which creates a function body. Without an explicit <code>return</code>, it returns <code>undefined</code>. So every element in the new array is <code>undefined</code>.</p>
+<p><strong>Fix:</strong> either add <code>return x * 2;</code> inside the braces, OR remove the braces so it becomes a concise arrow: <code>x =&gt; x * 2</code>.</p>
+<a class="nav-link back" href="#q3">← Back to Question 3</a><hr>
+
+<h2 id="ans4">Q4 — Answer</h2>
+<pre>24</pre>
+<p><strong>Trace:</strong></p>
+<pre>Initial:  acc = 1
+Iter 1:   curr = 1  →  acc * curr = 1 * 1 = 1    →  acc = 1
+Iter 2:   curr = 2  →  1 * 2 = 2                  →  acc = 2
+Iter 3:   curr = 3  →  2 * 3 = 6                  →  acc = 6
+Iter 4:   curr = 4  →  6 * 4 = 24                 →  acc = 24
+
+Final: 24  (This is 4 factorial! reduce is great for aggregations like this.)</pre>
+<a class="nav-link back" href="#q4">← Back to Question 4</a><hr>
+
+<h2 id="ans5">Q5 — Answer</h2>
+<pre>220</pre>
+<p><strong>Stage-by-stage:</strong></p>
+<pre>Start:     [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+.filter:   [2, 4, 6, 8, 10]           (only evens)
+.map:      [4, 16, 36, 64, 100]       (each squared)
+.reduce:   4 + 16 + 36 + 64 + 100 = 220</pre>
+<a class="nav-link back" href="#q5">← Back to Question 5</a><hr>
+
+<h2 id="ans6">Q6 — Answer</h2>
+<pre>undefined
+[2, 4, 6]
+false</pre>
+<p><strong>Explanation:</strong> <code>forEach</code> always returns <code>undefined</code>, no matter what the callback returns. <code>map</code> returns a new array. Since <code>undefined !== [2, 4, 6]</code>, the third output is <code>false</code>. This is the fundamental difference between the two.</p>
+<a class="nav-link back" href="#q6">← Back to Question 6</a><hr>
+
+<h2 id="ans7">Q7 — Answer</h2>
+<pre>{ apple: 3, banana: 2, orange: 1 }</pre>
+<p><strong>Explanation:</strong></p>
+<ul>
+  <li><code>acc[fruit] || 0</code> — if the key exists on <code>acc</code>, use its value; otherwise use <code>0</code>. This handles the "first time we see this fruit" case.</li>
+  <li><code>+ 1</code> increments the count.</li>
+  <li>We return <code>acc</code> every iteration so the next iteration gets the updated object.</li>
+</ul>
+<p>This is the classic "count occurrences" pattern with reduce.</p>
+<a class="nav-link back" href="#q7">← Back to Question 7</a><hr>
+
+<h2 id="ans8">Q8 — Answer</h2>
+<pre>[11, 12, 13]
+[101, 102, 103]
+[1001, 1002, 1003]</pre>
+<p><strong>The two concepts combined:</strong></p>
+<ol>
+  <li><strong>Higher-Order Functions</strong> — <code>makeAdder</code> is a HOF because it returns a function.</li>
+  <li><strong>Closures</strong> — the returned function remembers <code>x</code> from <code>makeAdder</code>'s scope, even after <code>makeAdder</code> has finished executing.</li>
+</ol>
+<p><code>add10</code> is a specialized function that "adds 10" — its closure preserves <code>x = 10</code>. Same for <code>add100</code>. This is the <strong>function factory pattern</strong>.</p>
+<a class="nav-link back" href="#q8">← Back to Question 8</a><hr>
+
+<h2 id="ans9">Q9 — Answer</h2>
+<pre>Array.prototype.myFilter = function(callback) {
+  const result = [];
+  for (let i = 0; i &lt; this.length; i++) {
+    if (callback(this[i], i, this)) {
+      result.push(this[i]);
+    }
+  }
+  return result;
+};
+
+// Test:
+console.log([1, 2, 3, 4, 5].myFilter(n =&gt; n &gt; 2));   // [3, 4, 5]</pre>
+<p><strong>Key points:</strong></p>
+<ul>
+  <li><code>this</code> refers to the array the method is called on (the dot rule from Chapter 4).</li>
+  <li>Create a new empty <code>result</code> array — never mutate the original.</li>
+  <li>Only push if the predicate returns truthy.</li>
+  <li>Pass <code>(element, index, array)</code> to match native filter's callback API.</li>
+</ul>
+<a class="nav-link back" href="#q9">← Back to Question 9</a><hr>
+
+<h2 id="ans10">Q10 — Answer</h2>
+<pre>totalRevenue: 2420
+
+spendByUser:
+{
+  Parth: 1420,     // 200 + 20 + 1200
+  Deepika: 500,
+  Rahul: 500       // 200 + 300
+}</pre>
+<p><strong>Q10a — The nested reduce:</strong></p>
+<ol>
+  <li>Outer <code>reduce</code> iterates over each <code>order</code>. Accumulator is the running <code>total</code>.</li>
+  <li>For each order, the <strong>inner reduce</strong> computes the sum of all item prices in that order.</li>
+  <li>That inner sum is added to the outer <code>total</code>.</li>
+</ol>
+<pre>Order 1: Parth's items → 200 + 20 = 220        total: 0 + 220 = 220
+Order 2: Deepika's items → 500                  total: 220 + 500 = 720
+Order 3: Parth's items → 1200                   total: 720 + 1200 = 1920
+Order 4: Rahul's items → 200 + 300 = 500        total: 1920 + 500 = 2420</pre>
+<p><strong>Q10b — Group by user:</strong> Same pattern as counting occurrences (Q7), but we're accumulating totals instead of increments. Notice how the same user "Parth" appears twice in <code>orders</code>, and the reduce correctly adds both order totals under the same key.</p>
+<p><strong>This nested reduce pattern is extremely common in real backend/BI code.</strong> If you can trace this comfortably, you've mastered functional data transformation.</p>
+<a class="nav-link back" href="#q10">← Back to Question 10</a>
+
+<hr>
+<h2 style="text-align:center;">📊 Scoring Guide</h2>
+<table>
+  <tr><th>Score</th><th>Level</th></tr>
+  <tr><td>9–10 / 10</td><td>🏆 Mastery — you can write production functional JS</td></tr>
+  <tr><td>7–8 / 10</td><td>✅ Solid — review Q7 (grouping) and Q10 (nested reduce)</td></tr>
+  <tr><td>5–6 / 10</td><td>🟨 Getting There — re-read Sections 6 (reduce) and 8 (chaining)</td></tr>
+  <tr><td>Below 5</td><td>🔄 Needs Revision — restart from Section 4</td></tr>
+</table>
+
+<div style="text-align:center;margin-top:25px;padding:18px;background:#e3f2fd;border-radius:8px;">
+  <p style="font-size:1.15em;font-weight:bold;color:#0078D4;">Key Mental Models:</p>
+  <p style="font-weight:bold;">🔹 HOF = takes a function OR returns a function</p>
+  <p style="font-weight:bold;">🔹 map = transform | filter = keep | reduce = collapse</p>
+  <p style="font-weight:bold;">🔹 forEach → undefined (side effects) · map → array (transform)</p>
+  <p style="font-weight:bold;">🔹 Chain works because filter/map return arrays with more methods on prototype</p>
+  <p style="font-weight:bold;">🔹 Always pass initial value to reduce</p>
+  <p style="font-weight:bold;">🔹 Function factory = HOF + closure = specialized fns on demand</p>
+</div>
+
+  </div>
+</div>
+
+</div><!-- end main -->
+
+<script>
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('collapsed');
+  document.getElementById('mainContent').classList.toggle('full');
+}
+function scrollTo(e, id) {
+  e.preventDefault();
+  const el = document.getElementById(id);
+  if (el) {
+    const cId = 'c' + id.replace('sec','');
+    const c = document.getElementById(cId);
+    if (c && c.classList.contains('collapsed')) toggleSection(cId);
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  if (window.innerWidth <= 768) {
+    document.getElementById('sidebar').classList.add('collapsed');
+    document.getElementById('mainContent').classList.add('full');
+  }
+}
+function toggleSection(id) {
+  const el = document.getElementById(id);
+  const icon = document.getElementById('icon-' + id);
+  if (el.classList.contains('collapsed')) {
+    el.classList.remove('collapsed');
+    el.style.maxHeight = el.scrollHeight + 10000 + 'px';
+    if (icon) icon.classList.remove('collapsed');
+  } else {
+    el.classList.add('collapsed');
+    el.style.maxHeight = '0px';
+    if (icon) icon.classList.add('collapsed');
+  }
+}
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.section-content').forEach(el => {
+    el.style.maxHeight = el.scrollHeight + 10000 + 'px';
+  });
+});
+</script>
+</body>
+</html>

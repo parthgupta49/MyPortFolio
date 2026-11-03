@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Execution Context &amp; Call Stack — Complete Notes</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Calibri, Arial, sans-serif; color: #1a1a1a; line-height: 1.7; background: #fff; }
+  .sidebar-toggle { position: fixed; top: 12px; left: 12px; z-index: 1001; background: #0078D4; color: #fff; border: none; width: 40px; height: 40px; border-radius: 8px; font-size: 1.4em; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+  .sidebar-toggle:hover { background: #106ebe; }
+  .sidebar { position: fixed; top: 0; left: 0; width: 300px; height: 100vh; background: #f0f4ff; border-right: 2px solid #0078D4; overflow-y: auto; z-index: 1000; transform: translateX(0); transition: transform 0.3s ease; padding: 60px 15px 20px 15px; }
+  .sidebar.collapsed { transform: translateX(-300px); }
+  .sidebar h3 { color: #0078D4; font-size: 1em; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 2px solid #0078D4; }
+  .sidebar a { display: block; padding: 5px 8px; color: #2b579a; text-decoration: none; font-size: 0.85em; border-radius: 4px; margin-bottom: 2px; }
+  .sidebar a:hover { background: #dce6f7; }
+  .sidebar .group-label { color: #555; font-weight: bold; font-size: 0.78em; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 12px; margin-bottom: 4px; padding-left: 8px; }
+  .main { margin-left: 300px; padding: 20px 30px 40px 30px; max-width: 990px; transition: margin-left 0.3s ease; }
+  .main.full { margin-left: 0; }
+  .title-block { text-align: center; padding: 25px 0; border-bottom: 4px solid #0078D4; margin-bottom: 25px; }
+  .title-block h1 { color: #0078D4; font-size: 2em; border: none; margin: 0; padding: 0; }
+  .title-block p { color: #555; font-size: 0.95em; margin: 3px 0; }
+  h1 { color: #0078D4; border-bottom: 3px solid #0078D4; padding-bottom: 8px; margin-top: 35px; font-size: 1.6em; }
+  h2 { color: #2b579a; margin-top: 25px; font-size: 1.3em; }
+  h3 { color: #444; margin-top: 18px; font-size: 1.1em; }
+  p { margin: 8px 0; }
+  ul, ol { padding-left: 24px; margin: 8px 0; }
+  li { margin-bottom: 6px; }
+  .section-header { cursor: pointer; display: flex; align-items: center; justify-content: space-between; padding: 10px 0; user-select: none; }
+  .section-header:hover h1 { color: #106ebe; }
+  .section-header .toggle-icon { font-size: 1.2em; color: #0078D4; transition: transform 0.3s; min-width: 24px; text-align: center; }
+  .section-header .toggle-icon.collapsed { transform: rotate(-90deg); }
+  .section-content { overflow: hidden; transition: max-height 0.4s ease; }
+  .section-content.collapsed { max-height: 0 !important; overflow: hidden; }
+  pre { background: #f5f5f5; border: 1px solid #ddd; border-left: 4px solid #0078D4; padding: 14px 18px; font-family: 'Consolas', 'Courier New', monospace; font-size: 0.9em; overflow-x: auto; border-radius: 4px; white-space: pre-wrap; margin: 12px 0; line-height: 1.55; }
+  code { font-family: 'Consolas', monospace; background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-size: 0.88em; }
+  table { border-collapse: collapse; width: 100%; margin: 14px 0; }
+  th { background: #0078D4; color: #fff; padding: 10px 14px; text-align: left; font-size: 0.92em; }
+  td { border: 1px solid #ccc; padding: 9px 14px; font-size: 0.9em; vertical-align: top; }
+  tr:nth-child(even) { background: #f9f9f9; }
+  .note-box { background: #e8f4e8; border-left: 4px solid #2e7d32; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+  .note-box strong { color: #2e7d32; }
+  .warn-box { background: #fff3e0; border-left: 4px solid #e65100; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+  .warn-box strong { color: #e65100; }
+  .danger-box { background: #fce4ec; border-left: 4px solid #c62828; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+  .danger-box strong { color: #c62828; }
+  .blue-box { background: #e3f2fd; border-left: 4px solid #1565c0; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+  .blue-box strong { color: #1565c0; }
+  .purple-box { background: #f3e5f5; border-left: 4px solid #7b1fa2; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+  .purple-box strong { color: #7b1fa2; }
+  .question-block { background: #fafafa; border: 1px solid #e0e0e0; padding: 16px 20px; margin: 18px 0; border-radius: 6px; }
+  .question-block h2 { margin-top: 0; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.78em; font-weight: bold; margin-left: 5px; }
+  .tag-easy { background: #e8f5e9; color: #2e7d32; }
+  .tag-medium { background: #fff8e1; color: #f57f17; }
+  .tag-hard { background: #fce4ec; color: #c62828; }
+  .tag-expert { background: #4a148c; color: #fff; }
+  .nav-link { display: inline-block; margin-top: 8px; font-size: 0.85em; color: #7b1fa2; text-decoration: none; font-weight: bold; }
+  .nav-link:hover { text-decoration: underline; }
+  .nav-link.back { color: #0078D4; }
+  .page-break { margin-top: 50px; border-top: 3px double #0078D4; padding-top: 20px; }
+  @media (max-width: 768px) { .sidebar { width: 260px; } .main { margin-left: 0; padding: 15px; } .sidebar.collapsed { transform: translateX(-260px); } }
+</style>
+</head>
+<body>
+<button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+<nav class="sidebar" id="sidebar">
+  <h3>📑 Execution Context — Nav</h3>
+  <div class="group-label">📖 Foundation</div>
+  <a href="#sec1" onclick="scrollTo(event,'sec1')">1. The Core Fundamental</a>
+  <a href="#sec2" onclick="scrollTo(event,'sec2')">2. Nature of JavaScript</a>
+  <a href="#sec3" onclick="scrollTo(event,'sec3')">3. ⭐ Terminology Decoder</a>
+  <a href="#sec4" onclick="scrollTo(event,'sec4')">4. Anatomy of an EC</a>
+  <a href="#sec5" onclick="scrollTo(event,'sec5')">5. Types of ECs</a>
+  <div class="group-label">⚙️ Mechanics</div>
+  <a href="#sec6" onclick="scrollTo(event,'sec6')">6. ⭐ The Two Phases</a>
+  <a href="#sec7" onclick="scrollTo(event,'sec7')">7. The Complete Flow</a>
+  <a href="#sec8" onclick="scrollTo(event,'sec8')">8. The Call Stack</a>
+  <a href="#sec9" onclick="scrollTo(event,'sec9')">9. Hoisting</a>
+  <a href="#sec10" onclick="scrollTo(event,'sec10')">10. The return Keyword</a>
+  <a href="#sec11" onclick="scrollTo(event,'sec11')">11. ⚙️ The Scope Chain</a>
+  <div class="group-label">🎯 Depth</div>
+  <a href="#sec12" onclick="scrollTo(event,'sec12')">12. undefined Explained</a>
+  <a href="#sec13" onclick="scrollTo(event,'sec13')">13. ⚠️ The DevTools Trap</a>
+  <a href="#sec14" onclick="scrollTo(event,'sec14')">14. How It All Connects</a>
+  <a href="#sec15" onclick="scrollTo(event,'sec15')">15. Common Gotchas</a>
+  <div class="group-label">📝 Revision</div>
+  <a href="#sec16" onclick="scrollTo(event,'sec16')">16. Cheat Sheet</a>
+  <a href="#sec17" onclick="scrollTo(event,'sec17')">17. Interview Answers</a>
+  <div class="group-label">🧪 Practice</div>
+  <a href="#sec18" onclick="scrollTo(event,'sec18')">18. Practice (10 Qs)</a>
+  <a href="#sec19" onclick="scrollTo(event,'sec19')">19. Answer Key</a>
+</nav>
+<div class="main" id="mainContent">
+<div class="title-block">
+  <h1>Execution Context &amp; The Call Stack</h1>
+  <p><strong>Complete Reference + Practice Sheet</strong></p>
+  <p>Chapter 1 — JavaScript Deep Dive</p>
+  <p><em>How the engine creates, populates, and destroys the environments your code runs in — with spec-level terminology and call stack mechanics.</em></p>
+</div>
+
+<!-- SEC 1 -->
+<div id="sec1">
+  <div class="section-header" onclick="toggleSection('c1')"><h1 style="border:none;margin:0;padding:0;">1. The Core Fundamental</h1><span class="toggle-icon" id="icon-c1">▼</span></div>
+  <div class="section-content" id="c1">
+    <div class="danger-box"><strong>Everything in JavaScript happens inside an Execution Context.</strong><br>JavaScript is not possible without it. It is the environment in which JS code is evaluated and executed.</div>
+
+    <p><strong>Definition:</strong> An Execution Context is an <strong>abstract environment</strong> created by the JS Engine to evaluate and execute code. Think of it as a container holding the variables, functions, scope references, and the <code>this</code> binding required for a specific piece of code to run.</p>
+
+    <h3>⚠️ What does "abstract" mean here?</h3>
+    <div class="purple-box"><strong>Important nuance — two meanings of "abstract":</strong>
+    <ul>
+      <li><strong>Meaning 1 (OOP sense):</strong> "hiding complexity, showing only what matters" — like an abstract class.</li>
+      <li><strong>Meaning 2 (the one used here):</strong> "conceptual / not physically real" — the opposite of <em>concrete</em>.</li>
+    </ul>
+    We mean <strong>meaning 2</strong>. There is no actual box in your RAM labelled <code>ExecutionContext</code>. You cannot point to a memory address and say "there it is."</div>
+
+    <p>The Execution Context is a <strong>specification concept</strong> — a model defined by the ECMAScript spec so that engine authors (V8, SpiderMonkey) and developers share a common way to <em>reason about</em> how code runs. V8 internally uses registers, stack frames, and hidden classes that look nothing like our neat diagrams.</p>
+
+    <h3>Abstract vs Concrete — the contrast that makes it click:</h3>
+    <table>
+      <tr><th>Thing</th><th>Abstract or Concrete?</th><th>Can you <code>console.log</code> it?</th></tr>
+      <tr><td>Execution Context</td><td>Abstract — a conceptual model</td><td>❌ No such thing to log</td></tr>
+      <tr><td>Lexical Environment</td><td>Abstract — a spec concept</td><td>❌ No</td></tr>
+      <tr><td>Scope Chain</td><td>Abstract — a conceptual chain</td><td>❌ No</td></tr>
+      <tr><td>Call Stack</td><td>Concrete-ish — a real stack structure</td><td>⚠️ Only via debugger</td></tr>
+      <tr><td>Memory Heap</td><td>Concrete — real allocated RAM</td><td>⚠️ Via memory profiler</td></tr>
+      <tr><td><code>window</code> object</td><td>Concrete — a real object</td><td>✅ Yes</td></tr>
+    </table>
+
+    <div class="note-box"><strong>💡 Clearer phrasing:</strong> "An Execution Context is a <em>conceptual model</em> the spec defines to describe the environment in which code runs. Engines implement it differently under the hood, but the model lets us reason about scope, memory, and execution consistently."</div>
+  </div>
+</div>
+
+<!-- SEC 2 -->
+<div id="sec2">
+  <div class="section-header" onclick="toggleSection('c2')"><h1 style="border:none;margin:0;padding:0;">2. The Nature of JavaScript</h1><span class="toggle-icon" id="icon-c2">▼</span></div>
+  <div class="section-content" id="c2">
+    <div class="blue-box"><strong>JavaScript is inherently a Synchronous, Single-Threaded Language.</strong></div>
+    <table>
+      <tr><th>Term</th><th>What It Means</th></tr>
+      <tr><td><strong>Single-Threaded</strong></td><td>JavaScript can only execute <strong>one command at a time</strong>. Think of a thread as a single worker executing a list of instructions.</td></tr>
+      <tr><td><strong>Synchronous</strong></td><td>It executes commands in a <strong>specific order</strong>, strictly line-by-line from top to bottom. It will NOT move to the next line until the current one finishes.</td></tr>
+    </table>
+    <h3>But what about AJAX, setTimeout, Promises?</h3>
+    <p>Asynchronous behavior is <strong>NOT handled by the core JS engine</strong>. It's handled by the <strong>browser's Web APIs</strong> (or Node.js APIs). The engine itself remains single-threaded and synchronous — it delegates async work to the browser and gets notified via the <strong>Event Loop &amp; Callback Queue</strong> when results are ready. <em>(Full detail in Chapter 9 — Event Loop.)</em></p>
+    <div class="note-box"><strong>🎯 Interview Answer:</strong> "JavaScript is a synchronous, single-threaded language. It executes one command at a time, in a specific order. Asynchronous behavior is achieved through the browser's Web APIs, the callback queue, and the event loop — not by the JS engine itself."</div>
+  </div>
+</div>
+
+<!-- SEC 3 — NEW: TERMINOLOGY DECODER -->
+<div id="sec3">
+  <div class="section-header" onclick="toggleSection('c3')"><h1 style="border:none;margin:0;padding:0;">⭐ 3. Terminology Decoder — Two Vocabularies, One Machine</h1><span class="toggle-icon" id="icon-c3">▼</span></div>
+  <div class="section-content" id="c3">
+    <div class="purple-box"><strong>⭐ Read this before anything else confuses you.</strong> There are <strong>two different vocabularies</strong> in circulation for the exact same machinery — and tutorials mix them freely without warning. This is why "Memory Component, Code Component, this binding, Variable Environment, Lexical Environment, 2 phases" feels like six things when it's really three, named twice.</div>
+
+    <h3>The Two Vocabularies</h3>
+    <table>
+      <tr><th>Vocabulary</th><th>Where it comes from</th><th>Terms used</th></tr>
+      <tr><td><strong>Teaching model</strong></td><td>Most tutorials and courses</td><td>Memory Component, Code Component, 2 Phases</td></tr>
+      <tr><td><strong>Spec model</strong></td><td>ECMAScript specification</td><td>Lexical Environment, Variable Environment, This Binding</td></tr>
+    </table>
+
+    <h3>The Correct Spec Definition — Exactly 3 Components</h3>
+    <pre>┌──────────────────────────────────────────────┐
+│           EXECUTION CONTEXT                  │
+│                                              │
+│  1. Lexical Environment                      │
+│     → let, const, class declarations         │
+│     → the outer-environment reference        │
+│       (this IS your scope chain link)        │
+│                                              │
+│  2. Variable Environment                     │
+│     → var declarations                       │
+│     → function declarations                  │
+│                                              │
+│  3. This Binding                             │
+│     → what `this` points to in this context  │
+└──────────────────────────────────────────────┘</pre>
+    <p>That's it. <strong>Three.</strong> Not five, not six.</p>
+
+    <h3>The Mapping Nobody Draws For You</h3>
+    <pre>TEACHING MODEL              →    SPEC MODEL
+─────────────────                ──────────
+
+"Memory Component"          →    Lexical Environment
+(a.k.a. Variable Env)            + Variable Environment
+                                 (both are storage)
+
+"Code Component"            →    NOT a component at all!
+(a.k.a. Thread of Execution)     It's the EXECUTION itself,
+                                 not a stored thing.
+
+(rarely mentioned)          →    This Binding</pre>
+
+    <div class="danger-box"><strong>🔑 The key realization:</strong> "Code Component" isn't really a <em>component</em> in spec terms — it's the <strong>act of running the code</strong>. Teaching materials call it a component to make the 2-phase model easy to visualize, but it isn't a storage slot like the other two. And "Memory Component" is just an umbrella name for <strong>both</strong> environments lumped together, because for beginners the <code>var</code> vs <code>let</code> split isn't the point yet.</div>
+
+    <h3>⭐ Lexical Environment vs Variable Environment — The Real Difference</h3>
+    <p>This is the part almost nobody explains clearly:</p>
+    <table>
+      <tr><th></th><th>Variable Environment</th><th>Lexical Environment</th></tr>
+      <tr><td><strong>Stores</strong></td><td><code>var</code> + function declarations</td><td><code>let</code>, <code>const</code>, <code>class</code></td></tr>
+      <tr><td><strong>Hoisting behavior</strong></td><td>Initialized to <code>undefined</code></td><td>Stays uninitialized (TDZ)</td></tr>
+      <tr><td><strong>Scope type</strong></td><td>Function-scoped</td><td>Block-scoped</td></tr>
+      <tr><td><strong>New copy per block <code>{ }</code>?</strong></td><td>❌ No — stays the same</td><td>✅ Yes — fresh one per block</td></tr>
+      <tr><td><strong>Holds outer reference?</strong></td><td>—</td><td>✅ Yes — this IS the scope chain link</td></tr>
+    </table>
+
+    <pre>function demo() {
+  var a = 1;        // → Variable Environment
+  let b = 2;        // → Lexical Environment
+
+  {
+    let c = 3;      // → a NEW Lexical Environment for this block
+    var d = 4;      // → still the SAME Variable Environment (function-scoped)
+  }
+}</pre>
+    <div class="blue-box"><strong>🔑 This is exactly why</strong> <code>var</code> leaks out of blocks but <code>let</code> doesn't — they live in <strong>different environments</strong>, and only one of them creates a fresh copy per block.</div>
+
+    <h3>Components vs Phases — Don't Confuse Them</h3>
+    <div class="warn-box"><strong>⚠️ "Memory Creation Phase" and "Code Execution Phase" are PHASES (time periods), not components.</strong><br>
+    • <strong>Components</strong> = the <em>things that exist</em> (Lexical Env, Variable Env, This Binding)<br>
+    • <strong>Phases</strong> = <em>what happens to them</em> over time (populate, then execute)</div>
+
+    <h3>Quick Reference — Which Word Means What</h3>
+    <table>
+      <tr><th>Term</th><th>What kind of thing is it?</th></tr>
+      <tr><td>Execution Context</td><td>The <strong>container</strong> (abstract)</td></tr>
+      <tr><td>Lexical Environment</td><td>A <strong>component</strong> — storage for let/const + scope chain link</td></tr>
+      <tr><td>Variable Environment</td><td>A <strong>component</strong> — storage for var/functions</td></tr>
+      <tr><td>This Binding</td><td>A <strong>component</strong> — what <code>this</code> points to</td></tr>
+      <tr><td>Memory Component</td><td><strong>Informal name</strong> for the two Environments combined</td></tr>
+      <tr><td>Code Component</td><td><strong>Informal name</strong> for the execution itself (not a real component)</td></tr>
+      <tr><td>Thread of Execution</td><td>Same as Code Component — the running of code</td></tr>
+      <tr><td>Memory Creation Phase</td><td>A <strong>phase</strong> (time period) — populates components</td></tr>
+      <tr><td>Code Execution Phase</td><td>A <strong>phase</strong> (time period) — runs the code</td></tr>
+      <tr><td>Scope Chain</td><td>The <strong>chain</strong> of outer-environment references across ECs</td></tr>
+      <tr><td>Call Stack</td><td>Where ECs are <strong>pushed and popped</strong></td></tr>
+    </table>
+
+    <h3>🎯 How To Say It Correctly</h3>
+    <div class="note-box"><strong>In an interview (safest — covers both vocabularies):</strong><br>
+    <em>"An Execution Context is the environment in which JavaScript code is evaluated. Per the spec it has three components: the Lexical Environment, which holds <code>let</code>/<code>const</code>/<code>class</code> and the reference to the outer environment; the Variable Environment, which holds <code>var</code> and function declarations; and the This Binding. It's created and populated in two phases — a creation phase where memory is allocated, and an execution phase where the code actually runs line by line."</em></div>
+    <div class="note-box"><strong>Casually / when teaching:</strong><br>
+    <em>"An EC has a memory part and a code part. Memory holds all variables and functions; code runs line by line. It's created in two phases."</em></div>
+  </div>
+</div>
+
+<!-- SEC 4 -->
+<div id="sec4">
+  <div class="section-header" onclick="toggleSection('c4')"><h1 style="border:none;margin:0;padding:0;">4. Anatomy of an Execution Context</h1><span class="toggle-icon" id="icon-c4">▼</span></div>
+  <div class="section-content" id="c4">
+    <h3>The Teaching Model (what you'll see in most tutorials):</h3>
+    <pre>┌──────────────────────────────────────────────────────────┐
+│                   EXECUTION CONTEXT                      │
+│                                                          │
+│  ┌─────────────────────┐  ┌────────────────────────────┐ │
+│  │  MEMORY COMPONENT   │  │    CODE COMPONENT          │ │
+│  │  (Variable Env)     │  │    (Thread of Execution)   │ │
+│  │                     │  │                            │ │
+│  │  key  :  value      │  │    Code is executed        │ │
+│  │  ──────────────     │  │    one line at a time      │ │
+│  │  n    :  2          │  │                            │ │
+│  │  fn   :  {code}     │  │    Line 1 → Line 2 → ...   │ │
+│  │  ans  :  undefined  │  │                            │ │
+│  └─────────────────────┘  └────────────────────────────┘ │
+└──────────────────────────────────────────────────────────┘</pre>
+
+    <h3>The Spec Model (what the engine actually defines):</h3>
+    <pre>┌─────────────────────────────────────┐
+│        EXECUTION CONTEXT            │
+│                                     │
+│  1. Lexical Environment             │
+│     • let / const / class           │
+│     • outer environment reference   │
+│       (the scope chain link)        │
+│                                     │
+│  2. Variable Environment            │
+│     • var declarations              │
+│     • function declarations         │
+│                                     │
+│  3. This Binding                    │
+│     • determined at call time       │
+│                                     │
+└─────────────────────────────────────┘</pre>
+
+    <div class="note-box"><strong>💡 Both diagrams describe the same machine.</strong> The first is easier for beginners; the second is what you say in interviews. See <a href="#sec3">Section 3 — Terminology Decoder</a> for the full mapping.</div>
+  </div>
+</div>
+
+<!-- SEC 5 -->
+<div id="sec5">
+  <div class="section-header" onclick="toggleSection('c5')"><h1 style="border:none;margin:0;padding:0;">5. Types of Execution Contexts</h1><span class="toggle-icon" id="icon-c5">▼</span></div>
+  <div class="section-content" id="c5">
+    <table>
+      <tr><th>Type</th><th>When Is It Created?</th><th>Key Details</th></tr>
+      <tr><td><strong>Global Execution Context (GEC)</strong></td><td>When the script <strong>first runs</strong></td><td>Creates the global object (<code>window</code> in browsers) and sets <code>this</code> to it. Only <strong>ONE</strong> GEC per program.</td></tr>
+      <tr><td><strong>Functional Execution Context (FEC)</strong></td><td>Every time a <strong>function is invoked</strong></td><td>Each call gets its <strong>own EC</strong>, tracking its own variables and where to return control. Destroyed when the function completes.</td></tr>
+      <tr><td><strong>Eval Execution Context</strong></td><td>When code runs inside <code>eval()</code></td><td>Rarely used, considered bad practice.</td></tr>
+    </table>
+    <div class="warn-box"><strong>⚠️ Key Point:</strong> There is only <strong>ONE</strong> Global Execution Context, but there can be <strong>many</strong> Functional Execution Contexts — one for every function invocation. Even calling the same function twice creates two separate ECs.</div>
+  </div>
+</div>
+
+<!-- SEC 6 -->
+<div id="sec6">
+  <div class="section-header" onclick="toggleSection('c6')"><h1 style="border:none;margin:0;padding:0;">⭐ 6. The Two Phases of EC Creation</h1><span class="toggle-icon" id="icon-c6">▼</span></div>
+  <div class="section-content" id="c6">
+    <p>Whenever an Execution Context is created (Global or Functional), it goes through <strong>two phases</strong>:</p>
+
+    <h2>Phase 1: Memory Creation Phase</h2>
+    <div class="blue-box"><strong>What happens:</strong> JavaScript scans the <strong>entire code</strong> and <strong>allocates memory</strong> for all variables and functions — <strong>before executing a single line</strong>.</div>
+    <ul>
+      <li><strong><code>var</code> variables</strong> → memory allocated + initialized to <code>undefined</code> (into the <strong>Variable Environment</strong>)</li>
+      <li><strong>Function declarations</strong> → the <strong>entire function code</strong> is copied into memory (also Variable Environment)</li>
+      <li><strong><code>let</code> / <code>const</code> / <code>class</code></strong> → memory IS allocated (into the <strong>Lexical Environment</strong>) but left <strong>uninitialized</strong> — this gap is the <strong>Temporal Dead Zone (TDZ)</strong></li>
+      <li><strong>This Binding</strong> is determined</li>
+      <li><strong>Outer environment reference</strong> is set (this creates the scope chain)</li>
+    </ul>
+
+    <h3>⭐ The Three States of a Variable</h3>
+    <p>This model makes hoisting and TDZ crystal clear:</p>
+    <pre>1. DECLARED    — memory slot created
+2. INITIALIZED — slot given a value (even `undefined` counts)
+3. ASSIGNED    — your actual value written
+
+
+var a = 5:
+  Creation phase  → declared + initialized to `undefined`
+  Execution phase → assigned 5
+  (steps 1 & 2 happen together → NO TDZ)
+
+let b = 5:
+  Creation phase  → declared ONLY (NOT initialized)  ← the TDZ gap
+  Execution phase → initialized + assigned 5
+  (steps 1 & 2 are SPLIT APART → TDZ exists between them)
+
+xyz (never written anywhere):
+  Never declared. Doesn't exist. → "is not defined"</pre>
+    <div class="danger-box"><strong>🔑 That gap between DECLARED and INITIALIZED <em>is</em> the Temporal Dead Zone.</strong> <code>var</code> skips the TDZ because both steps happen together. <code>let</code>/<code>const</code> split them apart.</div>
+
+    <h3>Does allocating memory for <code>let</code> actually matter?</h3>
+    <p><strong>Yes — it's not a formality.</strong> The allocation is exactly what lets the engine distinguish two very different situations:</p>
+    <table>
+      <tr><th>Situation</th><th>Engine knows</th><th>Error message</th></tr>
+      <tr><td><code>xyz</code> never declared</td><td>Nothing exists in the scope chain</td><td><code>xyz is not defined</code></td></tr>
+      <tr><td><code>let xyx</code> declared later</td><td>Slot EXISTS in this scope, but uninitialized</td><td><code>Cannot access 'xyx' before initialization</code></td></tr>
+    </table>
+    <p>If the engine allocated <strong>nothing</strong> for <code>let</code>, it would have no way to know the variable is "coming later in this scope." It would just walk the scope chain, find nothing, and say "not defined."</p>
+
+    <h3>The Real Behavioral Proof — Shadowing</h3>
+    <pre>let x = "outer";
+
+function demo() {
+  console.log(x);   // ❌ ReferenceError: Cannot access 'x' before initialization
+  let x = "inner";
+}
+demo();</pre>
+    <div class="note-box"><strong>💡 If <code>let x</code> inside the function had NO memory allocated during the creation phase</strong>, the engine would walk up the scope chain and happily print <code>"outer"</code>. Instead it errors — because the inner <code>x</code> slot already exists and <strong>shadows</strong> the outer one, even before initialization. <strong>That's the allocation doing real work.</strong></div>
+
+    <h2>Phase 2: Code Execution Phase</h2>
+    <div class="blue-box"><strong>What happens:</strong> JavaScript runs the code <strong>line by line</strong>. Computations happen, variables get real values, functions get invoked.</div>
+    <ul>
+      <li><code>var</code> variables updated from <code>undefined</code> to their <strong>actual values</strong></li>
+      <li><code>let</code>/<code>const</code> get <strong>initialized</strong> when execution reaches their line (TDZ ends here)</li>
+      <li>When a function is invoked, a <strong>brand new Execution Context</strong> is created and both phases <strong>repeat</strong> for it</li>
+      <li>On <code>return</code>, the function's EC is <strong>destroyed</strong> and control returns to the caller</li>
+    </ul>
+  </div>
+</div>
+
+<!-- SEC 7 — NEW: THE COMPLETE FLOW -->
+<div id="sec7">
+  <div class="section-header" onclick="toggleSection('c7')"><h1 style="border:none;margin:0;padding:0;">7. The Complete Flow — Components + Phases Together</h1><span class="toggle-icon" id="icon-c7">▼</span></div>
+  <div class="section-content" id="c7">
+    <div class="purple-box"><strong>This is the section that ties every term into one sequence.</strong> If you ever feel lost among "component / phase / environment / binding," come back here.</div>
+
+    <pre>1. Engine encounters code to run
+   (global script starts, OR a function is invoked)
+        │
+        ▼
+2. CREATE an Execution Context with its 3 components:
+   ┌────────────────────────────────┐
+   │ • Lexical Environment          │  (let/const/class + outer ref)
+   │ • Variable Environment         │  (var + function decls)
+   │ • This Binding                 │
+   └────────────────────────────────┘
+        │
+        ▼
+3. PUSH it onto the Call Stack
+        │
+        ▼
+4. PHASE 1 — Creation / Memory Phase
+   (populates the components above)
+   • var + function decls → Variable Env
+       var → `undefined`
+       functions → full body stored
+   • let/const/class → Lexical Env
+       declared but UNINITIALIZED (TDZ)
+   • This Binding determined
+   • Outer environment reference set (the scope chain link)
+        │
+        ▼
+5. PHASE 2 — Execution Phase
+   (this is the "Code Component" / "Thread of Execution")
+   • Code runs line by line
+   • Assignments actually happen
+   • let/const get initialized when reached (TDZ ends)
+   • New ECs created if functions are called → recurse to step 2
+        │
+        ▼
+6. POP the EC off the Call Stack when done
+   (unless a CLOSURE keeps its Lexical Environment alive)</pre>
+
+    <h3>📖 Full Worked Example — Both Phases in Action</h3>
+    <pre>var n = 2;
+function square(num) {
+  var ans = num * num;
+  return ans;
+}
+var square2 = square(n);
+var square4 = square(4);</pre>
+
+    <h3>Phase 1 — Memory Creation (Global EC):</h3>
+    <pre>┌──────────────────────────────────┐
+│  MEMORY (after Phase 1)          │
+│                                  │
+│  n       : undefined             │
+│  square  : function(num){...}    │  ← entire function code stored!
+│  square2 : undefined             │
+│  square4 : undefined             │
+└──────────────────────────────────┘</pre>
+
+    <h3>Phase 2 — Code Execution (line by line):</h3>
+    <pre>Line 1:  var n = 2         → n updated: undefined → 2
+Line 2-5: function square   → nothing to execute (already in memory)
+Line 6:  var square2 = square(n)  → FUNCTION INVOCATION! 🚀
+         ↓
+         A brand new Execution Context is created for square(2)
+
+         Phase 1 (Memory) of square(2):
+         ┌──────────────────────┐
+         │  num : undefined     │
+         │  ans : undefined     │
+         └──────────────────────┘
+
+         Phase 2 (Code) of square(2):
+         Line 1: num = 2           (argument passed in)
+         Line 2: ans = 2 * 2 = 4   → ans updated: undefined → 4
+         Line 3: return ans        → returns 4 to the caller
+                                   → THIS EC IS DESTROYED 💥
+
+         Back in GEC: square2 updated: undefined → 4
+
+Line 7:  var square4 = square(4)  → same cycle repeats
+         → new EC → num=4, ans=16 → return 16 → EC destroyed
+         → square4 updated: undefined → 16
+
+Program ends → GEC is also destroyed.</pre>
+
+    <div class="note-box"><strong>🎯 Interview Precision:</strong> Always describe Phase 2 as "line by line" — state exactly which line and what changes. Don't say "variables get assigned." Say "On line 1, <code>n</code> is updated from <code>undefined</code> to <code>2</code>."</div>
+  </div>
+</div>
+
+<!-- SEC 8 -->
+<div id="sec8">
+  <div class="section-header" onclick="toggleSection('c8')"><h1 style="border:none;margin:0;padding:0;">8. The Call Stack — Managing Execution Contexts</h1><span class="toggle-icon" id="icon-c8">▼</span></div>
+  <div class="section-content" id="c8">
+    <div class="danger-box"><strong>Call Stack</strong> = A <strong>LIFO (Last In, First Out)</strong> data structure that maintains the order of execution of Execution Contexts.</div>
+    <h3>How It Works:</h3>
+    <ol>
+      <li>Program starts → <strong>GEC is pushed</strong> (always at the bottom)</li>
+      <li>Function invoked → a new <strong>FEC is pushed</strong> on top</li>
+      <li>Function finishes (return) → that <strong>FEC is popped</strong> off</li>
+      <li>Control returns to the context <strong>below it</strong></li>
+      <li>Program finishes → <strong>GEC is popped</strong>, stack is empty</li>
+    </ol>
+    <h3>Visual Example:</h3>
+    <pre>function a() { console.log("a start"); b(); console.log("a end"); }
+function b() { console.log("b start"); c(); console.log("b end"); }
+function c() { console.log("c"); }
+a();</pre>
+    <pre>CALL STACK OVER TIME:
+
+Step 1: Program starts     Step 2: a() invoked      Step 3: b() invoked
+┌─────────┐               ┌─────────┐               ┌─────────┐
+│         │               │         │               │  c()    │ ← Step 4
+│         │               │         │               ├─────────┤
+│         │               │  a()    │               │  b()    │
+├─────────┤               ├─────────┤               ├─────────┤
+│  GEC    │               │  GEC    │               │  a()    │
+└─────────┘               └─────────┘               ├─────────┤
+                                                    │  GEC    │
+                                                    └─────────┘
+
+Step 5: c() popped         Step 6: b() popped        Step 7: a() popped
+┌─────────┐               ┌─────────┐               ┌─────────┐
+│  b()    │               │  a()    │               │  GEC    │
+├─────────┤               ├─────────┤               └─────────┘
+│  a()    │               │  GEC    │
+├─────────┤               └─────────┘               Step 8: Program done
+│  GEC    │                                         Stack is EMPTY
+└─────────┘</pre>
+    <pre>Output:
+a start
+b start
+c
+b end
+a end</pre>
+    <h3>Fancy Names for the Call Stack (all the same thing):</h3>
+    <table>
+      <tr><th>Name</th><th>Same Thing?</th></tr>
+      <tr><td>Call Stack</td><td>✅ Most common</td></tr>
+      <tr><td>Execution Context Stack</td><td>✅</td></tr>
+      <tr><td>Program Stack</td><td>✅</td></tr>
+      <tr><td>Control Stack</td><td>✅</td></tr>
+      <tr><td>Runtime Stack</td><td>✅</td></tr>
+      <tr><td>Machine Stack</td><td>✅</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- SEC 9 -->
+<div id="sec9">
+  <div class="section-header" onclick="toggleSection('c9')"><h1 style="border:none;margin:0;padding:0;">9. Hoisting — A Consequence of the Memory Phase</h1><span class="toggle-icon" id="icon-c9">▼</span></div>
+  <div class="section-content" id="c9">
+    <p>Hoisting is NOT magic. It's simply a <strong>consequence of Phase 1</strong>. Because memory is allocated BEFORE code runs, variables and functions "appear" available before their declaration lines.</p>
+    <h3>Function Declaration vs Function Expression:</h3>
+    <pre>console.log(add(2, 3));       // ✅ 5
+console.log(multiply(2, 3));  // 💥 TypeError!
+
+function add(a, b) {          // Function DECLARATION
+  return a + b;
+}
+
+var multiply = function(a, b) { // Function EXPRESSION
+  return a * b;
+};</pre>
+    <pre>After Phase 1 (Memory Creation):
+┌───────────────────────────────────────┐
+│  add      : function(a, b){...}  ✅   │  ← Full function stored!
+│  multiply : undefined            ❌   │  ← Just a var → undefined
+└───────────────────────────────────────┘</pre>
+    <table>
+      <tr><th>Type</th><th>Stored in Memory Phase</th><th>Available before declaration?</th></tr>
+      <tr><td><strong>Function Declaration</strong><br><code>function add() {}</code></td><td>Entire function code</td><td>✅ YES — fully hoisted</td></tr>
+      <tr><td><strong>Function Expression</strong><br><code>var multiply = function() {}</code></td><td><code>undefined</code> (it's a <code>var</code>)</td><td>❌ NO — TypeError</td></tr>
+      <tr><td><strong>Arrow Function (in var)</strong><br><code>var fn = () =&gt; {}</code></td><td><code>undefined</code></td><td>❌ NO — same as expression</td></tr>
+      <tr><td><strong><code>let</code> / <code>const</code></strong></td><td>Declared but uninitialized (TDZ)</td><td>❌ NO — ReferenceError</td></tr>
+    </table>
+    <div class="warn-box"><strong>⚠️ TypeError vs ReferenceError:</strong><br>
+    • Calling <code>multiply(2,3)</code> when it's <code>undefined</code> → <strong>TypeError</strong> (undefined is not a function)<br>
+    • Accessing a <code>let</code>/<code>const</code> before its line → <strong>ReferenceError</strong> (cannot access before initialization)</div>
+  </div>
+</div>
+
+<!-- SEC 10 -->
+<div id="sec10">
+  <div class="section-header" onclick="toggleSection('c10')"><h1 style="border:none;margin:0;padding:0;">10. The <code>return</code> Keyword</h1><span class="toggle-icon" id="icon-c10">▼</span></div>
+  <div class="section-content" id="c10">
+    <p><code>return</code> does <strong>two things</strong>:</p>
+    <ol>
+      <li><strong>Specifies the value</strong> sent back to the calling context</li>
+      <li><strong>Destroys the current Execution Context</strong> — popped off the Call Stack, control returns to the caller</li>
+    </ol>
+    <h3>What if there's NO return statement?</h3>
+    <pre>function doSomething() {
+  var x = 42;
+  // no return statement
+}
+var result = doSomething();
+console.log(result);   // undefined</pre>
+    <div class="danger-box"><strong>Rule:</strong> With no explicit <code>return</code> (or bare <code>return;</code>), a function <strong>implicitly returns <code>undefined</code></strong>.</div>
+    <h3>Nested returns — the trap:</h3>
+    <pre>function outer() {
+  function middle() {
+    function inner() {
+      console.log(60);  // prints 60
+      // no return!
+    }
+    return inner();     // inner returns undefined → middle returns undefined
+  }
+  return middle();      // middle returns undefined → outer returns undefined
+}
+var result = outer();
+console.log(result);    // undefined (even though 60 was printed!)</pre>
+    <div class="note-box"><strong>🎯 Key Distinction:</strong> <code>console.log()</code> <strong>prints</strong> but returns <code>undefined</code>. <code>return</code> <strong>sends a value back</strong>. Printing ≠ Returning. A classic interview trap.</div>
+  </div>
+</div>
+
+<!-- SEC 11 -->
+<div id="sec11">
+  <div class="section-header" onclick="toggleSection('c11')"><h1 style="border:none;margin:0;padding:0;">⚙️ 11. The Scope Chain</h1><span class="toggle-icon" id="icon-c11">▼</span></div>
+  <div class="section-content" id="c11">
+    <div class="danger-box"><strong>🧠 This is the engine-level understanding</strong> of how nested functions access parent variables. It connects Execution Context to Closures and the <code>this</code> keyword.</div>
+    <h2>The Problem</h2>
+    <pre>var a = 10;
+function outer() {
+  var b = 20;
+  function middle() {
+    var c = 30;
+    function inner() {
+      // inner's local memory: { } ← EMPTY! No a, no b, no c!
+      console.log(a + b + c);  // But this works... HOW?
+    }
+    inner();
+  }
+  middle();
+}
+outer();   // Output: 60</pre>
+
+    <h2>The Answer: Lexical Environment &amp; Scope Chain</h2>
+    <p>Every Execution Context's <strong>Lexical Environment</strong> holds a <strong>reference to its parent's Lexical Environment</strong>. That chain of references is the <strong>Scope Chain</strong>.</p>
+    <pre>When inner() needs variable 'a':
+
+  inner() EC
+  ┌──────────────────────┐
+  │ Local Memory: { }    │ → 'a' not here ❌
+  │ Parent Ref: → middle │
+  └──────────┬───────────┘
+             ↓
+  middle() EC
+  ┌──────────────────────┐
+  │ Local Memory: {c:30} │ → 'a' not here ❌
+  │ Parent Ref: → outer  │
+  └──────────┬───────────┘
+             ↓
+  outer() EC
+  ┌──────────────────────┐
+  │ Local Memory: {b:20} │ → 'a' not here ❌
+  │ Parent Ref: → GEC    │
+  └──────────┬───────────┘
+             ↓
+  Global EC
+  ┌──────────────────────┐
+  │ Local Memory: {a:10} │ → ✅ FOUND! a = 10
+  │ Parent Ref: → null   │
+  └──────────────────────┘</pre>
+    <table>
+      <tr><th>Variable</th><th>inner()?</th><th>middle()?</th><th>outer()?</th><th>GEC?</th><th>Found At</th></tr>
+      <tr><td><code>c</code></td><td>❌</td><td>✅ c = 30</td><td>—</td><td>—</td><td>middle()</td></tr>
+      <tr><td><code>b</code></td><td>❌</td><td>❌</td><td>✅ b = 20</td><td>—</td><td>outer()</td></tr>
+      <tr><td><code>a</code></td><td>❌</td><td>❌</td><td>❌</td><td>✅ a = 10</td><td>GEC</td></tr>
+    </table>
+    <div class="blue-box"><strong>🧠 KEY INSIGHT:</strong> The Scope Chain is determined by <strong>where the function is WRITTEN</strong> (lexical position), NOT where it's called. That's why it's called the <strong>Lexical</strong> Environment. This same mechanism powers <strong>Closures</strong> and how arrow functions resolve <code>this</code>.</div>
+    <h3>Variable not found anywhere?</h3>
+    <pre>function test() {
+  console.log(xyz);  // engine walks entire chain → not found
+}
+test();
+// 💥 ReferenceError: xyz is not defined</pre>
+    <div class="warn-box"><strong>⚠️ Error type summary:</strong><br>
+    • Variable not in scope chain → <strong>ReferenceError</strong><br>
+    • Property not on an object → <strong>undefined</strong> (no error)<br>
+    • Property access on <code>undefined</code>/<code>null</code> → <strong>TypeError</strong></div>
+  </div>
+</div>
+
+<!-- SEC 12 -->
+<div id="sec12">
+  <div class="section-header" onclick="toggleSection('c12')"><h1 style="border:none;margin:0;padding:0;">12. <code>undefined</code> — The Most Misunderstood Keyword</h1><span class="toggle-icon" id="icon-c12">▼</span></div>
+  <div class="section-content" id="c12">
+    <p><code>undefined</code> means: <strong>"memory has been allocated, but no value has been assigned yet."</strong></p>
+    <h3>The Two Origins of <code>undefined</code>:</h3>
+    <table>
+      <tr><th>Scenario</th><th>Who Sets It?</th><th>When?</th></tr>
+      <tr><td><code>var x;</code> (no assignment)</td><td>JS Engine automatically</td><td>Memory Creation Phase</td></tr>
+      <tr><td><code>var y = undefined;</code></td><td>Developer explicitly</td><td>Code Execution Phase</td></tr>
+    </table>
+    <pre>var x;                  // Memory Phase: x = undefined (engine)
+                        // Code Phase: no assignment → stays undefined
+
+var y = undefined;      // Memory Phase: y = undefined (engine)
+                        // Code Phase: y = undefined (developer ACTIVELY assigns)</pre>
+    <div class="danger-box"><strong>❌ BAD PRACTICE:</strong> Never write <code>var y = undefined;</code> — <code>undefined</code> is a placeholder meant for the engine. To represent "no value" intentionally, use <code>null</code>.</div>
+    <h3><code>undefined</code> vs <code>null</code> vs <code>not defined</code>:</h3>
+    <table>
+      <tr><th>Term</th><th>Meaning</th><th>Type</th></tr>
+      <tr><td><code>undefined</code></td><td>Memory allocated, no value assigned yet</td><td><code>typeof → "undefined"</code></td></tr>
+      <tr><td><code>null</code></td><td>Intentional absence of value (developer sets it)</td><td><code>typeof → "object"</code> (a known JS bug)</td></tr>
+      <tr><td><code>not defined</code></td><td>Doesn't exist in memory at all → <strong>ReferenceError</strong></td><td>N/A (throws)</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- SEC 13 — NEW: DEVTOOLS TRAP -->
+<div id="sec13">
+  <div class="section-header" onclick="toggleSection('c13')"><h1 style="border:none;margin:0;padding:0;">⚠️ 13. The DevTools Console Trap (TDZ Testing)</h1><span class="toggle-icon" id="icon-c13">▼</span></div>
+  <div class="section-content" id="c13">
+    <div class="danger-box"><strong>⚠️ Your console can lie to you.</strong> If you test TDZ behavior directly in the Chrome DevTools console, you'll get <em>misleading</em> error messages that seem to contradict everything in Section 6.</div>
+
+    <h3>What You'd See in the Console (misleading):</h3>
+    <pre>// Typed directly into DevTools console:
+
+&gt; console.log(xyz)
+❌ Uncaught ReferenceError: xyz is not defined
+
+&gt; console.log(xyx); let xyx = 1;
+❌ Uncaught ReferenceError: xyx is not defined     ← SAME error?!</pre>
+    <p>This makes it look like <code>let</code> gets no memory allocation at all — since both cases give the identical error.</p>
+
+    <h3>What ACTUALLY Happens in a Real Script:</h3>
+    <pre>// In a .js file or &lt;script&gt; tag:
+
+console.log(xyz);
+// ❌ ReferenceError: xyz is not defined
+
+console.log(xyx);
+let xyx = 1;
+// ❌ ReferenceError: Cannot access 'xyx' before initialization</pre>
+    <div class="note-box"><strong>💡 TWO DIFFERENT messages.</strong> That difference is the entire proof that memory <em>was</em> allocated for <code>xyx</code> — the engine knows the slot exists but is uninitialized.</div>
+
+    <h3>Why the Console Behaves Differently</h3>
+    <p>Chrome DevTools doesn't run your input as a normal script. It wraps it specially so you can re-declare <code>let</code> variables across entries (try <code>let a = 1</code> twice in a real file → SyntaxError; in the console → works fine). That wrapping breaks standard TDZ semantics, so you get the generic message.</p>
+
+    <h3>✅ How To Test TDZ Correctly in the Console</h3>
+    <p>Force a real scope by wrapping in a block or function:</p>
+    <pre>// Option A — wrap in a block
+{
+  console.log(xyx);
+  let xyx = 1;
+}
+// ❌ ReferenceError: Cannot access 'xyx' before initialization  ✅ correct!</pre>
+    <pre>// Option B — wrap in a function
+function test() {
+  console.log(xyx);
+  let xyx = 1;
+}
+test();
+// ❌ ReferenceError: Cannot access 'xyx' before initialization  ✅ correct!</pre>
+
+    <div class="warn-box"><strong>⚠️ Rule of thumb:</strong> <strong>Never trust the bare DevTools console</strong> for testing TDZ, <code>let</code>/<code>const</code> redeclaration, or top-level scope behavior. Use a real file, or wrap your test in a block <code>{ }</code> or a function.</div>
+  </div>
+</div>
+
+<!-- SEC 14 -->
+<div id="sec14">
+  <div class="section-header" onclick="toggleSection('c14')"><h1 style="border:none;margin:0;padding:0;">14. How It All Connects — The Big Picture</h1><span class="toggle-icon" id="icon-c14">▼</span></div>
+  <div class="section-content" id="c14">
+    <div class="purple-box"><strong>Every concept in this series traces back to the Execution Context:</strong></div>
+    <table>
+      <tr><th>Concept</th><th>How It Connects</th></tr>
+      <tr><td><strong>Hoisting</strong> (Ch 2)</td><td>Variables/functions available before declaration because of the <strong>Memory Creation Phase</strong></td></tr>
+      <tr><td><strong>TDZ</strong> (Ch 2)</td><td>The gap between DECLARED and INITIALIZED for <code>let</code>/<code>const</code> in the Lexical Environment</td></tr>
+      <tr><td><strong>Scope Chain</strong> (Ch 3)</td><td>Each EC's Lexical Environment holds a reference to its parent's — forming a chain</td></tr>
+      <tr><td><strong>Closures</strong> (Ch 3)</td><td>A returned function carries its <strong>Lexical Environment</strong> with it — the scope reference survives even after the parent EC is destroyed</td></tr>
+      <tr><td><strong><code>this</code> keyword</strong> (Ch 4)</td><td>Every EC has a <strong>This Binding</strong> — regular functions create a fresh one, arrow functions skip it</td></tr>
+      <tr><td><strong>Value vs Reference</strong> (Ch 5)</td><td>Variables live in the EC's environments; objects live in the Memory Heap, referenced from there</td></tr>
+      <tr><td><strong><code>undefined</code></strong></td><td>The placeholder set during the <strong>Memory Creation Phase</strong></td></tr>
+      <tr><td><strong>Call Stack</strong></td><td>Manages the <strong>creation, ordering, and destruction</strong> of ECs</td></tr>
+      <tr><td><strong>Event Loop</strong> (Ch 9)</td><td>Pushes callbacks onto the Call Stack only when the stack is <strong>empty</strong></td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- SEC 15 -->
+<div id="sec15">
+  <div class="section-header" onclick="toggleSection('c15')"><h1 style="border:none;margin:0;padding:0;">15. Common Gotchas</h1><span class="toggle-icon" id="icon-c15">▼</span></div>
+  <div class="section-content" id="c15">
+    <h2>Gotcha A: Printing ≠ Returning</h2>
+    <pre>function add(a, b) {
+  console.log(a + b);   // PRINTS 5
+}
+var result = add(2, 3);
+console.log(result);     // undefined! (no return statement)</pre>
+
+    <h2>Gotcha B: Same Function, Different Invocations = Different ECs</h2>
+    <pre>function counter() {
+  var count = 0;
+  count++;
+  console.log(count);
+}
+counter();  // 1
+counter();  // 1 (NOT 2!)
+counter();  // 1 (NOT 3!)</pre>
+    <p>Each call creates a <strong>brand new EC</strong> with a fresh <code>count = 0</code>. No memory between calls — unless you use closures.</p>
+
+    <h2>Gotcha C: Function Expressions Aren't Hoisted Like Declarations</h2>
+    <pre>greet();   // 💥 TypeError: greet is not a function
+var greet = function() { console.log("Hello"); };</pre>
+
+    <h2>Gotcha D: <code>var</code> Inside a Function Creates LOCAL Memory</h2>
+    <pre>var x = "global";
+function test() {
+  var x = "local";      // A DIFFERENT x!
+  console.log(x);       // "local"
+}
+test();
+console.log(x);         // "global" (unchanged!)</pre>
+
+    <h2>Gotcha E: Call Stack Overflow</h2>
+    <pre>function infinite() {
+  infinite();   // calls itself forever
+}
+infinite();
+// 💥 RangeError: Maximum call stack size exceeded</pre>
+    <p>Each recursive call pushes a new EC. Without a base case, the stack fills and crashes. This is the origin of the name <strong>StackOverflow.com</strong>!</p>
+
+    <h2>Gotcha F: Testing TDZ in DevTools</h2>
+    <p>See <a href="#sec13">Section 13</a> — the bare console gives misleading errors. Always wrap in a block or function.</p>
+  </div>
+</div>
+
+<!-- SEC 16 -->
+<div id="sec16">
+  <div class="section-header" onclick="toggleSection('c16')"><h1 style="border:none;margin:0;padding:0;">16. Master Cheat Sheet</h1><span class="toggle-icon" id="icon-c16">▼</span></div>
+  <div class="section-content" id="c16">
+    <table>
+      <tr><th>Concept</th><th>Key Point</th></tr>
+      <tr><td>Execution Context</td><td><strong>Abstract</strong> (conceptual, not physical) container for code evaluation</td></tr>
+      <tr><td>3 Components (spec)</td><td>Lexical Environment + Variable Environment + This Binding</td></tr>
+      <tr><td>"Memory Component"</td><td>Informal umbrella name for the two Environments combined</td></tr>
+      <tr><td>"Code Component"</td><td>Informal name for the execution itself — NOT a real component</td></tr>
+      <tr><td>Lexical Environment</td><td><code>let</code>/<code>const</code>/<code>class</code> + outer reference. Block-scoped. New copy per block.</td></tr>
+      <tr><td>Variable Environment</td><td><code>var</code> + function declarations. Function-scoped. Same across blocks.</td></tr>
+      <tr><td>Phases ≠ Components</td><td>Phases are time periods; components are the things that exist</td></tr>
+      <tr><td>Memory Creation Phase</td><td><code>var</code> → <code>undefined</code>; functions → full code; <code>let</code>/<code>const</code> → declared but uninitialized (TDZ)</td></tr>
+      <tr><td>Code Execution Phase</td><td>Runs line by line. Assignments happen. TDZ ends when declaration line is reached.</td></tr>
+      <tr><td>3 States of a Variable</td><td>DECLARED → INITIALIZED → ASSIGNED. TDZ = gap between 1 and 2.</td></tr>
+      <tr><td>Call Stack</td><td>LIFO. GEC at bottom. Push on invoke, pop on return.</td></tr>
+      <tr><td>Hoisting</td><td>A consequence of the Memory Phase, not magic</td></tr>
+      <tr><td>Scope Chain</td><td>Chain of Lexical Environment references. Follows <strong>lexical position</strong>, NOT call order.</td></tr>
+      <tr><td><code>return</code></td><td>Sends value back + destroys the EC. No return → implicit <code>undefined</code>.</td></tr>
+      <tr><td>DevTools trap</td><td>Bare console gives wrong TDZ errors. Wrap in <code>{ }</code> or a function to test properly.</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- SEC 17 -->
+<div id="sec17">
+  <div class="section-header" onclick="toggleSection('c17')"><h1 style="border:none;margin:0;padding:0;">17. Interview Answer Templates</h1><span class="toggle-icon" id="icon-c17">▼</span></div>
+  <div class="section-content" id="c17">
+    <h3>Q: "What is an Execution Context?"</h3>
+    <div class="note-box" style="line-height:1.8;"><em>"An Execution Context is a conceptual environment the JavaScript engine creates to evaluate and execute code. Per the spec it has three components: the Lexical Environment, which holds <code>let</code>/<code>const</code>/<code>class</code> plus the reference to the outer environment; the Variable Environment, which holds <code>var</code> and function declarations; and the This Binding. It's created in two phases — a Memory Creation Phase where memory is allocated, and a Code Execution Phase where the code runs line by line."</em></div>
+
+    <h3>Q: "Difference between Lexical and Variable Environment?"</h3>
+    <div class="note-box" style="line-height:1.8;"><em>"The Variable Environment stores <code>var</code> declarations and function declarations — it's function-scoped and stays the same across blocks. The Lexical Environment stores <code>let</code>, <code>const</code>, and <code>class</code> — it's block-scoped, so a new one is created for each block, and it also holds the reference to the outer environment which forms the scope chain. This split is exactly why <code>var</code> leaks out of blocks but <code>let</code> doesn't."</em></div>
+
+    <h3>Q: "How does the Call Stack work?"</h3>
+    <div class="note-box" style="line-height:1.8;"><em>"The Call Stack is a LIFO structure managing Execution Contexts. When a program starts, the Global Execution Context is pushed. Every function invocation pushes a new Functional Execution Context on top. When a function finishes, its EC is popped and control returns to the context below. When the program ends, the GEC is popped and the stack is empty."</em></div>
+
+    <h3>Q: "Explain Hoisting"</h3>
+    <div class="note-box" style="line-height:1.8;"><em>"Hoisting is a consequence of the Memory Creation Phase. Before any code executes, the engine allocates memory — <code>var</code> is initialized to <code>undefined</code>, function declarations are stored with their complete code, and <code>let</code>/<code>const</code> are declared but left uninitialized, which creates the Temporal Dead Zone. That's why you can call a function declaration before its line, but a function expression gives a TypeError because it's just <code>undefined</code> at that point."</em></div>
+
+    <h3>Q: "Does memory allocation for <code>let</code> actually matter?"</h3>
+    <div class="note-box" style="line-height:1.8;"><em>"Yes. Because the slot exists, the engine can distinguish 'declared but not yet initialized' from 'never declared at all' — giving two different errors: 'Cannot access before initialization' versus 'is not defined.' It also has real behavioral impact: an inner <code>let</code> shadows an outer variable of the same name even before initialization, so you get a TDZ error instead of silently reading the outer value."</em></div>
+
+    <h3>Q: "How does the Scope Chain work?"</h3>
+    <div class="note-box" style="line-height:1.8;"><em>"Every Execution Context's Lexical Environment holds a reference to its parent's Lexical Environment, forming a chain. When the engine needs a variable, it checks the current EC first, then follows the reference upward until it finds it or reaches the global context. If it's nowhere in the chain, it throws a ReferenceError. Crucially, the chain follows where the function is <em>written</em> — its lexical position — not where it's called."</em></div>
+  </div>
+</div>
+
+<!-- SEC 18 — PRACTICE -->
+<div class="page-break" id="sec18">
+  <div class="section-header" onclick="toggleSection('c18')"><h1 style="border:none;margin:0;padding:0;">18. Practice Sheet — 10 Questions</h1><span class="toggle-icon" id="icon-c18">▼</span></div>
+  <div class="section-content" id="c18">
+    <p><strong>📝 Instructions:</strong> Predict the EXACT output (or error type). Reason using the two-phase model. Predict, don't run.</p>
+
+    <div class="question-block" id="q1"><h2>Q1 — Memory Phase Basics <span class="tag tag-easy">Easy</span></h2>
+    <pre>console.log(a);
+console.log(b);
+console.log(fn);
+var a = 10;
+var b = "hello";
+function fn() { return 42; }</pre>
+    <a class="nav-link" href="#ans1">→ See Answer</a></div>
+
+    <div class="question-block" id="q2"><h2>Q2 — Expression vs Declaration <span class="tag tag-easy">Easy</span></h2>
+    <pre>console.log(square(5));
+console.log(cube(3));
+function square(n) { return n * n; }
+var cube = function(n) { return n * n * n; };</pre>
+    <a class="nav-link" href="#ans2">→ See Answer</a></div>
+
+    <div class="question-block" id="q3"><h2>Q3 — Local Scope Destruction <span class="tag tag-easy">Easy</span></h2>
+    <pre>var x = 10;
+var y = 20;
+function add(a, b) {
+  var result = a + b;
+  return result;
+}
+var sum = add(x, y);
+console.log(sum);
+console.log(result);</pre>
+    <a class="nav-link" href="#ans3">→ See Answer</a></div>
+
+    <div class="question-block" id="q4"><h2>Q4 — Return Trap <span class="tag tag-medium">Medium</span></h2>
+    <pre>function getFullName(first, last) {
+  var fullName = first + " " + last;
+  console.log("Inside:", fullName);
+}
+var name = getFullName("Ada", "Lovelace");
+console.log("Outside:", name);</pre>
+    <a class="nav-link" href="#ans4">→ See Answer</a></div>
+
+    <div class="question-block" id="q5"><h2>Q5 — EC Lifecycle Count <span class="tag tag-medium">Medium</span></h2>
+    <pre>function double(n) { return n * 2; }
+function triple(n) { return n * 3; }
+var a = double(5);
+var b = triple(a);
+var c = double(b);
+console.log(c);</pre>
+    <p><strong>1)</strong> What is the output?</p>
+    <p><strong>2)</strong> How many TOTAL Execution Contexts are created and destroyed? List them.</p>
+    <a class="nav-link" href="#ans5">→ See Answer</a></div>
+
+    <div class="question-block" id="q6"><h2>Q6 — Scope Chain Resolution <span class="tag tag-medium">Medium</span></h2>
+    <pre>var color = "red";
+function outer() {
+  var color = "blue";
+  function inner() {
+    console.log(color);
+  }
+  inner();
+}
+outer();</pre>
+    <p><strong>Trace the scope chain to explain your answer.</strong></p>
+    <a class="nav-link" href="#ans6">→ See Answer</a></div>
+
+    <div class="question-block" id="q7"><h2>Q7 — Lexical vs Call Order <span class="tag tag-hard">Hard</span></h2>
+    <pre>var x = 1;
+function first() {
+  var x = 2;
+  second();
+}
+function second() {
+  console.log(x);
+}
+first();</pre>
+    <p><strong>Is it 1 or 2? Think carefully about scope chain vs call stack.</strong></p>
+    <a class="nav-link" href="#ans7">→ See Answer</a></div>
+
+    <div class="question-block" id="q8"><h2>Q8 — Nested Returns + Call Stack <span class="tag tag-hard">Hard</span></h2>
+    <pre>function outer() {
+  var a = 10;
+  function middle() {
+    var b = 20;
+    function inner() {
+      var c = 30;
+      return a + b + c;
+    }
+    return inner();
+  }
+  return middle();
+}
+var result = outer();
+console.log(result);</pre>
+    <p><strong>1)</strong> What is the output?</p>
+    <p><strong>2)</strong> Describe the Call Stack at the moment <code>return a + b + c</code> executes.</p>
+    <a class="nav-link" href="#ans8">→ See Answer</a></div>
+
+    <div class="question-block" id="q9"><h2>Q9 — Hoisting Collision <span class="tag tag-expert">Expert</span></h2>
+    <pre>var x = 10;
+function x() {
+  return 20;
+}
+console.log(typeof x);
+console.log(x);</pre>
+    <p><strong>What happens when a variable and a function share the SAME name during the memory phase?</strong></p>
+    <a class="nav-link" href="#ans9">→ See Answer</a></div>
+
+    <div class="question-block" id="q10"><h2>Q10 — The Final Boss <span class="tag tag-expert">Expert</span></h2>
+    <pre>var a = 1;
+function outer() {
+  console.log("A:", a);
+  var a = 2;
+  console.log("B:", a);
+
+  function middle() {
+    console.log("C:", a);
+    var a = 3;
+    console.log("D:", a);
+
+    function inner() {
+      console.log("E:", a);
+    }
+    inner();
+  }
+  middle();
+
+  console.log("F:", a);
+}
+outer();
+console.log("G:", a);</pre>
+    <p><strong>All 7 outputs (A through G). Tests hoisting + scope chain + EC lifecycle simultaneously.</strong></p>
+    <a class="nav-link" href="#ans10">→ See Answer</a></div>
+  </div>
+</div>
+
+<!-- SEC 19 — ANSWERS -->
+<div class="page-break" id="sec19">
+  <div class="section-header" onclick="toggleSection('c19')"><h1 style="border:none;margin:0;padding:0;">19. Answer Key</h1><span class="toggle-icon" id="icon-c19">▼</span></div>
+  <div class="section-content" id="c19">
+
+    <h2 id="ans1">Q1 — Answer</h2>
+    <pre>undefined
+undefined
+function fn() { return 42; }</pre>
+    <p>Memory Phase stores <code>a: undefined</code>, <code>b: undefined</code>, <code>fn: full function code</code>. When the logs run, the Code Phase hasn't reached the assignment lines yet.</p>
+    <a class="nav-link back" href="#q1">← Back to Question 1</a><hr>
+
+    <h2 id="ans2">Q2 — Answer</h2>
+    <pre>25
+💥 TypeError: cube is not a function</pre>
+    <p><code>square</code> is a function declaration → fully hoisted. <code>cube</code> is a function expression in a <code>var</code> → Memory Phase stores <code>undefined</code>. Calling <code>undefined(3)</code> → TypeError.</p>
+    <a class="nav-link back" href="#q2">← Back to Question 2</a><hr>
+
+    <h2 id="ans3">Q3 — Answer</h2>
+    <pre>30
+💥 ReferenceError: result is not defined</pre>
+    <p><code>result</code> was a local variable inside <code>add()</code>'s EC, which was destroyed on return. It never existed in the Global EC.</p>
+    <a class="nav-link back" href="#q3">← Back to Question 3</a><hr>
+
+    <h2 id="ans4">Q4 — Answer</h2>
+    <pre>Inside: Ada Lovelace
+Outside: undefined</pre>
+    <p><code>console.log</code> prints but doesn't return. No <code>return</code> statement → implicit <code>return undefined</code>. Printing ≠ Returning.</p>
+    <a class="nav-link back" href="#q4">← Back to Question 4</a><hr>
+
+    <h2 id="ans5">Q5 — Answer</h2>
+    <pre>Output: 60
+
+Total ECs created: 4
+1. GEC (created at start, destroyed at end)
+2. FEC for double(5)  → returns 10 → destroyed
+3. FEC for triple(10) → returns 30 → destroyed
+4. FEC for double(30) → returns 60 → destroyed</pre>
+    <p>Trace: a = 10, b = 30, c = 60.</p>
+    <a class="nav-link back" href="#q5">← Back to Question 5</a><hr>
+
+    <h2 id="ans6">Q6 — Answer</h2>
+    <pre>"blue"</pre>
+    <p><code>inner()</code> looks for <code>color</code> in its own memory → not found. Walks up to <code>outer()</code> → finds <code>"blue"</code>. The chain stops at the first match, never reaching the global <code>"red"</code>.</p>
+    <a class="nav-link back" href="#q6">← Back to Question 6</a><hr>
+
+    <h2 id="ans7">Q7 — Answer</h2>
+    <pre>1</pre>
+    <p><code>second()</code> is defined in the <strong>global scope</strong>, NOT inside <code>first()</code>. The scope chain follows <strong>where a function is WRITTEN</strong> (lexical position), not where it's called. So <code>second()</code>'s chain goes straight to the Global EC where <code>x = 1</code>. It never sees <code>first()</code>'s <code>x = 2</code>.</p>
+    <div class="danger-box"><strong>🔑 Critical Insight:</strong> Scope Chain follows <strong>lexical (written) position</strong>. Call Stack follows <strong>invocation order</strong>. They are NOT the same — one of the most common interview traps.</div>
+    <a class="nav-link back" href="#q7">← Back to Question 7</a><hr>
+
+    <h2 id="ans8">Q8 — Answer</h2>
+    <pre>Output: 60
+
+Call Stack when `return a + b + c` executes:
+┌──────────┐
+│  inner() │  ← currently executing
+├──────────┤
+│ middle() │
+├──────────┤
+│  outer() │
+├──────────┤
+│   GEC    │
+└──────────┘</pre>
+    <p>Every function has a proper <code>return</code>, so 60 bubbles all the way up.</p>
+    <a class="nav-link back" href="#q8">← Back to Question 8</a><hr>
+
+    <h2 id="ans9">Q9 — Answer</h2>
+    <pre>number
+10</pre>
+    <p>During Memory Phase, <strong>both</strong> are processed: <code>var x</code> sets <code>undefined</code>, then the function declaration <strong>overwrites</strong> it → <code>x = function</code>. Then during Code Phase, line 1 runs <code>x = 10</code>, overwriting the function with the number.</p>
+    <div class="warn-box"><strong>Order:</strong> var declarations processed first (x = undefined) → function declarations overwrite (x = function) → Code Phase assignment overwrites again (x = 10). Final: <code>10</code>.</div>
+    <a class="nav-link back" href="#q9">← Back to Question 9</a><hr>
+
+    <h2 id="ans10">Q10 — Answer</h2>
+    <pre>A: undefined
+B: 2
+C: undefined
+D: 3
+E: 3
+F: 2
+G: 1</pre>
+    <ul>
+      <li><strong>A:</strong> <code>outer()</code>'s Memory Phase stores its OWN <code>var a = undefined</code>. The assignment is on the next line → <code>undefined</code>. Hoisting within the function's own EC!</li>
+      <li><strong>B:</strong> <code>a = 2</code> has now executed in outer's EC → <code>2</code></li>
+      <li><strong>C:</strong> <code>middle()</code>'s Memory Phase stores its OWN <code>var a = undefined</code>. Same trap → <code>undefined</code></li>
+      <li><strong>D:</strong> <code>a = 3</code> executed in middle's EC → <code>3</code></li>
+      <li><strong>E:</strong> <code>inner()</code> has no <code>var a</code>. Scope chain → middle's EC → <code>3</code></li>
+      <li><strong>F:</strong> Back in outer's EC → outer's <code>a</code> is still <code>2</code></li>
+      <li><strong>G:</strong> Back in GEC → global <code>a = 1</code></li>
+    </ul>
+    <div class="blue-box"><strong>🔑 Key Insight:</strong> Each function's <code>var a</code> creates a <strong>separate variable</strong> in its own EC. Hoisting happens WITHIN each EC independently. The scope chain only kicks in when a variable is NOT found in the current EC.</div>
+    <a class="nav-link back" href="#q10">← Back to Question 10</a>
+
+    <hr>
+    <h2 style="text-align:center;">📊 Scoring Guide</h2>
+    <table>
+      <tr><th>Score</th><th>Level</th><th>What It Means</th></tr>
+      <tr><td>9–10 / 10</td><td>🏆 Mastery</td><td>You understand EC at an engine level. Teach others!</td></tr>
+      <tr><td>7–8 / 10</td><td>✅ Solid</td><td>Strong foundation. Review missed ones.</td></tr>
+      <tr><td>5–6 / 10</td><td>🟨 Getting There</td><td>Re-read Sections 3, 6, 11 (Terminology, Phases, Scope Chain).</td></tr>
+      <tr><td>Below 5</td><td>🔄 Needs Revision</td><td>Restart from Section 3 — the Terminology Decoder.</td></tr>
+    </table>
+
+    <div style="text-align:center;margin-top:25px;padding:18px;background:#e3f2fd;border-radius:8px;">
+      <p style="font-size:1.15em;font-weight:bold;color:#0078D4;">Key Mental Models:</p>
+      <p style="font-weight:bold;">🔹 3 components: Lexical Env + Variable Env + This Binding</p>
+      <p style="font-weight:bold;">🔹 Phases ≠ Components. Phases are time; components are things.</p>
+      <p style="font-weight:bold;">🔹 3 states: DECLARED → INITIALIZED → ASSIGNED. TDZ = the gap.</p>
+      <p style="font-weight:bold;">🔹 Scope Chain = lexical position, NOT call order</p>
+      <p style="font-weight:bold;">🔹 Which EC am I in? → What phase? → What's in memory now?</p>
+    </div>
+  </div>
+</div>
+</div>
+<script>
+function toggleSidebar(){document.getElementById('sidebar').classList.toggle('collapsed');document.getElementById('mainContent').classList.toggle('full');}
+function scrollTo(e,id){e.preventDefault();const el=document.getElementById(id);if(el){const cId='c'+id.replace('sec','');const c=document.getElementById(cId);if(c&&c.classList.contains('collapsed'))toggleSection(cId);el.scrollIntoView({behavior:'smooth',block:'start'});}if(window.innerWidth<=768){document.getElementById('sidebar').classList.add('collapsed');document.getElementById('mainContent').classList.add('full');}}
+function toggleSection(id){const el=document.getElementById(id);const icon=document.getElementById('icon-'+id);if(el.classList.contains('collapsed')){el.classList.remove('collapsed');el.style.maxHeight=el.scrollHeight+10000+'px';if(icon)icon.classList.remove('collapsed');}else{el.classList.add('collapsed');el.style.maxHeight='0px';if(icon)icon.classList.add('collapsed');}}
+document.addEventListener('DOMContentLoaded',function(){document.querySelectorAll('.section-content').forEach(el=>{el.style.maxHeight=el.scrollHeight+10000+'px';});});
+</script>
+</body>
+</html>

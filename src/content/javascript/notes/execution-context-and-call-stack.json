@@ -1,0 +1,1721 @@
+{
+  "subject": "javascript",
+  "slug": "execution-context-and-call-stack",
+  "title": "Execution Context & The Call Stack",
+  "chapterLabel": "Chapter 1",
+  "summary": "How the engine creates, populates, and destroys the environments your code runs in — with spec-level terminology and call stack mechanics.",
+  "tags": [
+    "fundamentals",
+    "scope",
+    "memory",
+    "hoisting",
+    "errors"
+  ],
+  "video": null,
+  "groups": [
+    {
+      "label": "Foundation",
+      "sectionIds": [
+        "sec1",
+        "sec2",
+        "sec3",
+        "sec4",
+        "sec5"
+      ]
+    },
+    {
+      "label": "Mechanics",
+      "sectionIds": [
+        "sec6",
+        "sec7",
+        "sec8",
+        "sec9",
+        "sec10",
+        "sec11"
+      ]
+    },
+    {
+      "label": "Depth",
+      "sectionIds": [
+        "sec12",
+        "sec13",
+        "sec14",
+        "sec15"
+      ]
+    },
+    {
+      "label": "Revision",
+      "sectionIds": [
+        "sec16",
+        "sec17"
+      ]
+    },
+    {
+      "label": "Practice",
+      "sectionIds": [
+        "sec18",
+        "sec19"
+      ]
+    }
+  ],
+  "sections": [
+    {
+      "id": "sec1",
+      "n": "1",
+      "title": "The Core Fundamental",
+      "badge": null,
+      "group": "Foundation",
+      "blocks": [
+        {
+          "t": "callout",
+          "kind": "danger",
+          "html": "<strong>Everything in JavaScript happens inside an Execution Context.</strong><br>JavaScript is not possible without it. It is the environment in which JS code is evaluated and executed."
+        },
+        {
+          "t": "p",
+          "html": "<strong>Definition:</strong> An Execution Context is an <strong>abstract environment</strong> created by the JS Engine to evaluate and execute code. Think of it as a container holding the variables, functions, scope references, and the <code>this</code> binding required for a specific piece of code to run."
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "⚠️ What does \"abstract\" mean here?"
+        },
+        {
+          "t": "callout",
+          "kind": "key",
+          "html": "<strong>Important nuance — two meanings of \"abstract\":</strong> <br>• <strong>Meaning 1 (OOP sense):</strong> \"hiding complexity, showing only what matters\" — like an abstract class.<br>• <strong>Meaning 2 (the one used here):</strong> \"conceptual / not physically real\" — the opposite of <em>concrete</em>. We mean <strong>meaning 2</strong>. There is no actual box in your RAM labelled <code>ExecutionContext</code>. You cannot point to a memory address and say \"there it is.\""
+        },
+        {
+          "t": "p",
+          "html": "The Execution Context is a <strong>specification concept</strong> — a model defined by the ECMAScript spec so that engine authors (V8, SpiderMonkey) and developers share a common way to <em>reason about</em> how code runs. V8 internally uses registers, stack frames, and hidden classes that look nothing like our neat diagrams."
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Abstract vs Concrete — the contrast that makes it click:"
+        },
+        {
+          "t": "table",
+          "head": [
+            "Thing",
+            "Abstract or Concrete?",
+            "Can you <code>console.log</code> it?"
+          ],
+          "rows": [
+            [
+              "Execution Context",
+              "Abstract — a conceptual model",
+              "❌ No such thing to log"
+            ],
+            [
+              "Lexical Environment",
+              "Abstract — a spec concept",
+              "❌ No"
+            ],
+            [
+              "Scope Chain",
+              "Abstract — a conceptual chain",
+              "❌ No"
+            ],
+            [
+              "Call Stack",
+              "Concrete-ish — a real stack structure",
+              "⚠️ Only via debugger"
+            ],
+            [
+              "Memory Heap",
+              "Concrete — real allocated RAM",
+              "⚠️ Via memory profiler"
+            ],
+            [
+              "<code>window</code> object",
+              "Concrete — a real object",
+              "✅ Yes"
+            ]
+          ]
+        },
+        {
+          "t": "callout",
+          "kind": "note",
+          "html": "<strong>💡 Clearer phrasing:</strong> \"An Execution Context is a <em>conceptual model</em> the spec defines to describe the environment in which code runs. Engines implement it differently under the hood, but the model lets us reason about scope, memory, and execution consistently.\""
+        }
+      ]
+    },
+    {
+      "id": "sec2",
+      "n": "2",
+      "title": "The Nature of JavaScript",
+      "badge": null,
+      "group": "Foundation",
+      "blocks": [
+        {
+          "t": "callout",
+          "kind": "info",
+          "html": "<strong>JavaScript is inherently a Synchronous, Single-Threaded Language.</strong>"
+        },
+        {
+          "t": "table",
+          "head": [
+            "Term",
+            "What It Means"
+          ],
+          "rows": [
+            [
+              "<strong>Single-Threaded</strong>",
+              "JavaScript can only execute <strong>one command at a time</strong>. Think of a thread as a single worker executing a list of instructions."
+            ],
+            [
+              "<strong>Synchronous</strong>",
+              "It executes commands in a <strong>specific order</strong>, strictly line-by-line from top to bottom. It will NOT move to the next line until the current one finishes."
+            ]
+          ]
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "But what about AJAX, setTimeout, Promises?"
+        },
+        {
+          "t": "p",
+          "html": "Asynchronous behavior is <strong>NOT handled by the core JS engine</strong>. It's handled by the <strong>browser's Web APIs</strong> (or Node.js APIs). The engine itself remains single-threaded and synchronous — it delegates async work to the browser and gets notified via the <strong>Event Loop &amp; Callback Queue</strong> when results are ready. <em>(Full detail in Chapter 9 — Event Loop.)</em>"
+        },
+        {
+          "t": "callout",
+          "kind": "note",
+          "html": "<strong>🎯 Interview Answer:</strong> \"JavaScript is a synchronous, single-threaded language. It executes one command at a time, in a specific order. Asynchronous behavior is achieved through the browser's Web APIs, the callback queue, and the event loop — not by the JS engine itself.\""
+        }
+      ]
+    },
+    {
+      "id": "sec3",
+      "n": "3",
+      "title": "Terminology Decoder — Two Vocabularies, One Machine",
+      "badge": "star",
+      "group": "Foundation",
+      "blocks": [
+        {
+          "t": "callout",
+          "kind": "key",
+          "html": "<strong>⭐ Read this before anything else confuses you.</strong> There are <strong>two different vocabularies</strong> in circulation for the exact same machinery — and tutorials mix them freely without warning. This is why \"Memory Component, Code Component, this binding, Variable Environment, Lexical Environment, 2 phases\" feels like six things when it's really three, named twice."
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "The Two Vocabularies"
+        },
+        {
+          "t": "table",
+          "head": [
+            "Vocabulary",
+            "Where it comes from",
+            "Terms used"
+          ],
+          "rows": [
+            [
+              "<strong>Teaching model</strong>",
+              "Most tutorials and courses",
+              "Memory Component, Code Component, 2 Phases"
+            ],
+            [
+              "<strong>Spec model</strong>",
+              "ECMAScript specification",
+              "Lexical Environment, Variable Environment, This Binding"
+            ]
+          ]
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "The Correct Spec Definition — Exactly 3 Components"
+        },
+        {
+          "t": "code",
+          "code": "┌──────────────────────────────────────────────┐\n│           EXECUTION CONTEXT                  │\n│                                              │\n│  1. Lexical Environment                      │\n│     → let, const, class declarations         │\n│     → the outer-environment reference        │\n│       (this IS your scope chain link)        │\n│                                              │\n│  2. Variable Environment                     │\n│     → var declarations                       │\n│     → function declarations                  │\n│                                              │\n│  3. This Binding                             │\n│     → what `this` points to in this context  │\n└──────────────────────────────────────────────┘",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "That's it. <strong>Three.</strong> Not five, not six."
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "The Mapping Nobody Draws For You"
+        },
+        {
+          "t": "code",
+          "code": "TEACHING MODEL              →    SPEC MODEL\n─────────────────                ──────────\n\n\"Memory Component\"          →    Lexical Environment\n(a.k.a. Variable Env)            + Variable Environment\n                                 (both are storage)\n\n\"Code Component\"            →    NOT a component at all!\n(a.k.a. Thread of Execution)     It's the EXECUTION itself,\n                                 not a stored thing.\n\n(rarely mentioned)          →    This Binding",
+          "label": null
+        },
+        {
+          "t": "callout",
+          "kind": "danger",
+          "html": "<strong>🔑 The key realization:</strong> \"Code Component\" isn't really a <em>component</em> in spec terms — it's the <strong>act of running the code</strong>. Teaching materials call it a component to make the 2-phase model easy to visualize, but it isn't a storage slot like the other two. And \"Memory Component\" is just an umbrella name for <strong>both</strong> environments lumped together, because for beginners the <code>var</code> vs <code>let</code> split isn't the point yet."
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "⭐ Lexical Environment vs Variable Environment — The Real Difference"
+        },
+        {
+          "t": "p",
+          "html": "This is the part almost nobody explains clearly:"
+        },
+        {
+          "t": "table",
+          "head": [
+            "",
+            "Variable Environment",
+            "Lexical Environment"
+          ],
+          "rows": [
+            [
+              "<strong>Stores</strong>",
+              "<code>var</code> + function declarations",
+              "<code>let</code>, <code>const</code>, <code>class</code>"
+            ],
+            [
+              "<strong>Hoisting behavior</strong>",
+              "Initialized to <code>undefined</code>",
+              "Stays uninitialized (TDZ)"
+            ],
+            [
+              "<strong>Scope type</strong>",
+              "Function-scoped",
+              "Block-scoped"
+            ],
+            [
+              "<strong>New copy per block <code>{ }</code>?</strong>",
+              "❌ No — stays the same",
+              "✅ Yes — fresh one per block"
+            ],
+            [
+              "<strong>Holds outer reference?</strong>",
+              "—",
+              "✅ Yes — this IS the scope chain link"
+            ]
+          ]
+        },
+        {
+          "t": "code",
+          "code": "function demo() {\n  var a = 1;        // → Variable Environment\n  let b = 2;        // → Lexical Environment\n\n  {\n    let c = 3;      // → a NEW Lexical Environment for this block\n    var d = 4;      // → still the SAME Variable Environment (function-scoped)\n  }\n}",
+          "label": null
+        },
+        {
+          "t": "callout",
+          "kind": "info",
+          "html": "<strong>🔑 This is exactly why</strong> <code>var</code> leaks out of blocks but <code>let</code> doesn't — they live in <strong>different environments</strong>, and only one of them creates a fresh copy per block."
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Components vs Phases — Don't Confuse Them"
+        },
+        {
+          "t": "callout",
+          "kind": "warn",
+          "html": "<strong>⚠️ \"Memory Creation Phase\" and \"Code Execution Phase\" are PHASES (time periods), not components.</strong><br>• <strong>Components</strong> = the <em>things that exist</em> (Lexical Env, Variable Env, This Binding)<br>• <strong>Phases</strong> = <em>what happens to them</em> over time (populate, then execute)"
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Quick Reference — Which Word Means What"
+        },
+        {
+          "t": "table",
+          "head": [
+            "Term",
+            "What kind of thing is it?"
+          ],
+          "rows": [
+            [
+              "Execution Context",
+              "The <strong>container</strong> (abstract)"
+            ],
+            [
+              "Lexical Environment",
+              "A <strong>component</strong> — storage for let/const + scope chain link"
+            ],
+            [
+              "Variable Environment",
+              "A <strong>component</strong> — storage for var/functions"
+            ],
+            [
+              "This Binding",
+              "A <strong>component</strong> — what <code>this</code> points to"
+            ],
+            [
+              "Memory Component",
+              "<strong>Informal name</strong> for the two Environments combined"
+            ],
+            [
+              "Code Component",
+              "<strong>Informal name</strong> for the execution itself (not a real component)"
+            ],
+            [
+              "Thread of Execution",
+              "Same as Code Component — the running of code"
+            ],
+            [
+              "Memory Creation Phase",
+              "A <strong>phase</strong> (time period) — populates components"
+            ],
+            [
+              "Code Execution Phase",
+              "A <strong>phase</strong> (time period) — runs the code"
+            ],
+            [
+              "Scope Chain",
+              "The <strong>chain</strong> of outer-environment references across ECs"
+            ],
+            [
+              "Call Stack",
+              "Where ECs are <strong>pushed and popped</strong>"
+            ]
+          ]
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "🎯 How To Say It Correctly"
+        },
+        {
+          "t": "callout",
+          "kind": "note",
+          "html": "<strong>In an interview (safest — covers both vocabularies):</strong><br><em>\"An Execution Context is the environment in which JavaScript code is evaluated. Per the spec it has three components: the Lexical Environment, which holds <code>let</code>/<code>const</code>/<code>class</code> and the reference to the outer environment; the Variable Environment, which holds <code>var</code> and function declarations; and the This Binding. It's created and populated in two phases — a creation phase where memory is allocated, and an execution phase where the code actually runs line by line.\"</em>"
+        },
+        {
+          "t": "callout",
+          "kind": "note",
+          "html": "<strong>Casually / when teaching:</strong><br><em>\"An EC has a memory part and a code part. Memory holds all variables and functions; code runs line by line. It's created in two phases.\"</em>"
+        }
+      ]
+    },
+    {
+      "id": "sec4",
+      "n": "4",
+      "title": "Anatomy of an Execution Context",
+      "badge": null,
+      "group": "Foundation",
+      "blocks": [
+        {
+          "t": "h",
+          "level": 3,
+          "html": "The Teaching Model (what you'll see in most tutorials):"
+        },
+        {
+          "t": "code",
+          "code": "┌──────────────────────────────────────────────────────────┐\n│                   EXECUTION CONTEXT                      │\n│                                                          │\n│  ┌─────────────────────┐  ┌────────────────────────────┐ │\n│  │  MEMORY COMPONENT   │  │    CODE COMPONENT          │ │\n│  │  (Variable Env)     │  │    (Thread of Execution)   │ │\n│  │                     │  │                            │ │\n│  │  key  :  value      │  │    Code is executed        │ │\n│  │  ──────────────     │  │    one line at a time      │ │\n│  │  n    :  2          │  │                            │ │\n│  │  fn   :  {code}     │  │    Line 1 → Line 2 → ...   │ │\n│  │  ans  :  undefined  │  │                            │ │\n│  └─────────────────────┘  └────────────────────────────┘ │\n└──────────────────────────────────────────────────────────┘",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "The Spec Model (what the engine actually defines):"
+        },
+        {
+          "t": "code",
+          "code": "┌─────────────────────────────────────┐\n│        EXECUTION CONTEXT            │\n│                                     │\n│  1. Lexical Environment             │\n│     • let / const / class           │\n│     • outer environment reference   │\n│       (the scope chain link)        │\n│                                     │\n│  2. Variable Environment            │\n│     • var declarations              │\n│     • function declarations         │\n│                                     │\n│  3. This Binding                    │\n│     • determined at call time       │\n│                                     │\n└─────────────────────────────────────┘",
+          "label": null
+        },
+        {
+          "t": "callout",
+          "kind": "note",
+          "html": "<strong>💡 Both diagrams describe the same machine.</strong> The first is easier for beginners; the second is what you say in interviews. See <a href=\"#sec3\">Section 3 — Terminology Decoder</a> for the full mapping."
+        }
+      ]
+    },
+    {
+      "id": "sec5",
+      "n": "5",
+      "title": "Types of Execution Contexts",
+      "badge": null,
+      "group": "Foundation",
+      "blocks": [
+        {
+          "t": "table",
+          "head": [
+            "Type",
+            "When Is It Created?",
+            "Key Details"
+          ],
+          "rows": [
+            [
+              "<strong>Global Execution Context (GEC)</strong>",
+              "When the script <strong>first runs</strong>",
+              "Creates the global object (<code>window</code> in browsers) and sets <code>this</code> to it. Only <strong>ONE</strong> GEC per program."
+            ],
+            [
+              "<strong>Functional Execution Context (FEC)</strong>",
+              "Every time a <strong>function is invoked</strong>",
+              "Each call gets its <strong>own EC</strong>, tracking its own variables and where to return control. Destroyed when the function completes."
+            ],
+            [
+              "<strong>Eval Execution Context</strong>",
+              "When code runs inside <code>eval()</code>",
+              "Rarely used, considered bad practice."
+            ]
+          ]
+        },
+        {
+          "t": "callout",
+          "kind": "warn",
+          "html": "<strong>⚠️ Key Point:</strong> There is only <strong>ONE</strong> Global Execution Context, but there can be <strong>many</strong> Functional Execution Contexts — one for every function invocation. Even calling the same function twice creates two separate ECs."
+        }
+      ]
+    },
+    {
+      "id": "sec6",
+      "n": "6",
+      "title": "The Two Phases of EC Creation",
+      "badge": "star",
+      "group": "Mechanics",
+      "blocks": [
+        {
+          "t": "p",
+          "html": "Whenever an Execution Context is created (Global or Functional), it goes through <strong>two phases</strong>:"
+        },
+        {
+          "t": "h",
+          "level": 2,
+          "html": "Phase 1: Memory Creation Phase"
+        },
+        {
+          "t": "callout",
+          "kind": "info",
+          "html": "<strong>What happens:</strong> JavaScript scans the <strong>entire code</strong> and <strong>allocates memory</strong> for all variables and functions — <strong>before executing a single line</strong>."
+        },
+        {
+          "t": "list",
+          "ordered": false,
+          "items": [
+            "<strong><code>var</code> variables</strong> → memory allocated + initialized to <code>undefined</code> (into the <strong>Variable Environment</strong>)",
+            "<strong>Function declarations</strong> → the <strong>entire function code</strong> is copied into memory (also Variable Environment)",
+            "<strong><code>let</code> / <code>const</code> / <code>class</code></strong> → memory IS allocated (into the <strong>Lexical Environment</strong>) but left <strong>uninitialized</strong> — this gap is the <strong>Temporal Dead Zone (TDZ)</strong>",
+            "<strong>This Binding</strong> is determined",
+            "<strong>Outer environment reference</strong> is set (this creates the scope chain)"
+          ]
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "⭐ The Three States of a Variable"
+        },
+        {
+          "t": "p",
+          "html": "This model makes hoisting and TDZ crystal clear:"
+        },
+        {
+          "t": "code",
+          "code": "1. DECLARED    — memory slot created\n2. INITIALIZED — slot given a value (even `undefined` counts)\n3. ASSIGNED    — your actual value written\n\n\nvar a = 5:\n  Creation phase  → declared + initialized to `undefined`\n  Execution phase → assigned 5\n  (steps 1 & 2 happen together → NO TDZ)\n\nlet b = 5:\n  Creation phase  → declared ONLY (NOT initialized)  ← the TDZ gap\n  Execution phase → initialized + assigned 5\n  (steps 1 & 2 are SPLIT APART → TDZ exists between them)\n\nxyz (never written anywhere):\n  Never declared. Doesn't exist. → \"is not defined\"",
+          "label": null
+        },
+        {
+          "t": "callout",
+          "kind": "danger",
+          "html": "<strong>🔑 That gap between DECLARED and INITIALIZED <em>is</em> the Temporal Dead Zone.</strong> <code>var</code> skips the TDZ because both steps happen together. <code>let</code>/<code>const</code> split them apart."
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Does allocating memory for <code>let</code> actually matter?"
+        },
+        {
+          "t": "p",
+          "html": "<strong>Yes — it's not a formality.</strong> The allocation is exactly what lets the engine distinguish two very different situations:"
+        },
+        {
+          "t": "table",
+          "head": [
+            "Situation",
+            "Engine knows",
+            "Error message"
+          ],
+          "rows": [
+            [
+              "<code>xyz</code> never declared",
+              "Nothing exists in the scope chain",
+              "<code>xyz is not defined</code>"
+            ],
+            [
+              "<code>let xyx</code> declared later",
+              "Slot EXISTS in this scope, but uninitialized",
+              "<code>Cannot access 'xyx' before initialization</code>"
+            ]
+          ]
+        },
+        {
+          "t": "p",
+          "html": "If the engine allocated <strong>nothing</strong> for <code>let</code>, it would have no way to know the variable is \"coming later in this scope.\" It would just walk the scope chain, find nothing, and say \"not defined.\""
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "The Real Behavioral Proof — Shadowing"
+        },
+        {
+          "t": "code",
+          "code": "let x = \"outer\";\n\nfunction demo() {\n  console.log(x);   // ❌ ReferenceError: Cannot access 'x' before initialization\n  let x = \"inner\";\n}\ndemo();",
+          "label": null
+        },
+        {
+          "t": "callout",
+          "kind": "note",
+          "html": "<strong>💡 If <code>let x</code> inside the function had NO memory allocated during the creation phase</strong>, the engine would walk up the scope chain and happily print <code>\"outer\"</code>. Instead it errors — because the inner <code>x</code> slot already exists and <strong>shadows</strong> the outer one, even before initialization. <strong>That's the allocation doing real work.</strong>"
+        },
+        {
+          "t": "h",
+          "level": 2,
+          "html": "Phase 2: Code Execution Phase"
+        },
+        {
+          "t": "callout",
+          "kind": "info",
+          "html": "<strong>What happens:</strong> JavaScript runs the code <strong>line by line</strong>. Computations happen, variables get real values, functions get invoked."
+        },
+        {
+          "t": "list",
+          "ordered": false,
+          "items": [
+            "<code>var</code> variables updated from <code>undefined</code> to their <strong>actual values</strong>",
+            "<code>let</code>/<code>const</code> get <strong>initialized</strong> when execution reaches their line (TDZ ends here)",
+            "When a function is invoked, a <strong>brand new Execution Context</strong> is created and both phases <strong>repeat</strong> for it",
+            "On <code>return</code>, the function's EC is <strong>destroyed</strong> and control returns to the caller"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sec7",
+      "n": "7",
+      "title": "The Complete Flow — Components + Phases Together",
+      "badge": null,
+      "group": "Mechanics",
+      "blocks": [
+        {
+          "t": "callout",
+          "kind": "key",
+          "html": "<strong>This is the section that ties every term into one sequence.</strong> If you ever feel lost among \"component / phase / environment / binding,\" come back here."
+        },
+        {
+          "t": "code",
+          "code": "1. Engine encounters code to run\n   (global script starts, OR a function is invoked)\n        │\n        ▼\n2. CREATE an Execution Context with its 3 components:\n   ┌────────────────────────────────┐\n   │ • Lexical Environment          │  (let/const/class + outer ref)\n   │ • Variable Environment         │  (var + function decls)\n   │ • This Binding                 │\n   └────────────────────────────────┘\n        │\n        ▼\n3. PUSH it onto the Call Stack\n        │\n        ▼\n4. PHASE 1 — Creation / Memory Phase\n   (populates the components above)\n   • var + function decls → Variable Env\n       var → `undefined`\n       functions → full body stored\n   • let/const/class → Lexical Env\n       declared but UNINITIALIZED (TDZ)\n   • This Binding determined\n   • Outer environment reference set (the scope chain link)\n        │\n        ▼\n5. PHASE 2 — Execution Phase\n   (this is the \"Code Component\" / \"Thread of Execution\")\n   • Code runs line by line\n   • Assignments actually happen\n   • let/const get initialized when reached (TDZ ends)\n   • New ECs created if functions are called → recurse to step 2\n        │\n        ▼\n6. POP the EC off the Call Stack when done\n   (unless a CLOSURE keeps its Lexical Environment alive)",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "📖 Full Worked Example — Both Phases in Action"
+        },
+        {
+          "t": "code",
+          "code": "var n = 2;\nfunction square(num) {\n  var ans = num * num;\n  return ans;\n}\nvar square2 = square(n);\nvar square4 = square(4);",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Phase 1 — Memory Creation (Global EC):"
+        },
+        {
+          "t": "code",
+          "code": "┌──────────────────────────────────┐\n│  MEMORY (after Phase 1)          │\n│                                  │\n│  n       : undefined             │\n│  square  : function(num){...}    │  ← entire function code stored!\n│  square2 : undefined             │\n│  square4 : undefined             │\n└──────────────────────────────────┘",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Phase 2 — Code Execution (line by line):"
+        },
+        {
+          "t": "code",
+          "code": "Line 1:  var n = 2         → n updated: undefined → 2\nLine 2-5: function square   → nothing to execute (already in memory)\nLine 6:  var square2 = square(n)  → FUNCTION INVOCATION! 🚀\n         ↓\n         A brand new Execution Context is created for square(2)\n\n         Phase 1 (Memory) of square(2):\n         ┌──────────────────────┐\n         │  num : undefined     │\n         │  ans : undefined     │\n         └──────────────────────┘\n\n         Phase 2 (Code) of square(2):\n         Line 1: num = 2           (argument passed in)\n         Line 2: ans = 2 * 2 = 4   → ans updated: undefined → 4\n         Line 3: return ans        → returns 4 to the caller\n                                   → THIS EC IS DESTROYED 💥\n\n         Back in GEC: square2 updated: undefined → 4\n\nLine 7:  var square4 = square(4)  → same cycle repeats\n         → new EC → num=4, ans=16 → return 16 → EC destroyed\n         → square4 updated: undefined → 16\n\nProgram ends → GEC is also destroyed.",
+          "label": null
+        },
+        {
+          "t": "callout",
+          "kind": "note",
+          "html": "<strong>🎯 Interview Precision:</strong> Always describe Phase 2 as \"line by line\" — state exactly which line and what changes. Don't say \"variables get assigned.\" Say \"On line 1, <code>n</code> is updated from <code>undefined</code> to <code>2</code>.\""
+        }
+      ]
+    },
+    {
+      "id": "sec8",
+      "n": "8",
+      "title": "The Call Stack — Managing Execution Contexts",
+      "badge": null,
+      "group": "Mechanics",
+      "blocks": [
+        {
+          "t": "callout",
+          "kind": "danger",
+          "html": "<strong>Call Stack</strong> = A <strong>LIFO (Last In, First Out)</strong> data structure that maintains the order of execution of Execution Contexts."
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "How It Works:"
+        },
+        {
+          "t": "list",
+          "ordered": true,
+          "items": [
+            "Program starts → <strong>GEC is pushed</strong> (always at the bottom)",
+            "Function invoked → a new <strong>FEC is pushed</strong> on top",
+            "Function finishes (return) → that <strong>FEC is popped</strong> off",
+            "Control returns to the context <strong>below it</strong>",
+            "Program finishes → <strong>GEC is popped</strong>, stack is empty"
+          ]
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Visual Example:"
+        },
+        {
+          "t": "code",
+          "code": "function a() { console.log(\"a start\"); b(); console.log(\"a end\"); }\nfunction b() { console.log(\"b start\"); c(); console.log(\"b end\"); }\nfunction c() { console.log(\"c\"); }\na();",
+          "label": null
+        },
+        {
+          "t": "code",
+          "code": "CALL STACK OVER TIME:\n\nStep 1: Program starts     Step 2: a() invoked      Step 3: b() invoked\n┌─────────┐               ┌─────────┐               ┌─────────┐\n│         │               │         │               │  c()    │ ← Step 4\n│         │               │         │               ├─────────┤\n│         │               │  a()    │               │  b()    │\n├─────────┤               ├─────────┤               ├─────────┤\n│  GEC    │               │  GEC    │               │  a()    │\n└─────────┘               └─────────┘               ├─────────┤\n                                                    │  GEC    │\n                                                    └─────────┘\n\nStep 5: c() popped         Step 6: b() popped        Step 7: a() popped\n┌─────────┐               ┌─────────┐               ┌─────────┐\n│  b()    │               │  a()    │               │  GEC    │\n├─────────┤               ├─────────┤               └─────────┘\n│  a()    │               │  GEC    │\n├─────────┤               └─────────┘               Step 8: Program done\n│  GEC    │                                         Stack is EMPTY\n└─────────┘",
+          "label": null
+        },
+        {
+          "t": "code",
+          "code": "Output:\na start\nb start\nc\nb end\na end",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Fancy Names for the Call Stack (all the same thing):"
+        },
+        {
+          "t": "table",
+          "head": [
+            "Name",
+            "Same Thing?"
+          ],
+          "rows": [
+            [
+              "Call Stack",
+              "✅ Most common"
+            ],
+            [
+              "Execution Context Stack",
+              "✅"
+            ],
+            [
+              "Program Stack",
+              "✅"
+            ],
+            [
+              "Control Stack",
+              "✅"
+            ],
+            [
+              "Runtime Stack",
+              "✅"
+            ],
+            [
+              "Machine Stack",
+              "✅"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sec9",
+      "n": "9",
+      "title": "Hoisting — A Consequence of the Memory Phase",
+      "badge": null,
+      "group": "Mechanics",
+      "blocks": [
+        {
+          "t": "p",
+          "html": "Hoisting is NOT magic. It's simply a <strong>consequence of Phase 1</strong>. Because memory is allocated BEFORE code runs, variables and functions \"appear\" available before their declaration lines."
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Function Declaration vs Function Expression:"
+        },
+        {
+          "t": "code",
+          "code": "console.log(add(2, 3));       // ✅ 5\nconsole.log(multiply(2, 3));  // 💥 TypeError!\n\nfunction add(a, b) {          // Function DECLARATION\n  return a + b;\n}\n\nvar multiply = function(a, b) { // Function EXPRESSION\n  return a * b;\n};",
+          "label": null
+        },
+        {
+          "t": "code",
+          "code": "After Phase 1 (Memory Creation):\n┌───────────────────────────────────────┐\n│  add      : function(a, b){...}  ✅   │  ← Full function stored!\n│  multiply : undefined            ❌   │  ← Just a var → undefined\n└───────────────────────────────────────┘",
+          "label": null
+        },
+        {
+          "t": "table",
+          "head": [
+            "Type",
+            "Stored in Memory Phase",
+            "Available before declaration?"
+          ],
+          "rows": [
+            [
+              "<strong>Function Declaration</strong><br><code>function add() {}</code>",
+              "Entire function code",
+              "✅ YES — fully hoisted"
+            ],
+            [
+              "<strong>Function Expression</strong><br><code>var multiply = function() {}</code>",
+              "<code>undefined</code> (it's a <code>var</code>)",
+              "❌ NO — TypeError"
+            ],
+            [
+              "<strong>Arrow Function (in var)</strong><br><code>var fn = () =&gt; {}</code>",
+              "<code>undefined</code>",
+              "❌ NO — same as expression"
+            ],
+            [
+              "<strong><code>let</code> / <code>const</code></strong>",
+              "Declared but uninitialized (TDZ)",
+              "❌ NO — ReferenceError"
+            ]
+          ]
+        },
+        {
+          "t": "callout",
+          "kind": "warn",
+          "html": "<strong>⚠️ TypeError vs ReferenceError:</strong><br>• Calling <code>multiply(2,3)</code> when it's <code>undefined</code> → <strong>TypeError</strong> (undefined is not a function)<br>• Accessing a <code>let</code>/<code>const</code> before its line → <strong>ReferenceError</strong> (cannot access before initialization)"
+        }
+      ]
+    },
+    {
+      "id": "sec10",
+      "n": "10",
+      "title": "The return Keyword",
+      "badge": null,
+      "group": "Mechanics",
+      "blocks": [
+        {
+          "t": "p",
+          "html": "<code>return</code> does <strong>two things</strong>:"
+        },
+        {
+          "t": "list",
+          "ordered": true,
+          "items": [
+            "<strong>Specifies the value</strong> sent back to the calling context",
+            "<strong>Destroys the current Execution Context</strong> — popped off the Call Stack, control returns to the caller"
+          ]
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "What if there's NO return statement?"
+        },
+        {
+          "t": "code",
+          "code": "function doSomething() {\n  var x = 42;\n  // no return statement\n}\nvar result = doSomething();\nconsole.log(result);   // undefined",
+          "label": null
+        },
+        {
+          "t": "callout",
+          "kind": "danger",
+          "html": "<strong>Rule:</strong> With no explicit <code>return</code> (or bare <code>return;</code>), a function <strong>implicitly returns <code>undefined</code></strong>."
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Nested returns — the trap:"
+        },
+        {
+          "t": "code",
+          "code": "function outer() {\n  function middle() {\n    function inner() {\n      console.log(60);  // prints 60\n      // no return!\n    }\n    return inner();     // inner returns undefined → middle returns undefined\n  }\n  return middle();      // middle returns undefined → outer returns undefined\n}\nvar result = outer();\nconsole.log(result);    // undefined (even though 60 was printed!)",
+          "label": null
+        },
+        {
+          "t": "callout",
+          "kind": "note",
+          "html": "<strong>🎯 Key Distinction:</strong> <code>console.log()</code> <strong>prints</strong> but returns <code>undefined</code>. <code>return</code> <strong>sends a value back</strong>. Printing ≠ Returning. A classic interview trap."
+        }
+      ]
+    },
+    {
+      "id": "sec11",
+      "n": "11",
+      "title": "The Scope Chain",
+      "badge": "gear",
+      "group": "Mechanics",
+      "blocks": [
+        {
+          "t": "callout",
+          "kind": "danger",
+          "html": "<strong>🧠 This is the engine-level understanding</strong> of how nested functions access parent variables. It connects Execution Context to Closures and the <code>this</code> keyword."
+        },
+        {
+          "t": "h",
+          "level": 2,
+          "html": "The Problem"
+        },
+        {
+          "t": "code",
+          "code": "var a = 10;\nfunction outer() {\n  var b = 20;\n  function middle() {\n    var c = 30;\n    function inner() {\n      // inner's local memory: { } ← EMPTY! No a, no b, no c!\n      console.log(a + b + c);  // But this works... HOW?\n    }\n    inner();\n  }\n  middle();\n}\nouter();   // Output: 60",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 2,
+          "html": "The Answer: Lexical Environment &amp; Scope Chain"
+        },
+        {
+          "t": "p",
+          "html": "Every Execution Context's <strong>Lexical Environment</strong> holds a <strong>reference to its parent's Lexical Environment</strong>. That chain of references is the <strong>Scope Chain</strong>."
+        },
+        {
+          "t": "code",
+          "code": "When inner() needs variable 'a':\n\n  inner() EC\n  ┌──────────────────────┐\n  │ Local Memory: { }    │ → 'a' not here ❌\n  │ Parent Ref: → middle │\n  └──────────┬───────────┘\n             ↓\n  middle() EC\n  ┌──────────────────────┐\n  │ Local Memory: {c:30} │ → 'a' not here ❌\n  │ Parent Ref: → outer  │\n  └──────────┬───────────┘\n             ↓\n  outer() EC\n  ┌──────────────────────┐\n  │ Local Memory: {b:20} │ → 'a' not here ❌\n  │ Parent Ref: → GEC    │\n  └──────────┬───────────┘\n             ↓\n  Global EC\n  ┌──────────────────────┐\n  │ Local Memory: {a:10} │ → ✅ FOUND! a = 10\n  │ Parent Ref: → null   │\n  └──────────────────────┘",
+          "label": null
+        },
+        {
+          "t": "table",
+          "head": [
+            "Variable",
+            "inner()?",
+            "middle()?",
+            "outer()?",
+            "GEC?",
+            "Found At"
+          ],
+          "rows": [
+            [
+              "<code>c</code>",
+              "❌",
+              "✅ c = 30",
+              "—",
+              "—",
+              "middle()"
+            ],
+            [
+              "<code>b</code>",
+              "❌",
+              "❌",
+              "✅ b = 20",
+              "—",
+              "outer()"
+            ],
+            [
+              "<code>a</code>",
+              "❌",
+              "❌",
+              "❌",
+              "✅ a = 10",
+              "GEC"
+            ]
+          ]
+        },
+        {
+          "t": "callout",
+          "kind": "info",
+          "html": "<strong>🧠 KEY INSIGHT:</strong> The Scope Chain is determined by <strong>where the function is WRITTEN</strong> (lexical position), NOT where it's called. That's why it's called the <strong>Lexical</strong> Environment. This same mechanism powers <strong>Closures</strong> and how arrow functions resolve <code>this</code>."
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Variable not found anywhere?"
+        },
+        {
+          "t": "code",
+          "code": "function test() {\n  console.log(xyz);  // engine walks entire chain → not found\n}\ntest();\n// 💥 ReferenceError: xyz is not defined",
+          "label": null
+        },
+        {
+          "t": "callout",
+          "kind": "warn",
+          "html": "<strong>⚠️ Error type summary:</strong><br>• Variable not in scope chain → <strong>ReferenceError</strong><br>• Property not on an object → <strong>undefined</strong> (no error)<br>• Property access on <code>undefined</code>/<code>null</code> → <strong>TypeError</strong>"
+        }
+      ]
+    },
+    {
+      "id": "sec12",
+      "n": "12",
+      "title": "undefined — The Most Misunderstood Keyword",
+      "badge": null,
+      "group": "Depth",
+      "blocks": [
+        {
+          "t": "p",
+          "html": "<code>undefined</code> means: <strong>\"memory has been allocated, but no value has been assigned yet.\"</strong>"
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "The Two Origins of <code>undefined</code>:"
+        },
+        {
+          "t": "table",
+          "head": [
+            "Scenario",
+            "Who Sets It?",
+            "When?"
+          ],
+          "rows": [
+            [
+              "<code>var x;</code> (no assignment)",
+              "JS Engine automatically",
+              "Memory Creation Phase"
+            ],
+            [
+              "<code>var y = undefined;</code>",
+              "Developer explicitly",
+              "Code Execution Phase"
+            ]
+          ]
+        },
+        {
+          "t": "code",
+          "code": "var x;                  // Memory Phase: x = undefined (engine)\n                        // Code Phase: no assignment → stays undefined\n\nvar y = undefined;      // Memory Phase: y = undefined (engine)\n                        // Code Phase: y = undefined (developer ACTIVELY assigns)",
+          "label": null
+        },
+        {
+          "t": "callout",
+          "kind": "danger",
+          "html": "<strong>❌ BAD PRACTICE:</strong> Never write <code>var y = undefined;</code> — <code>undefined</code> is a placeholder meant for the engine. To represent \"no value\" intentionally, use <code>null</code>."
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "<code>undefined</code> vs <code>null</code> vs <code>not defined</code>:"
+        },
+        {
+          "t": "table",
+          "head": [
+            "Term",
+            "Meaning",
+            "Type"
+          ],
+          "rows": [
+            [
+              "<code>undefined</code>",
+              "Memory allocated, no value assigned yet",
+              "<code>typeof → \"undefined\"</code>"
+            ],
+            [
+              "<code>null</code>",
+              "Intentional absence of value (developer sets it)",
+              "<code>typeof → \"object\"</code> (a known JS bug)"
+            ],
+            [
+              "<code>not defined</code>",
+              "Doesn't exist in memory at all → <strong>ReferenceError</strong>",
+              "N/A (throws)"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sec13",
+      "n": "13",
+      "title": "The DevTools Console Trap (TDZ Testing)",
+      "badge": "warn",
+      "group": "Depth",
+      "blocks": [
+        {
+          "t": "callout",
+          "kind": "danger",
+          "html": "<strong>⚠️ Your console can lie to you.</strong> If you test TDZ behavior directly in the Chrome DevTools console, you'll get <em>misleading</em> error messages that seem to contradict everything in Section 6."
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "What You'd See in the Console (misleading):"
+        },
+        {
+          "t": "code",
+          "code": "// Typed directly into DevTools console:\n\n> console.log(xyz)\n❌ Uncaught ReferenceError: xyz is not defined\n\n> console.log(xyx); let xyx = 1;\n❌ Uncaught ReferenceError: xyx is not defined     ← SAME error?!",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "This makes it look like <code>let</code> gets no memory allocation at all — since both cases give the identical error."
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "What ACTUALLY Happens in a Real Script:"
+        },
+        {
+          "t": "code",
+          "code": "// In a .js file or <script> tag:\n\nconsole.log(xyz);\n// ❌ ReferenceError: xyz is not defined\n\nconsole.log(xyx);\nlet xyx = 1;\n// ❌ ReferenceError: Cannot access 'xyx' before initialization",
+          "label": null
+        },
+        {
+          "t": "callout",
+          "kind": "note",
+          "html": "<strong>💡 TWO DIFFERENT messages.</strong> That difference is the entire proof that memory <em>was</em> allocated for <code>xyx</code> — the engine knows the slot exists but is uninitialized."
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Why the Console Behaves Differently"
+        },
+        {
+          "t": "p",
+          "html": "Chrome DevTools doesn't run your input as a normal script. It wraps it specially so you can re-declare <code>let</code> variables across entries (try <code>let a = 1</code> twice in a real file → SyntaxError; in the console → works fine). That wrapping breaks standard TDZ semantics, so you get the generic message."
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "✅ How To Test TDZ Correctly in the Console"
+        },
+        {
+          "t": "p",
+          "html": "Force a real scope by wrapping in a block or function:"
+        },
+        {
+          "t": "code",
+          "code": "// Option A — wrap in a block\n{\n  console.log(xyx);\n  let xyx = 1;\n}\n// ❌ ReferenceError: Cannot access 'xyx' before initialization  ✅ correct!",
+          "label": null
+        },
+        {
+          "t": "code",
+          "code": "// Option B — wrap in a function\nfunction test() {\n  console.log(xyx);\n  let xyx = 1;\n}\ntest();\n// ❌ ReferenceError: Cannot access 'xyx' before initialization  ✅ correct!",
+          "label": null
+        },
+        {
+          "t": "callout",
+          "kind": "warn",
+          "html": "<strong>⚠️ Rule of thumb:</strong> <strong>Never trust the bare DevTools console</strong> for testing TDZ, <code>let</code>/<code>const</code> redeclaration, or top-level scope behavior. Use a real file, or wrap your test in a block <code>{ }</code> or a function."
+        }
+      ]
+    },
+    {
+      "id": "sec14",
+      "n": "14",
+      "title": "How It All Connects — The Big Picture",
+      "badge": null,
+      "group": "Depth",
+      "blocks": [
+        {
+          "t": "callout",
+          "kind": "key",
+          "html": "<strong>Every concept in this series traces back to the Execution Context:</strong>"
+        },
+        {
+          "t": "table",
+          "head": [
+            "Concept",
+            "How It Connects"
+          ],
+          "rows": [
+            [
+              "<strong>Hoisting</strong> (Ch 2)",
+              "Variables/functions available before declaration because of the <strong>Memory Creation Phase</strong>"
+            ],
+            [
+              "<strong>TDZ</strong> (Ch 2)",
+              "The gap between DECLARED and INITIALIZED for <code>let</code>/<code>const</code> in the Lexical Environment"
+            ],
+            [
+              "<strong>Scope Chain</strong> (Ch 3)",
+              "Each EC's Lexical Environment holds a reference to its parent's — forming a chain"
+            ],
+            [
+              "<strong>Closures</strong> (Ch 3)",
+              "A returned function carries its <strong>Lexical Environment</strong> with it — the scope reference survives even after the parent EC is destroyed"
+            ],
+            [
+              "<strong><code>this</code> keyword</strong> (Ch 4)",
+              "Every EC has a <strong>This Binding</strong> — regular functions create a fresh one, arrow functions skip it"
+            ],
+            [
+              "<strong>Value vs Reference</strong> (Ch 5)",
+              "Variables live in the EC's environments; objects live in the Memory Heap, referenced from there"
+            ],
+            [
+              "<strong><code>undefined</code></strong>",
+              "The placeholder set during the <strong>Memory Creation Phase</strong>"
+            ],
+            [
+              "<strong>Call Stack</strong>",
+              "Manages the <strong>creation, ordering, and destruction</strong> of ECs"
+            ],
+            [
+              "<strong>Event Loop</strong> (Ch 9)",
+              "Pushes callbacks onto the Call Stack only when the stack is <strong>empty</strong>"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sec15",
+      "n": "15",
+      "title": "Common Gotchas",
+      "badge": null,
+      "group": "Depth",
+      "blocks": [
+        {
+          "t": "h",
+          "level": 2,
+          "html": "Gotcha A: Printing ≠ Returning"
+        },
+        {
+          "t": "code",
+          "code": "function add(a, b) {\n  console.log(a + b);   // PRINTS 5\n}\nvar result = add(2, 3);\nconsole.log(result);     // undefined! (no return statement)",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 2,
+          "html": "Gotcha B: Same Function, Different Invocations = Different ECs"
+        },
+        {
+          "t": "code",
+          "code": "function counter() {\n  var count = 0;\n  count++;\n  console.log(count);\n}\ncounter();  // 1\ncounter();  // 1 (NOT 2!)\ncounter();  // 1 (NOT 3!)",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "Each call creates a <strong>brand new EC</strong> with a fresh <code>count = 0</code>. No memory between calls — unless you use closures."
+        },
+        {
+          "t": "h",
+          "level": 2,
+          "html": "Gotcha C: Function Expressions Aren't Hoisted Like Declarations"
+        },
+        {
+          "t": "code",
+          "code": "greet();   // 💥 TypeError: greet is not a function\nvar greet = function() { console.log(\"Hello\"); };",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 2,
+          "html": "Gotcha D: <code>var</code> Inside a Function Creates LOCAL Memory"
+        },
+        {
+          "t": "code",
+          "code": "var x = \"global\";\nfunction test() {\n  var x = \"local\";      // A DIFFERENT x!\n  console.log(x);       // \"local\"\n}\ntest();\nconsole.log(x);         // \"global\" (unchanged!)",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 2,
+          "html": "Gotcha E: Call Stack Overflow"
+        },
+        {
+          "t": "code",
+          "code": "function infinite() {\n  infinite();   // calls itself forever\n}\ninfinite();\n// 💥 RangeError: Maximum call stack size exceeded",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "Each recursive call pushes a new EC. Without a base case, the stack fills and crashes. This is the origin of the name <strong>StackOverflow.com</strong>!"
+        },
+        {
+          "t": "h",
+          "level": 2,
+          "html": "Gotcha F: Testing TDZ in DevTools"
+        },
+        {
+          "t": "p",
+          "html": "See <a href=\"#sec13\">Section 13</a> — the bare console gives misleading errors. Always wrap in a block or function."
+        }
+      ]
+    },
+    {
+      "id": "sec16",
+      "n": "16",
+      "title": "Master Cheat Sheet",
+      "badge": null,
+      "group": "Revision",
+      "blocks": [
+        {
+          "t": "table",
+          "head": [
+            "Concept",
+            "Key Point"
+          ],
+          "rows": [
+            [
+              "Execution Context",
+              "<strong>Abstract</strong> (conceptual, not physical) container for code evaluation"
+            ],
+            [
+              "3 Components (spec)",
+              "Lexical Environment + Variable Environment + This Binding"
+            ],
+            [
+              "\"Memory Component\"",
+              "Informal umbrella name for the two Environments combined"
+            ],
+            [
+              "\"Code Component\"",
+              "Informal name for the execution itself — NOT a real component"
+            ],
+            [
+              "Lexical Environment",
+              "<code>let</code>/<code>const</code>/<code>class</code> + outer reference. Block-scoped. New copy per block."
+            ],
+            [
+              "Variable Environment",
+              "<code>var</code> + function declarations. Function-scoped. Same across blocks."
+            ],
+            [
+              "Phases ≠ Components",
+              "Phases are time periods; components are the things that exist"
+            ],
+            [
+              "Memory Creation Phase",
+              "<code>var</code> → <code>undefined</code>; functions → full code; <code>let</code>/<code>const</code> → declared but uninitialized (TDZ)"
+            ],
+            [
+              "Code Execution Phase",
+              "Runs line by line. Assignments happen. TDZ ends when declaration line is reached."
+            ],
+            [
+              "3 States of a Variable",
+              "DECLARED → INITIALIZED → ASSIGNED. TDZ = gap between 1 and 2."
+            ],
+            [
+              "Call Stack",
+              "LIFO. GEC at bottom. Push on invoke, pop on return."
+            ],
+            [
+              "Hoisting",
+              "A consequence of the Memory Phase, not magic"
+            ],
+            [
+              "Scope Chain",
+              "Chain of Lexical Environment references. Follows <strong>lexical position</strong>, NOT call order."
+            ],
+            [
+              "<code>return</code>",
+              "Sends value back + destroys the EC. No return → implicit <code>undefined</code>."
+            ],
+            [
+              "DevTools trap",
+              "Bare console gives wrong TDZ errors. Wrap in <code>{ }</code> or a function to test properly."
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sec17",
+      "n": "17",
+      "title": "Interview Answer Templates",
+      "badge": null,
+      "group": "Revision",
+      "blocks": [
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Q: \"What is an Execution Context?\""
+        },
+        {
+          "t": "callout",
+          "kind": "note",
+          "html": "<em>\"An Execution Context is a conceptual environment the JavaScript engine creates to evaluate and execute code. Per the spec it has three components: the Lexical Environment, which holds <code>let</code>/<code>const</code>/<code>class</code> plus the reference to the outer environment; the Variable Environment, which holds <code>var</code> and function declarations; and the This Binding. It's created in two phases — a Memory Creation Phase where memory is allocated, and a Code Execution Phase where the code runs line by line.\"</em>"
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Q: \"Difference between Lexical and Variable Environment?\""
+        },
+        {
+          "t": "callout",
+          "kind": "note",
+          "html": "<em>\"The Variable Environment stores <code>var</code> declarations and function declarations — it's function-scoped and stays the same across blocks. The Lexical Environment stores <code>let</code>, <code>const</code>, and <code>class</code> — it's block-scoped, so a new one is created for each block, and it also holds the reference to the outer environment which forms the scope chain. This split is exactly why <code>var</code> leaks out of blocks but <code>let</code> doesn't.\"</em>"
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Q: \"How does the Call Stack work?\""
+        },
+        {
+          "t": "callout",
+          "kind": "note",
+          "html": "<em>\"The Call Stack is a LIFO structure managing Execution Contexts. When a program starts, the Global Execution Context is pushed. Every function invocation pushes a new Functional Execution Context on top. When a function finishes, its EC is popped and control returns to the context below. When the program ends, the GEC is popped and the stack is empty.\"</em>"
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Q: \"Explain Hoisting\""
+        },
+        {
+          "t": "callout",
+          "kind": "note",
+          "html": "<em>\"Hoisting is a consequence of the Memory Creation Phase. Before any code executes, the engine allocates memory — <code>var</code> is initialized to <code>undefined</code>, function declarations are stored with their complete code, and <code>let</code>/<code>const</code> are declared but left uninitialized, which creates the Temporal Dead Zone. That's why you can call a function declaration before its line, but a function expression gives a TypeError because it's just <code>undefined</code> at that point.\"</em>"
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Q: \"Does memory allocation for <code>let</code> actually matter?\""
+        },
+        {
+          "t": "callout",
+          "kind": "note",
+          "html": "<em>\"Yes. Because the slot exists, the engine can distinguish 'declared but not yet initialized' from 'never declared at all' — giving two different errors: 'Cannot access before initialization' versus 'is not defined.' It also has real behavioral impact: an inner <code>let</code> shadows an outer variable of the same name even before initialization, so you get a TDZ error instead of silently reading the outer value.\"</em>"
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Q: \"How does the Scope Chain work?\""
+        },
+        {
+          "t": "callout",
+          "kind": "note",
+          "html": "<em>\"Every Execution Context's Lexical Environment holds a reference to its parent's Lexical Environment, forming a chain. When the engine needs a variable, it checks the current EC first, then follows the reference upward until it finds it or reaches the global context. If it's nowhere in the chain, it throws a ReferenceError. Crucially, the chain follows where the function is <em>written</em> — its lexical position — not where it's called.\"</em>"
+        }
+      ]
+    },
+    {
+      "id": "sec18",
+      "n": "18",
+      "title": "Practice Sheet — 10 Questions",
+      "badge": null,
+      "group": "Practice",
+      "blocks": [
+        {
+          "t": "p",
+          "html": "<strong>📝 Instructions:</strong> Predict the EXACT output (or error type). Reason using the two-phase model. Predict, don't run."
+        },
+        {
+          "t": "question",
+          "n": 1,
+          "difficulty": "easy",
+          "html": "Memory Phase Basics",
+          "code": "console.log(a);\nconsole.log(b);\nconsole.log(fn);\nvar a = 10;\nvar b = \"hello\";\nfunction fn() { return 42; }"
+        },
+        {
+          "t": "question",
+          "n": 2,
+          "difficulty": "easy",
+          "html": "Expression vs Declaration",
+          "code": "console.log(square(5));\nconsole.log(cube(3));\nfunction square(n) { return n * n; }\nvar cube = function(n) { return n * n * n; };"
+        },
+        {
+          "t": "question",
+          "n": 3,
+          "difficulty": "easy",
+          "html": "Local Scope Destruction",
+          "code": "var x = 10;\nvar y = 20;\nfunction add(a, b) {\n  var result = a + b;\n  return result;\n}\nvar sum = add(x, y);\nconsole.log(sum);\nconsole.log(result);"
+        },
+        {
+          "t": "question",
+          "n": 4,
+          "difficulty": "medium",
+          "html": "Return Trap",
+          "code": "function getFullName(first, last) {\n  var fullName = first + \" \" + last;\n  console.log(\"Inside:\", fullName);\n}\nvar name = getFullName(\"Ada\", \"Lovelace\");\nconsole.log(\"Outside:\", name);"
+        },
+        {
+          "t": "question",
+          "n": 5,
+          "difficulty": "medium",
+          "html": "EC Lifecycle Count<br><strong>1)</strong> What is the output?<br><strong>2)</strong> How many TOTAL Execution Contexts are created and destroyed? List them.",
+          "code": "function double(n) { return n * 2; }\nfunction triple(n) { return n * 3; }\nvar a = double(5);\nvar b = triple(a);\nvar c = double(b);\nconsole.log(c);"
+        },
+        {
+          "t": "question",
+          "n": 6,
+          "difficulty": "medium",
+          "html": "Scope Chain Resolution<br><strong>Trace the scope chain to explain your answer.</strong>",
+          "code": "var color = \"red\";\nfunction outer() {\n  var color = \"blue\";\n  function inner() {\n    console.log(color);\n  }\n  inner();\n}\nouter();"
+        },
+        {
+          "t": "question",
+          "n": 7,
+          "difficulty": "hard",
+          "html": "Lexical vs Call Order<br><strong>Is it 1 or 2? Think carefully about scope chain vs call stack.</strong>",
+          "code": "var x = 1;\nfunction first() {\n  var x = 2;\n  second();\n}\nfunction second() {\n  console.log(x);\n}\nfirst();"
+        },
+        {
+          "t": "question",
+          "n": 8,
+          "difficulty": "hard",
+          "html": "Nested Returns + Call Stack<br><strong>1)</strong> What is the output?<br><strong>2)</strong> Describe the Call Stack at the moment <code>return a + b + c</code> executes.",
+          "code": "function outer() {\n  var a = 10;\n  function middle() {\n    var b = 20;\n    function inner() {\n      var c = 30;\n      return a + b + c;\n    }\n    return inner();\n  }\n  return middle();\n}\nvar result = outer();\nconsole.log(result);"
+        },
+        {
+          "t": "question",
+          "n": 9,
+          "difficulty": "expert",
+          "html": "Hoisting Collision<br><strong>What happens when a variable and a function share the SAME name during the memory phase?</strong>",
+          "code": "var x = 10;\nfunction x() {\n  return 20;\n}\nconsole.log(typeof x);\nconsole.log(x);"
+        },
+        {
+          "t": "question",
+          "n": 10,
+          "difficulty": "expert",
+          "html": "The Final Boss<br><strong>All 7 outputs (A through G). Tests hoisting + scope chain + EC lifecycle simultaneously.</strong>",
+          "code": "var a = 1;\nfunction outer() {\n  console.log(\"A:\", a);\n  var a = 2;\n  console.log(\"B:\", a);\n\n  function middle() {\n    console.log(\"C:\", a);\n    var a = 3;\n    console.log(\"D:\", a);\n\n    function inner() {\n      console.log(\"E:\", a);\n    }\n    inner();\n  }\n  middle();\n\n  console.log(\"F:\", a);\n}\nouter();\nconsole.log(\"G:\", a);"
+        }
+      ]
+    },
+    {
+      "id": "sec19",
+      "n": "19",
+      "title": "Answer Key",
+      "badge": null,
+      "group": "Practice",
+      "blocks": [
+        {
+          "t": "answer",
+          "n": 1,
+          "html": "Q1 — Answer"
+        },
+        {
+          "t": "code",
+          "code": "undefined\nundefined\nfunction fn() { return 42; }",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "Memory Phase stores <code>a: undefined</code>, <code>b: undefined</code>, <code>fn: full function code</code>. When the logs run, the Code Phase hasn't reached the assignment lines yet."
+        },
+        {
+          "t": "hr"
+        },
+        {
+          "t": "answer",
+          "n": 2,
+          "html": "Q2 — Answer"
+        },
+        {
+          "t": "code",
+          "code": "25\n💥 TypeError: cube is not a function",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "<code>square</code> is a function declaration → fully hoisted. <code>cube</code> is a function expression in a <code>var</code> → Memory Phase stores <code>undefined</code>. Calling <code>undefined(3)</code> → TypeError."
+        },
+        {
+          "t": "hr"
+        },
+        {
+          "t": "answer",
+          "n": 3,
+          "html": "Q3 — Answer"
+        },
+        {
+          "t": "code",
+          "code": "30\n💥 ReferenceError: result is not defined",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "<code>result</code> was a local variable inside <code>add()</code>'s EC, which was destroyed on return. It never existed in the Global EC."
+        },
+        {
+          "t": "hr"
+        },
+        {
+          "t": "answer",
+          "n": 4,
+          "html": "Q4 — Answer"
+        },
+        {
+          "t": "code",
+          "code": "Inside: Ada Lovelace\nOutside: undefined",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "<code>console.log</code> prints but doesn't return. No <code>return</code> statement → implicit <code>return undefined</code>. Printing ≠ Returning."
+        },
+        {
+          "t": "hr"
+        },
+        {
+          "t": "answer",
+          "n": 5,
+          "html": "Q5 — Answer"
+        },
+        {
+          "t": "code",
+          "code": "Output: 60\n\nTotal ECs created: 4\n1. GEC (created at start, destroyed at end)\n2. FEC for double(5)  → returns 10 → destroyed\n3. FEC for triple(10) → returns 30 → destroyed\n4. FEC for double(30) → returns 60 → destroyed",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "Trace: a = 10, b = 30, c = 60."
+        },
+        {
+          "t": "hr"
+        },
+        {
+          "t": "answer",
+          "n": 6,
+          "html": "Q6 — Answer"
+        },
+        {
+          "t": "code",
+          "code": "\"blue\"",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "<code>inner()</code> looks for <code>color</code> in its own memory → not found. Walks up to <code>outer()</code> → finds <code>\"blue\"</code>. The chain stops at the first match, never reaching the global <code>\"red\"</code>."
+        },
+        {
+          "t": "hr"
+        },
+        {
+          "t": "answer",
+          "n": 7,
+          "html": "Q7 — Answer"
+        },
+        {
+          "t": "code",
+          "code": "1",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "<code>second()</code> is defined in the <strong>global scope</strong>, NOT inside <code>first()</code>. The scope chain follows <strong>where a function is WRITTEN</strong> (lexical position), not where it's called. So <code>second()</code>'s chain goes straight to the Global EC where <code>x = 1</code>. It never sees <code>first()</code>'s <code>x = 2</code>."
+        },
+        {
+          "t": "callout",
+          "kind": "danger",
+          "html": "<strong>🔑 Critical Insight:</strong> Scope Chain follows <strong>lexical (written) position</strong>. Call Stack follows <strong>invocation order</strong>. They are NOT the same — one of the most common interview traps."
+        },
+        {
+          "t": "hr"
+        },
+        {
+          "t": "answer",
+          "n": 8,
+          "html": "Q8 — Answer"
+        },
+        {
+          "t": "code",
+          "code": "Output: 60\n\nCall Stack when `return a + b + c` executes:\n┌──────────┐\n│  inner() │  ← currently executing\n├──────────┤\n│ middle() │\n├──────────┤\n│  outer() │\n├──────────┤\n│   GEC    │\n└──────────┘",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "Every function has a proper <code>return</code>, so 60 bubbles all the way up."
+        },
+        {
+          "t": "hr"
+        },
+        {
+          "t": "answer",
+          "n": 9,
+          "html": "Q9 — Answer"
+        },
+        {
+          "t": "code",
+          "code": "number\n10",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "During Memory Phase, <strong>both</strong> are processed: <code>var x</code> sets <code>undefined</code>, then the function declaration <strong>overwrites</strong> it → <code>x = function</code>. Then during Code Phase, line 1 runs <code>x = 10</code>, overwriting the function with the number."
+        },
+        {
+          "t": "callout",
+          "kind": "warn",
+          "html": "<strong>Order:</strong> var declarations processed first (x = undefined) → function declarations overwrite (x = function) → Code Phase assignment overwrites again (x = 10). Final: <code>10</code>."
+        },
+        {
+          "t": "hr"
+        },
+        {
+          "t": "answer",
+          "n": 10,
+          "html": "Q10 — Answer"
+        },
+        {
+          "t": "code",
+          "code": "A: undefined\nB: 2\nC: undefined\nD: 3\nE: 3\nF: 2\nG: 1",
+          "label": null
+        },
+        {
+          "t": "list",
+          "ordered": false,
+          "items": [
+            "<strong>A:</strong> <code>outer()</code>'s Memory Phase stores its OWN <code>var a = undefined</code>. The assignment is on the next line → <code>undefined</code>. Hoisting within the function's own EC!",
+            "<strong>B:</strong> <code>a = 2</code> has now executed in outer's EC → <code>2</code>",
+            "<strong>C:</strong> <code>middle()</code>'s Memory Phase stores its OWN <code>var a = undefined</code>. Same trap → <code>undefined</code>",
+            "<strong>D:</strong> <code>a = 3</code> executed in middle's EC → <code>3</code>",
+            "<strong>E:</strong> <code>inner()</code> has no <code>var a</code>. Scope chain → middle's EC → <code>3</code>",
+            "<strong>F:</strong> Back in outer's EC → outer's <code>a</code> is still <code>2</code>",
+            "<strong>G:</strong> Back in GEC → global <code>a = 1</code>"
+          ]
+        },
+        {
+          "t": "callout",
+          "kind": "info",
+          "html": "<strong>🔑 Key Insight:</strong> Each function's <code>var a</code> creates a <strong>separate variable</strong> in its own EC. Hoisting happens WITHIN each EC independently. The scope chain only kicks in when a variable is NOT found in the current EC."
+        },
+        {
+          "t": "hr"
+        },
+        {
+          "t": "h",
+          "level": 2,
+          "html": "📊 Scoring Guide"
+        },
+        {
+          "t": "table",
+          "head": [
+            "Score",
+            "Level",
+            "What It Means"
+          ],
+          "rows": [
+            [
+              "9–10 / 10",
+              "🏆 Mastery",
+              "You understand EC at an engine level. Teach others!"
+            ],
+            [
+              "7–8 / 10",
+              "✅ Solid",
+              "Strong foundation. Review missed ones."
+            ],
+            [
+              "5–6 / 10",
+              "🟨 Getting There",
+              "Re-read Sections 3, 6, 11 (Terminology, Phases, Scope Chain)."
+            ],
+            [
+              "Below 5",
+              "🔄 Needs Revision",
+              "Restart from Section 3 — the Terminology Decoder."
+            ]
+          ]
+        },
+        {
+          "t": "p",
+          "html": "Key Mental Models:"
+        },
+        {
+          "t": "p",
+          "html": "🔹 3 components: Lexical Env + Variable Env + This Binding"
+        },
+        {
+          "t": "p",
+          "html": "🔹 Phases ≠ Components. Phases are time; components are things."
+        },
+        {
+          "t": "p",
+          "html": "🔹 3 states: DECLARED → INITIALIZED → ASSIGNED. TDZ = the gap."
+        },
+        {
+          "t": "p",
+          "html": "🔹 Scope Chain = lexical position, NOT call order"
+        },
+        {
+          "t": "p",
+          "html": "🔹 Which EC am I in? → What phase? → What's in memory now?"
+        }
+      ]
+    }
+  ]
+}

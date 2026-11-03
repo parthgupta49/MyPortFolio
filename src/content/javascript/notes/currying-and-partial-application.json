@@ -1,0 +1,713 @@
+{
+  "subject": "javascript",
+  "slug": "currying-and-partial-application",
+  "title": "Currying & Partial Application",
+  "chapterLabel": "Chapter 8",
+  "summary": "Honest take: it's closures wearing a fancy name. Useful in a few real places, overused everywhere else.",
+  "tags": [
+    "currying",
+    "closures",
+    "this",
+    "functional",
+    "interview"
+  ],
+  "video": null,
+  "groups": [
+    {
+      "label": "Core",
+      "sectionIds": [
+        "sec1",
+        "sec2",
+        "sec3",
+        "sec4"
+      ]
+    },
+    {
+      "label": "Reality Check",
+      "sectionIds": [
+        "sec5",
+        "sec6",
+        "sec7"
+      ]
+    },
+    {
+      "label": "Revision",
+      "sectionIds": [
+        "sec8",
+        "sec9"
+      ]
+    },
+    {
+      "label": "Practice",
+      "sectionIds": [
+        "sec10",
+        "sec11"
+      ]
+    }
+  ],
+  "sections": [
+    {
+      "id": "sec1",
+      "n": "1",
+      "title": "What is Currying?",
+      "badge": null,
+      "group": "Core",
+      "blocks": [
+        {
+          "t": "callout",
+          "kind": "danger",
+          "html": "<strong>Definition:</strong> Currying is a technique that transforms a function taking <strong>multiple arguments</strong> into a <strong>sequence of nested functions, each taking a single argument</strong> (or a subset). Instead of calling <code>fn(a, b, c)</code>, you call <code>fn(a)(b)(c)</code>."
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Normal vs Curried — Side by Side:"
+        },
+        {
+          "t": "code",
+          "code": "// NORMAL — all arguments at once\nfunction multiply(a, b, c) {\n  return a * b * c;\n}\nmultiply(2, 3, 4);      // 24\n\n// CURRIED — one argument at a time\nfunction curriedMultiply(a) {\n  return function(b) {\n    return function(c) {\n      return a * b * c;\n    };\n  };\n}\ncurriedMultiply(2)(3)(4);   // 24",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "The Same Thing With Arrow Functions:"
+        },
+        {
+          "t": "code",
+          "code": "const curriedMultiply = a => b => c => a * b * c;\n\ncurriedMultiply(2)(3)(4);   // 24",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "Read the arrows left-to-right: <em>\"take <code>a</code>, return a function that takes <code>b</code>, which returns a function that takes <code>c</code>, which returns <code>a * b * c</code>.\"</em>"
+        },
+        {
+          "t": "callout",
+          "kind": "info",
+          "html": "<strong>🔑 The key difference:</strong> With a normal function you must supply ALL arguments at once. With a curried function, you can supply them <strong>one at a time, across separate calls</strong>, and the function \"remembers\" the earlier ones until it has everything it needs."
+        }
+      ]
+    },
+    {
+      "id": "sec2",
+      "n": "2",
+      "title": "It's Just Closures (Don't Overthink It)",
+      "badge": null,
+      "group": "Core",
+      "blocks": [
+        {
+          "t": "callout",
+          "kind": "key",
+          "html": "<strong>🧠 The honest truth:</strong> Currying is not some deep new concept. It is <strong>closures, used one level deeper</strong>. If you understand closures (Chapter 3), you already understand currying. The only \"new\" thing is the syntax."
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Why It Works — The Closure Chain:"
+        },
+        {
+          "t": "code",
+          "code": "const add = a => b => a + b;\n\nconst add5 = add(5);   // add(5) runs, `a` is set to 5\n                       // it returns the inner fn: b => 5 + b\n                       // the inner fn CLOSES OVER a = 5\n\nadd5(3);   // 8   — inner fn remembers a=5 via closure, adds b=3",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Step-by-Step Memory Trace:"
+        },
+        {
+          "t": "code",
+          "code": "const add5 = add(5);\n\n// 1. add(5) executes. `a = 5` in its scope.\n// 2. It returns `b => a + b`.\n// 3. add()'s execution context is DESTROYED...\n//    ...but the returned function kept a CLOSURE over `a = 5`.\n\nCLOSURE OF add5:\n┌──────────────┐\n│  a: 5        │  ← preserved from add's dead scope\n└──────────────┘\n       ↑\n     add5  ── when called with 3 → returns 5 + 3 = 8",
+          "label": null
+        },
+        {
+          "t": "callout",
+          "kind": "note",
+          "html": "<strong>💡 If someone asks \"how does currying work?\"</strong> — the answer is one word: <strong>closures</strong>. Each returned function closes over the arguments passed to the functions before it."
+        }
+      ]
+    },
+    {
+      "id": "sec3",
+      "n": "3",
+      "title": "Two Ways to Curry — Closures & bind()",
+      "badge": null,
+      "group": "Core",
+      "blocks": [
+        {
+          "t": "p",
+          "html": "There are two ways. Both achieve the same thing."
+        },
+        {
+          "t": "h",
+          "level": 2,
+          "html": "Method 1 — Closures (the common way)"
+        },
+        {
+          "t": "code",
+          "code": "const multiply = x => y => x * y;\n\nconst multiplyByTwo = multiply(2);    // x locked to 2 via closure\nmultiplyByTwo(5);                      // 10\n\nconst multiplyByThree = multiply(3);\nmultiplyByThree(10);                   // 30",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 2,
+          "html": "Method 2 — Using <code>bind()</code>"
+        },
+        {
+          "t": "p",
+          "html": "Remember <code>bind() from Chapter 4? It returns a NEW function with some arguments pre-set. That's currying too.</code>"
+        },
+        {
+          "t": "code",
+          "code": "const multiply = function(x, y) {\n  return x * y;\n};\n\n// bind(this, 2) pre-sets the FIRST argument (x) to 2:\nconst multiplyByTwo = multiply.bind(this, 2);\n\nmultiplyByTwo(5);   // 10  — 5 becomes y, x is already 2",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "bind() Edge Cases (worth knowing):"
+        },
+        {
+          "t": "table",
+          "head": [
+            "Code",
+            "Result",
+            "Why"
+          ],
+          "rows": [
+            [
+              "<code>multiply.bind(this, 2)(5)</code>",
+              "10",
+              "x=2 preset, y=5 at call"
+            ],
+            [
+              "<code>multiply.bind(this, 2, 3)(5)</code>",
+              "6",
+              "Both x=2, y=3 preset. The 5 is <strong>ignored</strong>."
+            ],
+            [
+              "<code>multiply.bind(this)(2, 3)</code>",
+              "6",
+              "Nothing preset, both passed at call"
+            ]
+          ]
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Comparison:"
+        },
+        {
+          "t": "table",
+          "head": [
+            "",
+            "Closure method",
+            "bind() method"
+          ],
+          "rows": [
+            [
+              "Mechanism",
+              "Nested functions + scope",
+              "Engine pre-sets arguments"
+            ],
+            [
+              "Call style",
+              "<code>fn(2)(5)</code>",
+              "<code>fn.bind(this, 2)(5)</code>"
+            ],
+            [
+              "Readability",
+              "Cleaner",
+              "More verbose"
+            ],
+            [
+              "Most common?",
+              "✅ Yes",
+              "Rare in practice"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sec4",
+      "n": "4",
+      "title": "Partial Application (Cousin of Currying)",
+      "badge": null,
+      "group": "Core",
+      "blocks": [
+        {
+          "t": "p",
+          "html": "These two terms get confused constantly. Here's the honest, simple distinction:"
+        },
+        {
+          "t": "table",
+          "head": [
+            "Term",
+            "Meaning"
+          ],
+          "rows": [
+            [
+              "<strong>Currying</strong>",
+              "Transform <code>fn(a, b, c)</code> into <code>fn(a)(b)(c)</code> — one arg per call, strictly"
+            ],
+            [
+              "<strong>Partial Application</strong>",
+              "Pre-fill SOME arguments now, supply the REST later. <code>fn(a, b)</code> then <code>partial(c)</code>"
+            ]
+          ]
+        },
+        {
+          "t": "code",
+          "code": "// PARTIAL APPLICATION — pre-fill some, supply rest later\nfunction greet(greeting, name) {\n  return `${greeting}, ${name}!`;\n}\n\nconst sayHello = greet.bind(this, \"Hello\");   // pre-fill greeting\nsayHello(\"Parth\");     // \"Hello, Parth!\"\nsayHello(\"Deepika\");   // \"Hello, Deepika!\"",
+          "label": null
+        },
+        {
+          "t": "callout",
+          "kind": "note",
+          "html": "<strong>💡 Don't stress the distinction.</strong> In everyday conversation, people use \"currying\" loosely to mean both. The practical idea is the same: <strong>lock in some arguments now, provide the rest later, and reuse the specialized function.</strong>"
+        }
+      ]
+    },
+    {
+      "id": "sec5",
+      "n": "5",
+      "title": "When Currying Is USELESS (Trust Your Instinct)",
+      "badge": "warn",
+      "group": "Reality Check",
+      "blocks": [
+        {
+          "t": "callout",
+          "kind": "danger",
+          "html": "<strong>Your skepticism is valid engineering taste.</strong> Most tutorials oversell currying. Here's when it's genuinely pointless — and rejecting it in these cases makes you a BETTER engineer, not a worse one."
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "❌ Useless Case 1 — Currying just to show off"
+        },
+        {
+          "t": "code",
+          "code": "// Pointless. Just write add(1, 2, 3).\nconst add = a => b => c => a + b + c;\nadd(1)(2)(3);   // 6\n\n// If you always have all 3 arguments at call-time,\n// currying adds NOTHING but confusion. Use a normal function.",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "❌ Useless Case 2 — When you never reuse the partial"
+        },
+        {
+          "t": "code",
+          "code": "// If you only ever call it once with all args, currying is wasted:\nconst multiply = x => y => x * y;\nmultiply(4)(5);   // 20  — why not just multiply(4, 5)?\n\n// Currying only pays off if you REUSE the intermediate function.",
+          "label": null
+        },
+        {
+          "t": "callout",
+          "kind": "warn",
+          "html": "<strong>🎯 The rule:</strong> If you're going to supply all arguments at the same moment, and you won't reuse a partially-applied version — <strong>do NOT curry.</strong> A normal function is clearer, faster to read, and easier to debug. Choosing the simpler tool is a sign of maturity, not ignorance."
+        }
+      ]
+    },
+    {
+      "id": "sec6",
+      "n": "6",
+      "title": "When Currying Is ACTUALLY Useful",
+      "badge": null,
+      "group": "Reality Check",
+      "blocks": [
+        {
+          "t": "p",
+          "html": "Three real cases where currying earns its place. Notice the common thread: <strong>you create a specialized function once, then reuse it.</strong>"
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "✅ Use Case 1 — Specialized reusable functions"
+        },
+        {
+          "t": "code",
+          "code": "const isDivisibleBy = divisor => num => num % divisor === 0;\n\nconst isEven = isDivisibleBy(2);        // reusable!\nconst isMultipleOf5 = isDivisibleBy(5);\n\n[1,2,3,4,5,6].filter(isEven);           // [2, 4, 6]\n[5,10,12,15,20].filter(isMultipleOf5);  // [5, 10, 15, 20]\n\n// Cleaner than writing `n => n % 2 === 0` over and over.",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "✅ Use Case 2 — Reusable filters (your build task!)"
+        },
+        {
+          "t": "code",
+          "code": "const filterBy = key => value => arr =>\n  arr.filter(item => item?.[key] === value);\n\nconst filterEngineers = filterBy(\"role\")(\"engineer\");\nconst filterManagers  = filterBy(\"role\")(\"manager\");\n\nfilterEngineers(users);   // all engineers\nfilterManagers(users);    // all managers\n\n// You built the filter logic once. Now spin up specialized\n// filters on demand. This is currying doing real work.",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "✅ Use Case 3 — Configuration set once, reused many times"
+        },
+        {
+          "t": "code",
+          "code": "const createLogger = prefix => message =>\n  console.log(`[${prefix}] ${message}`);\n\nconst errorLog = createLogger(\"ERROR\");\nconst infoLog  = createLogger(\"INFO\");\n\nerrorLog(\"Database down\");    // [ERROR] Database down\ninfoLog(\"Server started\");    // [INFO] Server started",
+          "label": null
+        },
+        {
+          "t": "callout",
+          "kind": "info",
+          "html": "<strong>🔑 The common thread:</strong> In every useful case, you <strong>lock in a configuration once</strong> (the divisor, the key, the prefix) and <strong>reuse the specialized function many times</strong>. That reuse is what justifies currying. No reuse = don't curry."
+        }
+      ]
+    },
+    {
+      "id": "sec7",
+      "n": "7",
+      "title": "Currying in React (Where You'll Actually Meet It)",
+      "badge": null,
+      "group": "Reality Check",
+      "blocks": [
+        {
+          "t": "callout",
+          "kind": "key",
+          "html": "<strong>⭐ THIS is the moment currying will click for you</strong> — not in a contrived <code>add(1)(2)(3)</code>, but in real React code. When you reach Week 5-7 of your roadmap, you'll write this pattern without even thinking about it."
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "The Classic React Pattern — Event Handler With an Argument:"
+        },
+        {
+          "t": "code",
+          "code": "// A curried event handler:\nconst handleDelete = (id) => (event) => {\n  console.log(\"Deleting item\", id);\n  // ...delete logic\n};\n\n// In JSX — rendering a list of delete buttons:\n{items.map(item => (\n  <button onClick={handleDelete(item.id)}>\n    Delete\n  </button>\n))}",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Why Currying Is Needed Here:"
+        },
+        {
+          "t": "p",
+          "html": "The <code>onClick</code> handler automatically receives the <code>event</code> object. But you ALSO need to know WHICH item's button was clicked (the <code>id</code>)."
+        },
+        {
+          "t": "list",
+          "ordered": false,
+          "items": [
+            "<code>handleDelete(item.id)</code> runs during render — it locks in the <code>id</code> and returns the actual handler.",
+            "When the button is clicked later, React calls that returned handler with the <code>event</code>.",
+            "The returned handler remembers <code>id</code> via closure. 🎯"
+          ]
+        },
+        {
+          "t": "callout",
+          "kind": "warn",
+          "html": "<strong>⚠️ Common beginner mistake:</strong>"
+        },
+        {
+          "t": "code",
+          "code": "// ❌ WRONG — calls handleDelete IMMEDIATELY during render:\n<button onClick={handleDelete(item.id)}>   // only works if curried!\n\n// ❌ WRONG — passing args the naive way runs it on every render:\n<button onClick={handleDelete(item.id, event)}>   // event undefined here\n\n// ✅ RIGHT — either curry (above) or wrap in arrow:\n<button onClick={(e) => handleDelete(item.id, e)}>",
+          "label": null
+        },
+        {
+          "t": "callout",
+          "kind": "warn",
+          "html": "Both the curried version and the arrow-wrap version work. You'll see both in real codebases."
+        },
+        {
+          "t": "callout",
+          "kind": "note",
+          "html": "<strong>💡 Bottom line:</strong> You don't need to force currying into your own code now. But when React hands you this event-handler situation, you'll recognize it — and it'll finally feel useful instead of academic."
+        }
+      ]
+    },
+    {
+      "id": "sec8",
+      "n": "8",
+      "title": "Master Cheat Sheet",
+      "badge": null,
+      "group": "Revision",
+      "blocks": [
+        {
+          "t": "table",
+          "head": [
+            "Concept",
+            "Key Point"
+          ],
+          "rows": [
+            [
+              "Currying",
+              "Transform <code>fn(a,b,c)</code> → <code>fn(a)(b)(c)</code>. One arg per call."
+            ],
+            [
+              "How it works",
+              "Closures. Each returned function remembers earlier arguments."
+            ],
+            [
+              "Two ways",
+              "Nested closures (common) OR <code>bind()</code> (rare)"
+            ],
+            [
+              "Arrow syntax",
+              "<code>a =&gt; b =&gt; c =&gt; a + b + c</code>"
+            ],
+            [
+              "Partial application",
+              "Pre-fill SOME args, supply rest later (e.g. via <code>bind</code>)"
+            ],
+            [
+              "When USELESS",
+              "All args available at once + no reuse → use a normal function"
+            ],
+            [
+              "When USEFUL",
+              "Lock config once, reuse specialized fn many times"
+            ],
+            [
+              "Real cases",
+              "Reusable filters/predicates, loggers, React event handlers"
+            ],
+            [
+              "The honest truth",
+              "It's closures with fancier syntax. Don't overuse it."
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sec9",
+      "n": "9",
+      "title": "Interview Answer Templates",
+      "badge": null,
+      "group": "Revision",
+      "blocks": [
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Q: \"What is currying?\""
+        },
+        {
+          "t": "callout",
+          "kind": "note",
+          "html": "<em>\"Currying is a technique that transforms a function taking multiple arguments into a sequence of functions that each take a single argument. So instead of <code>fn(a, b, c)</code>, you call <code>fn(a)(b)(c)</code>. It works entirely through closures — each returned function remembers the arguments passed to the functions before it. You can implement it with nested functions or using <code>bind()</code>.\"</em>"
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Q: \"How does currying work under the hood?\""
+        },
+        {
+          "t": "callout",
+          "kind": "note",
+          "html": "<em>\"Through closures. When the outer function is called with the first argument, it returns an inner function that closes over that argument. Even after the outer function's execution context is destroyed, the inner function retains access to that argument via the closure. This chains all the way down until all arguments are collected and the final result is computed.\"</em>"
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Q: \"When would you actually use currying?\""
+        },
+        {
+          "t": "callout",
+          "kind": "note",
+          "html": "<em>\"When I want to create specialized, reusable functions by locking in some configuration up front. For example, a <code>filterBy(key)(value)</code> function lets me build specific filters like 'filter by role engineer' once and reuse them. In React, curried event handlers are common — like <code>onClick={handleDelete(id)}</code> — where I lock in the item id and the handler receives the event later. But I wouldn't curry if I always have all arguments at once and won't reuse the partial — a normal function is clearer there.\"</em>"
+        },
+        {
+          "t": "callout",
+          "kind": "warn",
+          "html": "<strong>🎯 Interview power move:</strong> Mentioning that you know <em>when NOT to curry</em> signals maturity. Junior devs overuse patterns; senior devs know the tradeoffs. Saying \"I wouldn't curry here because there's no reuse\" is more impressive than blindly currying everything."
+        }
+      ]
+    },
+    {
+      "id": "sec10",
+      "n": "10",
+      "title": "Practice Sheet — 6 Questions",
+      "badge": null,
+      "group": "Practice",
+      "blocks": [
+        {
+          "t": "p",
+          "html": "<strong>📝 Instructions:</strong> Predict outputs and answer the reasoning questions."
+        },
+        {
+          "t": "question",
+          "n": 1,
+          "difficulty": "easy",
+          "html": "Basic Trace<br><strong>1)</strong> All 3 outputs?",
+          "code": "const add = a => b => a + b;\n\nconsole.log(add(3)(4));\nconst add10 = add(10);\nconsole.log(add10(5));\nconsole.log(typeof add10);"
+        },
+        {
+          "t": "question",
+          "n": 2,
+          "difficulty": "easy",
+          "html": "Three Levels<br><strong>1)</strong> All 3 outputs?<br><strong>2)</strong> What is <code>base</code>?",
+          "code": "const vol = l => w => h => l * w * h;\n\nconsole.log(vol(2)(3)(4));\nconst base = vol(5)(5);\nconsole.log(base(2));\nconsole.log(typeof base);"
+        },
+        {
+          "t": "question",
+          "n": 3,
+          "difficulty": "medium",
+          "html": "bind() Currying<br><strong>1)</strong> Both outputs?<br><strong>2)</strong> Why does the <code>99</code> not matter in the second one?",
+          "code": "function multiply(x, y) {\n  return x * y;\n}\n\nconst double = multiply.bind(this, 2);\nconst preset = multiply.bind(this, 4, 5);\n\nconsole.log(double(10));\nconsole.log(preset(99));"
+        },
+        {
+          "t": "question",
+          "n": 4,
+          "difficulty": "medium",
+          "html": "Useful or Useless?<br>For each snippet, say whether currying is <strong>justified</strong> or <strong>pointless</strong>, and why:",
+          "code": "// Snippet A\nconst sum = a => b => a + b;\nconsole.log(sum(3)(4));   // called once, all args available\n\n// Snippet B\nconst greaterThan = min => n => n > min;\nconst over18 = greaterThan(18);\n[15, 20, 25, 10].filter(over18);"
+        },
+        {
+          "t": "question",
+          "n": 5,
+          "difficulty": "medium",
+          "html": "Build a Curried Filter<br>Write a curried <code>filterBy</code> that takes a <code>key</code>, then a <code>value</code>, then an <code>array</code>, and returns matching objects.",
+          "code": "const filterBy = /* your code */;\n\nconst users = [\n  { name: \"Parth\", role: \"engineer\" },\n  { name: \"Deepika\", role: \"manager\" },\n  { name: \"Rahul\", role: \"engineer\" }\n];\n\nconst engineers = filterBy(\"role\")(\"engineer\");\nconsole.log(engineers(users));\n// [{ name: \"Parth\", ... }, { name: \"Rahul\", ... }]"
+        },
+        {
+          "t": "question",
+          "n": 6,
+          "difficulty": "hard",
+          "html": "React Handler<br>Conceptual — no running needed.<br><strong>1)</strong> When does <code>handleClick(42)</code> run — during render, or on click?<br><strong>2)</strong> When does the inner function (the one logging) run?<br><strong>3)</strong> How does the inner function know <code>id</code> is 42?",
+          "code": "const handleClick = (id) => (event) => {\n  console.log(\"Clicked:\", id);\n};\n\n// In JSX:\n<button onClick={handleClick(42)}>Click</button>"
+        }
+      ]
+    },
+    {
+      "id": "sec11",
+      "n": "11",
+      "title": "Answer Key",
+      "badge": null,
+      "group": "Practice",
+      "blocks": [
+        {
+          "t": "answer",
+          "n": 1,
+          "html": "Q1 — Answer"
+        },
+        {
+          "t": "code",
+          "code": "7\n15\n\"function\"",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "<strong>Explanation:</strong> <code>add(3)(4)</code> → 3+4 = 7. <code>add(10)</code> returns a function (closing over a=10), stored in <code>add10</code>. <code>add10(5)</code> → 10+5 = 15. <code>add10</code> is a function, not a number — it's the inner <code>b =&gt; a + b</code> waiting for its second argument."
+        },
+        {
+          "t": "hr"
+        },
+        {
+          "t": "answer",
+          "n": 2,
+          "html": "Q2 — Answer"
+        },
+        {
+          "t": "code",
+          "code": "24\n50\n\"function\"",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "<strong>Explanation:</strong> <code>vol(2)(3)(4)</code> → 2×3×4 = 24. <code>vol(5)(5)</code> locks l=5 and w=5, returns a function waiting for h — that's <code>base</code>. <code>base(2)</code> → 5×5×2 = 50. <code>base</code> is a function (the innermost <code>h =&gt; l * w * h</code> with l and w already closed over)."
+        },
+        {
+          "t": "hr"
+        },
+        {
+          "t": "answer",
+          "n": 3,
+          "html": "Q3 — Answer"
+        },
+        {
+          "t": "code",
+          "code": "20\n20",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "<strong>Explanation:</strong> <code>double = multiply.bind(this, 2)</code> presets x=2. <code>double(10)</code> → 2×10 = 20. <code>preset = multiply.bind(this, 4, 5)</code> presets BOTH x=4 and y=5. So <code>preset(99)</code> → 4×5 = 20. The <strong>99 is ignored</strong> because both parameters were already filled by bind — there's no third parameter for 99 to land in."
+        },
+        {
+          "t": "hr"
+        },
+        {
+          "t": "answer",
+          "n": 4,
+          "html": "Q4 — Answer"
+        },
+        {
+          "t": "p",
+          "html": "<strong>Snippet A — POINTLESS.</strong> All arguments are available at call time (<code>sum(3)(4)</code>), and the result is used once with no reuse of a partial. This should just be <code>const sum = (a, b) =&gt; a + b; sum(3, 4);</code>. Currying adds only confusion here."
+        },
+        {
+          "t": "p",
+          "html": "<strong>Snippet B — JUSTIFIED.</strong> <code>greaterThan(18)</code> creates a reusable <code>over18</code> predicate that reads cleanly and could be reused across multiple filters. Locking in the config (18) and reusing the specialized function is exactly when currying earns its place."
+        },
+        {
+          "t": "hr"
+        },
+        {
+          "t": "answer",
+          "n": 5,
+          "html": "Q5 — Answer"
+        },
+        {
+          "t": "code",
+          "code": "// Readable version:\nconst filterBy = function(key) {\n  return function(value) {\n    return function(arr) {\n      return arr.filter(item => item?.[key] === value);\n    };\n  };\n};\n\n// Arrow version (same thing):\nconst filterBy = key => value => arr =>\n  arr.filter(item => item?.[key] === value);",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "<strong>Explanation:</strong> Three nested functions. <code>filterBy(\"role\")</code> locks the key, <code>(\"engineer\")</code> locks the value, and the final call receives the array and does the filtering. The <code>?.[key]</code> optional chaining safely handles objects missing that key. This is currying doing genuine work — you can now build <code>filterEngineers</code>, <code>filterManagers</code>, etc. and reuse them."
+        },
+        {
+          "t": "hr"
+        },
+        {
+          "t": "answer",
+          "n": 6,
+          "html": "Q6 — Answer"
+        },
+        {
+          "t": "p",
+          "html": "<strong>1)</strong> <code>handleClick(42)</code> runs <strong>during render</strong> — React evaluates it while building the JSX. It locks in <code>id = 42</code> and returns the inner function."
+        },
+        {
+          "t": "p",
+          "html": "<strong>2)</strong> The inner function (the one that logs) runs <strong>on click</strong> — React stores it as the click handler and calls it with the <code>event</code> when the user clicks."
+        },
+        {
+          "t": "p",
+          "html": "<strong>3)</strong> Via <strong>closure</strong>. When <code>handleClick(42)</code> ran, the returned inner function closed over <code>id = 42</code>. Even though <code>handleClick</code>'s execution finished during render, the inner function preserved <code>id</code> and can access it whenever the click eventually fires."
+        },
+        {
+          "t": "hr"
+        },
+        {
+          "t": "p",
+          "html": "Key Mental Models:"
+        },
+        {
+          "t": "p",
+          "html": "🔹 Currying = closures with fancier syntax. Nothing more."
+        },
+        {
+          "t": "p",
+          "html": "🔹 fn(a)(b)(c) — each call locks one arg via closure"
+        },
+        {
+          "t": "p",
+          "html": "🔹 USELESS if all args available + no reuse → use a normal function"
+        },
+        {
+          "t": "p",
+          "html": "🔹 USEFUL for reusable specialized functions (filters, loggers, React handlers)"
+        },
+        {
+          "t": "p",
+          "html": "🔹 Knowing when NOT to curry = engineering maturity"
+        }
+      ]
+    }
+  ]
+}

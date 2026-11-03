@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Closures in JavaScript — Complete Notes</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Calibri, Arial, sans-serif; color: #1a1a1a; line-height: 1.7; background: #fff; }
+
+  /* SIDEBAR */
+  .sidebar-toggle { position: fixed; top: 12px; left: 12px; z-index: 1001; background: #0078D4; color: #fff; border: none; width: 40px; height: 40px; border-radius: 8px; font-size: 1.4em; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+  .sidebar-toggle:hover { background: #106ebe; }
+  .sidebar { position: fixed; top: 0; left: 0; width: 280px; height: 100vh; background: #f0f4ff; border-right: 2px solid #0078D4; overflow-y: auto; z-index: 1000; transform: translateX(0); transition: transform 0.3s ease; padding: 60px 15px 20px 15px; }
+  .sidebar.collapsed { transform: translateX(-280px); }
+  .sidebar h3 { color: #0078D4; font-size: 1em; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 2px solid #0078D4; }
+  .sidebar a { display: block; padding: 5px 8px; color: #2b579a; text-decoration: none; font-size: 0.85em; border-radius: 4px; margin-bottom: 2px; }
+  .sidebar a:hover { background: #dce6f7; }
+  .sidebar .group-label { color: #555; font-weight: bold; font-size: 0.78em; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 12px; margin-bottom: 4px; padding-left: 8px; }
+
+  /* MAIN */
+  .main { margin-left: 280px; padding: 20px 30px 40px 30px; max-width: 980px; transition: margin-left 0.3s ease; }
+  .main.full { margin-left: 0; }
+
+  /* TITLE */
+  .title-block { text-align: center; padding: 25px 0; border-bottom: 4px solid #0078D4; margin-bottom: 25px; }
+  .title-block h1 { color: #0078D4; font-size: 2em; border: none; margin: 0; padding: 0; }
+  .title-block p { color: #555; font-size: 0.95em; margin: 3px 0; }
+
+  /* HEADINGS */
+  h1 { color: #0078D4; border-bottom: 3px solid #0078D4; padding-bottom: 8px; margin-top: 35px; font-size: 1.6em; }
+  h2 { color: #2b579a; margin-top: 25px; font-size: 1.3em; }
+  h3 { color: #444; margin-top: 18px; font-size: 1.1em; }
+  p { margin: 8px 0; }
+  ul, ol { padding-left: 24px; margin: 8px 0; }
+  li { margin-bottom: 6px; }
+
+  /* COLLAPSIBLE */
+  .section-header { cursor: pointer; display: flex; align-items: center; justify-content: space-between; padding: 10px 0; user-select: none; }
+  .section-header:hover h1 { color: #106ebe; }
+  .section-header .toggle-icon { font-size: 1.2em; color: #0078D4; transition: transform 0.3s; min-width: 24px; text-align: center; }
+  .section-header .toggle-icon.collapsed { transform: rotate(-90deg); }
+  .section-content { overflow: hidden; transition: max-height 0.4s ease; }
+  .section-content.collapsed { max-height: 0 !important; overflow: hidden; }
+
+  /* CODE */
+  pre { background: #f5f5f5; border: 1px solid #ddd; border-left: 4px solid #0078D4; padding: 14px 18px; font-family: 'Consolas', 'Courier New', monospace; font-size: 0.92em; overflow-x: auto; border-radius: 4px; white-space: pre-wrap; margin: 12px 0; }
+  code { font-family: 'Consolas', monospace; background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-size: 0.88em; }
+
+  /* TABLES */
+  table { border-collapse: collapse; width: 100%; margin: 14px 0; }
+  th { background: #0078D4; color: #fff; padding: 10px 14px; text-align: center; font-size: 0.92em; }
+  td { border: 1px solid #ccc; padding: 9px 14px; text-align: center; font-size: 0.9em; }
+  tr:nth-child(even) { background: #f9f9f9; }
+
+  /* BOXES */
+  .note-box { background: #e8f4e8; border-left: 4px solid #2e7d32; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+  .note-box strong { color: #2e7d32; }
+  .warn-box { background: #fff3e0; border-left: 4px solid #e65100; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+  .warn-box strong { color: #e65100; }
+  .danger-box { background: #fce4ec; border-left: 4px solid #c62828; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+  .danger-box strong { color: #c62828; }
+  .blue-box { background: #e3f2fd; border-left: 4px solid #1565c0; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+  .blue-box strong { color: #1565c0; }
+  .purple-box { background: #f3e5f5; border-left: 4px solid #7b1fa2; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+  .purple-box strong { color: #7b1fa2; }
+
+  /* DEMO PANELS */
+  .demo-toggle { background: #161b22; color: #58a6ff; border: 2px solid #30363d; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-size: 1em; font-weight: bold; width: 100%; text-align: left; margin: 12px 0; display: flex; justify-content: space-between; align-items: center; }
+  .demo-toggle:hover { border-color: #58a6ff; }
+  .demo-panel { background: #0d1117; border: 2px solid #30363d; border-radius: 0 0 8px 8px; padding: 20px; margin-top: -14px; margin-bottom: 12px; color: #e6edf3; display: none; }
+  .demo-panel.open { display: block; }
+  .demo-panel pre { background: #161b22; border-color: #30363d; border-left-color: #58a6ff; color: #e6edf3; }
+  .demo-panel .note-box { background: #0d2818; border-left-color: #2ea043; color: #e6edf3; }
+  .demo-panel .purple-box { background: #1c1d2e; border-left-color: #8b5cf6; color: #e6edf3; }
+  .demo-panel .danger-box { background: #2d0000; border-left-color: #f85149; color: #e6edf3; }
+  .btn { background: #238636; color: #fff; border: none; padding: 8px 20px; border-radius: 6px; font-size: 0.9em; cursor: pointer; font-weight: bold; margin: 3px; }
+  .btn:hover { background: #2ea043; }
+  .btn.blue { background: #1f6feb; }
+  .btn.blue:hover { background: #388bfd; }
+  .btn.red { background: #da3633; }
+  .btn.red:hover { background: #f85149; }
+  .btn.purple { background: #8b5cf6; }
+  .btn.purple:hover { background: #a78bfa; }
+  .console-output { background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 12px; margin-top: 10px; min-height: 45px; font-family: 'Consolas', monospace; font-size: 0.9em; }
+  .console-line { padding: 2px 0; color: #7ee787; }
+  .console-line.info { color: #79c0ff; }
+  .console-line.warn { color: #d29922; }
+  .console-line.err { color: #f85149; }
+  .morph-step { display: none; }
+  .morph-step.active { display: block; }
+  .step-counter { color: #8b949e; text-align: center; margin: 8px 0; font-size: 0.9em; }
+  .narration { background: #0c2d6b; border: 1px solid #1f6feb; border-radius: 6px; padding: 14px; margin: 10px 0; font-size: 0.98em; line-height: 1.8; color: #e6edf3; }
+
+  /* PRACTICE */
+  .question-block { background: #fafafa; border: 1px solid #e0e0e0; padding: 16px 20px; margin: 18px 0; border-radius: 6px; }
+  .question-block h2 { margin-top: 0; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.78em; font-weight: bold; margin-left: 5px; }
+  .tag-easy { background: #e8f5e9; color: #2e7d32; }
+  .tag-medium { background: #fff8e1; color: #f57f17; }
+  .tag-hard { background: #fce4ec; color: #c62828; }
+  .tag-expert { background: #4a148c; color: #fff; }
+  .nav-link { display: inline-block; margin-top: 8px; font-size: 0.85em; color: #7b1fa2; text-decoration: none; font-weight: bold; }
+  .nav-link:hover { text-decoration: underline; }
+  .nav-link.back { color: #0078D4; }
+  .page-break { margin-top: 50px; border-top: 3px double #0078D4; padding-top: 20px; }
+
+  @media (max-width: 768px) {
+    .sidebar { width: 240px; }
+    .main { margin-left: 0; padding: 15px; }
+    .sidebar.collapsed { transform: translateX(-240px); }
+  }
+</style>
+</head>
+<body>
+
+<button class="sidebar-toggle" onclick="toggleSidebar()" id="sidebarBtn">☰</button>
+
+<nav class="sidebar" id="sidebar">
+  <h3>📑 Closures — Navigation</h3>
+  <div class="group-label">📖 Core Concepts</div>
+  <a href="#sec1" onclick="scrollTo(event,'sec1')">1. What is a Closure?</a>
+  <a href="#sec2" onclick="scrollTo(event,'sec2')">2. Two Conditions for a Closure</a>
+  <a href="#sec3" onclick="scrollTo(event,'sec3')">3. First-Class Functions</a>
+  <a href="#sec4" onclick="scrollTo(event,'sec4')">4. Engine Trace — Step-by-Step</a>
+  <a href="#sec5" onclick="scrollTo(event,'sec5')">5. References, Not Snapshots</a>
+  <div class="group-label">🔬 Deep Dives</div>
+  <a href="#sec6" onclick="scrollTo(event,'sec6')">6. Beyond return — Callbacks, setTimeout</a>
+  <a href="#sec7" onclick="scrollTo(event,'sec7')">7. ⚙️ Scope Chain vs Closure</a>
+  <a href="#sec8" onclick="scrollTo(event,'sec8')">8. Independent Closures</a>
+  <a href="#sec9" onclick="scrollTo(event,'sec9')">9. ⭐ setTimeout + Loop</a>
+  <a href="#sec10" onclick="scrollTo(event,'sec10')">10. Closures vs this</a>
+  <div class="group-label">💼 Practical</div>
+  <a href="#sec11" onclick="scrollTo(event,'sec11')">11. Real-World Use Cases</a>
+  <a href="#sec12" onclick="scrollTo(event,'sec12')">12. Garbage Collection</a>
+  <a href="#sec13" onclick="scrollTo(event,'sec13')">13. Common Gotchas</a>
+  <div class="group-label">📝 Revision</div>
+  <a href="#sec14" onclick="scrollTo(event,'sec14')">14. Master Cheat Sheet</a>
+  <a href="#sec15" onclick="scrollTo(event,'sec15')">15. Interview Templates</a>
+  <div class="group-label">🧪 Practice</div>
+  <a href="#sec16" onclick="scrollTo(event,'sec16')">16. Practice Sheet (10 Qs)</a>
+  <a href="#sec17" onclick="scrollTo(event,'sec17')">17. Answer Key</a>
+</nav>
+
+<div class="main" id="mainContent">
+
+<div class="title-block">
+  <h1>Closures in JavaScript</h1>
+  <p><strong>Complete Revision Notes + Practice Sheet</strong></p>
+  <p><em>With embedded interactive demos, engine-level depth, and interview patterns</em></p>
+</div>
+
+<!-- ===== SEC 1 ===== -->
+<div id="sec1">
+  <div class="section-header" onclick="toggleSection('c1')">
+    <h1 style="border:none;margin:0;padding:0;">1. What is a Closure? — The Formal Definition</h1>
+    <span class="toggle-icon" id="icon-c1">▼</span>
+  </div>
+  <div class="section-content" id="c1">
+    <div class="danger-box">
+      <strong>A closure is a function bundled together (enclosed) with its lexical environment.</strong><br><br>
+      In simpler terms: A closure is when an inner function has access to the outer (enclosing) function's variables — even after the outer function has completely finished executing and its Execution Context has been destroyed.
+    </div>
+
+    <p>From MDN: <em>"A closure is the combination of a function and the lexical environment within which that function was declared."</em></p>
+
+    <h3>The Simplest Closure:</h3>
+    <pre>function outer() {
+  let a = 7;
+
+  function inner() {
+    console.log(a);   // inner "closes over" variable a
+  }
+
+  return inner;
+}
+
+let z = outer();   // outer() executes, returns inner, then outer's EC is DESTROYED
+z();               // Output: 7 — But how? outer is long gone!</pre>
+
+    <h3>What just happened?</h3>
+    <ol>
+      <li>We called <code>outer()</code>. It declared <code>a = 7</code> and returned the function <code>inner</code>.</li>
+      <li>Once <code>outer()</code> finished, its Execution Context was entirely <strong>destroyed</strong> and removed from the Call Stack.</li>
+      <li>We later invoked <code>z()</code> (which holds <code>inner</code>).</li>
+      <li>Even though <code>outer</code> is long gone, <code>z()</code> perfectly prints <code>7</code>.</li>
+    </ol>
+
+    <div class="blue-box">
+      <strong>🔑 Why?</strong> Because when functions are returned in JavaScript, they are <strong>not returned alone</strong>. They are returned along with their <strong>lexical scope</strong>. When <code>inner</code> was <strong>born</strong> (defined) inside <code>outer</code>, the JS engine attached a hidden reference — <code>inner.[[Scope]]</code> — pointing to <code>outer</code>'s lexical environment. When <code>inner</code> was returned and <code>outer</code> died, that reference kept the variables alive. This hidden reference IS the closure.
+    </div>
+  </div>
+</div>
+
+<!-- ===== SEC 2 ===== -->
+<div id="sec2">
+  <div class="section-header" onclick="toggleSection('c2')">
+    <h1 style="border:none;margin:0;padding:0;">2. The Two Conditions for a Closure</h1>
+    <span class="toggle-icon" id="icon-c2">▼</span>
+  </div>
+  <div class="section-content" id="c2">
+    <div class="purple-box">
+      <strong>🧠 "When exactly IS a closure formed?" — This section answers the most common confusion.</strong>
+    </div>
+
+    <p>A closure is formed when <strong>BOTH</strong> of these conditions are true:</p>
+
+    <table>
+      <tr><th>#</th><th>Condition</th><th>What It Means</th></tr>
+      <tr><td><strong>1</strong></td><td>A function is <strong>defined inside</strong> another scope</td><td>The inner function is physically written inside an outer function/block</td></tr>
+      <tr><td><strong>2</strong></td><td>It <strong>references variables</strong> from that outer scope</td><td>The inner function actually USES a variable that's not in its own local memory</td></tr>
+    </table>
+
+    <h3>✅ Closure — Both conditions met:</h3>
+    <pre>function outer() {
+  let a = 7;              // outer's variable
+
+  function inner() {
+    console.log(a);       // ✅ references outer's variable
+  }
+
+  return inner;
+}
+// Condition 1: inner defined inside outer ✅
+// Condition 2: inner uses 'a' from outer ✅
+// → CLOSURE: YES</pre>
+
+    <h3>❌ NOT a closure — Condition 2 missing:</h3>
+    <pre>function outer() {
+  let a = 7;
+
+  function inner() {
+    console.log("Hello"); // ❌ does NOT use any outer variable
+  }
+
+  return inner;
+}
+// Condition 1: inner defined inside outer ✅
+// Condition 2: inner doesn't use any outer variable ❌
+// → CLOSURE: NO (nothing meaningful to close over)</pre>
+
+    <h3>✅ Closure — Even without return:</h3>
+    <pre>function outer() {
+  let a = 7;
+
+  function inner() {
+    console.log(a);       // ✅ uses outer's variable
+  }
+
+  inner();                // called directly, NOT returned
+}
+// Condition 1 ✅, Condition 2 ✅ → CLOSURE: YES (return is irrelevant)</pre>
+
+    <h3>✅ Closure — setTimeout callback:</h3>
+    <pre>function outer() {
+  let a = 7;
+
+  setTimeout(function() {
+    console.log(a);       // ✅ anonymous fn uses outer's variable
+  }, 1000);
+}
+// Condition 1: anonymous fn defined inside outer ✅
+// Condition 2: it uses 'a' from outer ✅
+// → CLOSURE: YES</pre>
+
+    <div class="blue-box">
+      <strong>💡 The simplest way to check:</strong> Does your function use a variable that it <strong>didn't create itself</strong>? And is that variable in a <strong>parent scope</strong> (not its own local memory)? If yes to both → that's a closure.
+    </div>
+  </div>
+</div>
+
+<!-- ===== SEC 3 ===== -->
+<div id="sec3">
+  <div class="section-header" onclick="toggleSection('c3')">
+    <h1 style="border:none;margin:0;padding:0;">3. First-Class Functions — Why Closures Are Possible</h1>
+    <span class="toggle-icon" id="icon-c3">▼</span>
+  </div>
+  <div class="section-content" id="c3">
+    <p>Closures exist because JavaScript treats functions as <strong>first-class citizens</strong>:</p>
+    <ul>
+      <li>Functions can be <strong>assigned to variables</strong>: <code>const fn = function() {}</code></li>
+      <li>Functions can be <strong>passed as arguments</strong> to other functions</li>
+      <li>Functions can be <strong>returned from</strong> other functions</li>
+    </ul>
+    <p>All three of these allow a function to "travel" outside its birthplace — carrying its closure with it.</p>
+
+    <pre>// Passing a function as an argument (callback pattern)
+function execute(fn) {
+  fn();
+}
+
+function greet() {
+  let msg = "Hello";
+  execute(function() {
+    console.log(msg);   // Closure! This anonymous fn closes over msg
+  });
+}
+
+greet();   // "Hello"</pre>
+  </div>
+</div>
+
+<!-- ===== SEC 4 ===== -->
+<div id="sec4">
+  <div class="section-header" onclick="toggleSection('c4')">
+    <h1 style="border:none;margin:0;padding:0;">4. How Closures Work — Step-by-Step Engine Trace</h1>
+    <span class="toggle-icon" id="icon-c4">▼</span>
+  </div>
+  <div class="section-content" id="c4">
+
+    <pre>function outer() {
+  let a = 7;
+
+  function inner() {
+    console.log(a);
+  }
+
+  return inner;
+}
+
+let z = outer();
+z();</pre>
+
+    <h3>Phase 1: <code>outer()</code> is called</h3>
+    <pre>Call Stack:
+┌──────────┐
+│  outer() │  ← EC created: { a: undefined, inner: fn }
+├──────────┤     Phase 2 of EC: a = 7
+│   GEC    │     inner is created → engine attaches inner.[[Scope]] = outer's lexical env
+└──────────┘     return inner → inner is sent out WITH its [[Scope]] reference</pre>
+
+    <h3>Phase 2: <code>outer()</code> finishes → EC destroyed</h3>
+    <pre>Call Stack:
+┌──────────┐
+│   GEC    │     z now holds: inner function + closure over { a: 7 }
+└──────────┘     outer's EC is GONE from the call stack.
+                 But 'a' survives in the closure.</pre>
+
+    <h3>Phase 3: <code>z()</code> is called</h3>
+    <pre>Call Stack:
+┌──────────┐
+│   z()    │  ← EC created for inner. Needs 'a'.
+├──────────┤     Looks in own memory → not found.
+│   GEC    │     Looks in CLOSURE (outer) → finds a = 7 ✅
+└──────────┘     Prints 7.</pre>
+
+    <div class="blue-box">
+      <strong>🧠 Chrome DevTools Proof:</strong> If you put a breakpoint inside <code>z()</code> and check the Scope panel, you'll see a special scope called <strong>"Closure (outer)"</strong> — this is the preserved lexical environment from the dead <code>outer()</code> function. The variables live there, not in any active EC.<br><br>
+      <code>Local: { }</code> ← inner's own memory (empty)<br>
+      <code>Closure (outer): { a: 7 }</code> ← preserved variables from dead outer()<br>
+      <code>Global: { z: f, ... }</code>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SEC 5 ===== -->
+<div id="sec5">
+  <div class="section-header" onclick="toggleSection('c5')">
+    <h1 style="border:none;margin:0;padding:0;">5. Closures Capture References, Not Snapshots</h1>
+    <span class="toggle-icon" id="icon-c5">▼</span>
+  </div>
+  <div class="section-content" id="c5">
+    <div class="danger-box">
+      <strong>Critical Rule:</strong> A closure does NOT store a <strong>snapshot</strong> of the value at the exact moment the function is declared. Instead, closures store the <strong>memory reference to the variables</strong>. By the time the closure is executed, it looks up the <strong>current value</strong> at that memory reference.
+    </div>
+
+    <pre>function create() {
+  let a = 10;
+
+  function modify() {
+    a = 100;
+  }
+
+  function read() {
+    console.log(a);
+  }
+
+  modify();       // a is changed to 100
+  return read;    // read closes over the REFERENCE to a
+}
+
+const reader = create();
+reader();   // 100 (NOT 10!)
+// The closure sees the CURRENT value of a, not the value when read was defined.</pre>
+
+    <h3>This also means closures see changes made AFTER they're created:</h3>
+    <pre>function counter() {
+  let count = 0;
+
+  return function() {
+    count++;              // modifies the same variable via reference
+    console.log(count);
+  };
+}
+
+const fn = counter();
+fn();   // 1
+fn();   // 2 (not 1 again! count persists because it's a reference)
+fn();   // 3</pre>
+
+    <div class="warn-box">
+      <strong>⚠️ Why this matters:</strong> This "reference not snapshot" behavior is exactly what causes the famous <code>setTimeout</code> + loop bug. The closure captures the <em>reference</em> to <code>var i</code>, and by the time the setTimeout fires, <code>i</code> has already been mutated to its final value.
+    </div>
+  </div>
+</div>
+
+<!-- ===== SEC 6 ===== -->
+<div id="sec6">
+  <div class="section-header" onclick="toggleSection('c6')">
+    <h1 style="border:none;margin:0;padding:0;">6. Closures Beyond <code>return</code> — Callbacks, setTimeout, Event Handlers</h1>
+    <span class="toggle-icon" id="icon-c6">▼</span>
+  </div>
+  <div class="section-content" id="c6">
+    <div class="danger-box">
+      <strong>🔴 The #1 misconception about closures:</strong> Many people think closures only happen when you <code>return</code> a function. This is WRONG. <code>return</code> doesn't create the closure — it just makes it visible outside. <strong>The closure is formed the moment the inner function is DEFINED.</strong>
+    </div>
+
+    <h3>A closure is formed whenever a function is <em>defined</em> inside another scope and references that scope's variables. The delivery method is irrelevant:</h3>
+
+    <table>
+      <tr><th>Delivery Method</th><th>Example</th><th>Closure?</th></tr>
+      <tr><td>📦 <strong>Returned</strong></td><td><code>return inner;</code></td><td>✅ YES</td></tr>
+      <tr><td>📬 <strong>Passed as callback</strong></td><td><code>setTimeout(inner, 1000);</code></td><td>✅ YES</td></tr>
+      <tr><td>🔔 <strong>Event handler</strong></td><td><code>btn.addEventListener('click', inner);</code></td><td>✅ YES</td></tr>
+      <tr><td>📌 <strong>Assigned to outer var</strong></td><td><code>globalVar = inner;</code></td><td>✅ YES</td></tr>
+      <tr><td>▶️ <strong>Called directly</strong></td><td><code>inner();</code></td><td>✅ YES (if it references outer vars)</td></tr>
+    </table>
+
+    <h3>Proof — No <code>return</code>, still a closure:</h3>
+    <pre>function outer() {
+  let count = 0;
+
+  function inner() {
+    count++;
+    console.log(count);
+  }
+
+  inner();   // ← called directly, NOT returned
+  inner();
+}
+
+outer();   // Output: 1, 2
+// inner accessed count from outer's scope. That's a closure.
+// No return was needed.</pre>
+
+    <h3>Proof — Passing to setTimeout, still a closure:</h3>
+    <pre>function setup() {
+  let message = "Hello";
+
+  setTimeout(function() {       // anonymous function DEFINED inside setup
+    console.log(message);       // REFERENCES setup's variable
+  }, 1000);                     // PASSED to setTimeout (not returned)
+}
+
+setup();   // setup() finishes instantly. EC destroyed.
+// After 1 second: "Hello" — closure kept message alive!</pre>
+
+    <h3>Proof — Event handler, still a closure:</h3>
+    <pre>function attachHandler() {
+  let clickCount = 0;
+
+  document.getElementById("btn").addEventListener("click", function() {
+    clickCount++;                      // references outer variable
+    console.log("Clicked " + clickCount + " times");
+  });
+}
+
+attachHandler();   // finishes instantly. But clickCount lives on via closure.
+// Click 1: "Clicked 1 times"
+// Click 2: "Clicked 2 times"
+// Click 3: "Clicked 3 times"</pre>
+
+    <div class="note-box">
+      <strong>🎯 The rule:</strong> The closure exists from the moment the function is <strong>born</strong>. How it "leaves" (return, callback, event handler, direct call) is irrelevant. The <code>[[Scope]]</code> reference is attached at creation time.
+    </div>
+
+    <!-- EMBEDDED INTERACTIVE: MORPH DEMO -->
+    <button class="demo-toggle" onclick="toggleDemo('morph-demo')">
+      🔄 Interactive: 5-Stage Morph — From <code>return</code> to <code>setTimeout</code>
+      <span id="morph-demo-icon">▶</span>
+    </button>
+    <div class="demo-panel" id="morph-demo">
+      <div class="step-counter" id="morph-counter">Stage 1 of 5</div>
+      <div style="text-align:center;margin:8px 0;">
+        <button class="btn blue" onclick="morphPrev()">← Prev</button>
+        <button class="btn" onclick="morphNext()">Next Stage →</button>
+        <button class="btn red" onclick="morphReset()">Reset</button>
+      </div>
+      <div class="morph-step active" id="morph-1">
+        <div class="narration"><strong>Stage 1: The pattern you know — outer returns inner.</strong><br>Your comfort zone. <code>outer()</code> creates a variable, defines an inner function that uses it, and returns that inner function. The inner function carries a closure over <code>secret</code>.</div>
+        <pre>function outer() {
+  let secret = "Parth";        // outer's variable
+
+  function inner() {            // inner function
+    console.log(secret);        // accesses outer's variable
+  }
+
+  return inner;                 // delivery method: RETURN
+}
+
+const fn = outer();
+fn();   // "Parth"</pre>
+      </div>
+      <div class="morph-step" id="morph-2">
+        <div class="narration"><strong>Stage 2: Instead of returning, PASS the inner function to someone else.</strong><br>The closure is identical. The only thing that changed is the "delivery method" — we're handing the function to <code>executeItLater()</code> instead of returning it.</div>
+        <pre>function outer() {
+  let secret = "Parth";
+
+  function inner() {
+    console.log(secret);        // still accesses outer's variable!
+  }
+
+  executeItLater(inner);        // delivery method: PASS AS ARGUMENT
+}
+
+function executeItLater(callback) {
+  callback();   // "Parth" — closure still works!
+}
+
+outer();</pre>
+        <div class="note-box"><strong>Same closure, different delivery.</strong> Whether you <code>return</code> it or <code>pass</code> it — the function still remembers its birthplace.</div>
+      </div>
+      <div class="morph-step" id="morph-3">
+        <div class="narration"><strong>Stage 3: What if "executeItLater" is... <code>setTimeout</code>?</strong><br><code>setTimeout</code> is just a function that takes a callback and calls it later. It's EXACTLY like <code>executeItLater</code> from Stage 2.</div>
+        <pre>function outer() {
+  let secret = "Parth";
+
+  function inner() {
+    console.log(secret);
+  }
+
+  setTimeout(inner, 1000);     // delivery method: PASS TO setTimeout
+}
+
+outer();
+// After 1 second: "Parth"</pre>
+        <div class="purple-box"><strong>🔑 setTimeout is just another function that receives your callback.</strong> It's not magic. The closure was already formed when inner was defined.</div>
+      </div>
+      <div class="morph-step" id="morph-4">
+        <div class="narration"><strong>Stage 4: Use an anonymous function inline.</strong><br>Instead of defining <code>inner</code> separately, define it directly inside the <code>setTimeout</code> call. Same closure.</div>
+        <pre>function outer() {
+  let secret = "Parth";
+
+  setTimeout(function() {       // anonymous fn defined RIGHT HERE
+    console.log(secret);        // still accesses outer's variable!
+  }, 1000);
+}
+
+outer();
+// After 1 second: "Parth"
+// Identical to Stage 3. Just no name for the inner function.</pre>
+      </div>
+      <div class="morph-step" id="morph-5">
+        <div class="narration"><strong>Stage 5: Replace "outer" with a for loop. THIS is the setTimeout + loop code.</strong><br>The loop body is the "outer scope". The callback is the "inner function". The loop variable is the "variable being closed over". <strong>Same pattern as Stage 1.</strong></div>
+        <pre>// The "outer" is now the for loop body
+// The "inner" is the anonymous callback inside setTimeout
+// The "secret" is the loop variable i
+
+for (var i = 1; i &lt;= 3; i++) {
+  setTimeout(function() {       // THIS is the "inner function"
+    console.log(i);             // THIS is accessing the "outer variable"
+  }, i * 1000);                 // THIS is "passing to someone else"
+}
+
+// The anonymous function inside setTimeout is defined inside the loop body.
+// It references 'i' from the outer scope. That's a CLOSURE.</pre>
+        <div class="danger-box"><strong>🔴 var:</strong> ONE i shared → all callbacks see final value (4)<br><strong>🟢 let:</strong> NEW i per iteration → each callback sees its own value (1,2,3)</div>
+      </div>
+      <!-- Live buttons -->
+      <div style="margin-top:15px;">
+        <button class="btn" onclick="runP1()">Pattern 1: return</button>
+        <button class="btn blue" onclick="runP2()">Pattern 2: pass to fn</button>
+        <button class="btn purple" onclick="runP3()">Pattern 3: setTimeout</button>
+        <button class="btn red" onclick="clearMC()">Clear</button>
+        <div class="console-output" id="morph-console"><div class="console-line info">// Click to run...</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SEC 7 ===== -->
+<div id="sec7">
+  <div class="section-header" onclick="toggleSection('c7')">
+    <h1 style="border:none;margin:0;padding:0;">⚙️ 7. Scope Chain vs Closure — The Key Distinction</h1>
+    <span class="toggle-icon" id="icon-c7">▼</span>
+  </div>
+  <div class="section-content" id="c7">
+    <div class="danger-box"><strong>They're NOT two different mechanisms. Closure IS the scope chain... that survives death.</strong></div>
+
+    <h3>Example 1 — Scope Chain (parent ALIVE):</h3>
+    <pre>function outer() {
+  let a = 10;
+
+  function inner() {
+    console.log(a);    // a is not in inner's local memory
+  }
+
+  inner();   // called while outer is STILL RUNNING
+}
+outer();</pre>
+
+    <pre>Call Stack when inner() runs:
+┌──────────┐
+│  inner() │  ← currently running. Needs 'a'. Not in local memory.
+├──────────┤
+│  outer() │  ← STILL ALIVE on the stack! Has a = 10 in its memory.
+├──────────┤
+│   GEC    │
+└──────────┘
+
+→ Engine walks up scope chain → finds a = 10 in living parent → done.
+→ Nothing special. Just normal scope chain lookup. Parent is alive.</pre>
+
+    <h3>Example 2 — Closure (parent DEAD):</h3>
+    <pre>function outer() {
+  let a = 10;
+
+  function inner() {
+    console.log(a);
+  }
+
+  return inner;   // inner leaves, outer is about to die
+}
+
+const fn = outer();   // outer finishes → EC DESTROYED
+fn();                  // calling inner... but outer is DEAD!</pre>
+
+    <pre>Call Stack when fn() runs:
+┌──────────┐
+│   fn()   │  ← currently running. Needs 'a'. Not in local memory.
+├──────────┤
+│   GEC    │  ← outer() is NOT HERE. It's dead. Gone. Popped off.
+└──────────┘
+
+Where is outer()? NOWHERE. Its EC was destroyed.
+Its local memory (where a = 10 lived) should be GONE.
+
+But fn() still prints 10. HOW?!
+
+Because fn has a hidden [[Scope]] reference:
+fn.[[Scope]] → { a: 10 }   ← THIS is the CLOSURE
+                              outer's variables, preserved after death</pre>
+
+    <div class="blue-box">
+      <strong>🧠 The Summary:</strong><br><br>
+      <strong>Scope Chain</strong> = the <strong>mechanism</strong> — "if variable not here, look at parent, then grandparent, etc."<br><br>
+      <strong>Closure</strong> = the <strong>preservation</strong> — "even if the parent is dead, the inner function keeps its variables alive through a hidden <code>[[Scope]]</code> reference"<br><br>
+      Without closures, the scope chain only works while the parent is alive on the Call Stack. With closures, the scope chain works <strong>forever</strong> — even after the parent is dead and gone. <strong>They're the same mechanism. Closure just extends it beyond death.</strong>
+    </div>
+
+    <pre>Analogy:
+
+  Scope Chain = the ROAD between your house and the store.
+                You walk the road to get groceries.
+
+  Closure     = the store was supposed to be DEMOLISHED (parent EC destroyed),
+                but because you still need groceries (inner fn references variables),
+                the store was PRESERVED just for you.
+
+                The road (scope chain) still exists.
+                The store (parent's variables) was kept alive BY the closure.
+                Without the closure, the store would be gone and the road
+                would lead to nothing (ReferenceError).</pre>
+  </div>
+</div>
+
+<!-- ===== SEC 8 ===== -->
+<div id="sec8">
+  <div class="section-header" onclick="toggleSection('c8')">
+    <h1 style="border:none;margin:0;padding:0;">8. Independent Closures — Same Factory, Different Memory</h1>
+    <span class="toggle-icon" id="icon-c8">▼</span>
+  </div>
+  <div class="section-content" id="c8">
+    <pre>function counter() {
+  let count = 0;
+  return function() {
+    count++;
+    return count;
+  };
+}
+
+const counterA = counter();   // Fresh EC → fresh count = 0
+const counterB = counter();   // Another fresh EC → another fresh count = 0
+
+console.log(counterA());   // 1
+console.log(counterA());   // 2
+console.log(counterB());   // 1 (NOT 3! — counterB has its own count)
+console.log(counterA());   // 3</pre>
+
+    <div class="blue-box">
+      <strong>🔑 Rule:</strong> Each invocation of the factory function creates a <strong>completely new Execution Context</strong> with its own <strong>separate variables</strong>. The returned closures close over <strong>different</strong> memory locations. <code>counterA</code> and <code>counterB</code> do NOT share the same <code>count</code>.
+    </div>
+  </div>
+</div>
+
+<!-- ===== SEC 9 ===== -->
+<div id="sec9">
+  <div class="section-header" onclick="toggleSection('c9')">
+    <h1 style="border:none;margin:0;padding:0;">⭐ 9. The Classic Interview Question — setTimeout + Loop</h1>
+    <span class="toggle-icon" id="icon-c9">▼</span>
+  </div>
+  <div class="section-content" id="c9">
+    <div class="purple-box"><strong>⭐ THE most famous closure interview question in JavaScript. Master this.</strong></div>
+
+    <h3>The Bug:</h3>
+    <pre>for (var i = 1; i &lt;= 3; i++) {
+  setTimeout(function() {
+    console.log(i);
+  }, i * 1000);
+}
+
+// Output (after 1s, 2s, 3s):
+// 4
+// 4
+// 4</pre>
+
+    <h3>Why 4, 4, 4?</h3>
+    <ol>
+      <li><code>var i</code> is <strong>function/global scoped</strong> — there is only ONE <code>i</code> in memory for all 3 iterations.</li>
+      <li>The <code>setTimeout</code> callbacks are registered but don't execute immediately — they wait in the callback queue.</li>
+      <li>By the time the loop finishes, <code>i</code> has been incremented to <strong>4</strong> (the value that fails the <code>i &lt;= 3</code> check).</li>
+      <li>When the callbacks finally execute, they all look up the <strong>same reference</strong> to <code>i</code> → all see 4.</li>
+      <li>Three <code>setTimeout</code> calls were made (i=1, 2, 3), so <strong>three outputs</strong> of 4.</li>
+    </ol>
+
+    <h3>Fix 1 — IIFE (Immediately Invoked Function Expression):</h3>
+    <pre>for (var i = 1; i &lt;= 3; i++) {
+  (function(j) {                    // IIFE creates a NEW scope each iteration
+    setTimeout(function() {
+      console.log(j);               // j is a SEPARATE variable per iteration
+    }, j * 1000);
+  })(i);                            // Pass current i as argument → becomes j
+}
+
+// Output: 1, 2, 3 ✅</pre>
+    <p><strong>Why it works:</strong> Each IIFE invocation creates a <strong>new Execution Context</strong> with its own parameter <code>j</code>. The setTimeout callback closes over <code>j</code> (not <code>i</code>). Each <code>j</code> is a different variable holding a different value (1, 2, 3).</p>
+
+    <h3>Fix 2 — Just use <code>let</code> (The Modern Way):</h3>
+    <pre>for (let i = 1; i &lt;= 3; i++) {
+  setTimeout(function() {
+    console.log(i);
+  }, i * 1000);
+}
+
+// Output: 1, 2, 3 ✅</pre>
+    <p><strong>Why it works:</strong> <code>let</code> is <strong>block-scoped</strong>. The JS spec has special behavior for <code>let</code> in <code>for</code> loops: each iteration creates a <strong>completely new variable</strong> (new block scope, new binding). Each callback closes over its iteration's own <code>i</code>.</p>
+
+    <div class="note-box">
+      <strong>🎯 Interview Tip:</strong> Explain the bug first, then offer BOTH fixes. Show the IIFE to demonstrate closure understanding, then mention <code>let</code> as the modern solution. This shows depth AND practical knowledge.
+    </div>
+
+    <!-- EMBEDDED INTERACTIVE: LOOP DEMO -->
+    <button class="demo-toggle" onclick="toggleDemo('loop-demo')">
+      🎮 Interactive: Run var / let / IIFE — See Real Output
+      <span id="loop-demo-icon">▶</span>
+    </button>
+    <div class="demo-panel" id="loop-demo">
+      <div style="text-align:center;margin:8px 0;">
+        <button class="btn red" onclick="runVarLoop()">Run var loop (Bug)</button>
+        <button class="btn" onclick="runLetLoop()">Run let loop (Fix)</button>
+        <button class="btn purple" onclick="runIIFELoop()">Run IIFE fix</button>
+        <button class="btn" onclick="clearLC()" style="background:#21262d;border:1px solid #30363d;">Clear</button>
+      </div>
+      <div class="console-output" id="loop-console"><div class="console-line info">// Click a button to run real code in your browser...</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SEC 10 ===== -->
+<div id="sec10">
+  <div class="section-header" onclick="toggleSection('c10')">
+    <h1 style="border:none;margin:0;padding:0;">10. Closures vs <code>this</code> — The Collision</h1>
+    <span class="toggle-icon" id="icon-c10">▼</span>
+  </div>
+  <div class="section-content" id="c10">
+    <div class="danger-box"><strong>🧠 This is an advanced concept most developers get wrong.</strong></div>
+
+    <h3>The Rule:</h3>
+    <ul>
+      <li><strong>Closures capture VARIABLES</strong> (like <code>let count</code>, <code>const name</code>) from the lexical environment.</li>
+      <li><strong>Closures DO NOT capture the <code>this</code> keyword.</strong> Every regular function call generates a brand new <code>this</code>.</li>
+    </ul>
+
+    <pre>const user = {
+  name: "Parth",
+  greet: function() {
+    const name = "Inner";     // a regular variable
+
+    return function() {
+      console.log(this.name); // this → determined by HOW this fn is called
+      console.log(name);      // name → captured by closure from greet's scope
+    };
+  }
+};
+
+const fn = user.greet();
+fn();   // Non-strict mode
+
+// Output 1: ""        ← this = window, window.name = "" (browser quirk)
+// Output 2: "Inner"   ← closure captured the variable 'name' from greet()</pre>
+
+    <h3>The Three Fixes for the "Lost <code>this</code>" Problem:</h3>
+    <pre>// Fix 1: The self trick (Pre-2015)
+greet: function() {
+  const self = this;           // Save this into a VARIABLE
+  return function() {
+    console.log(self.name);    // Closure captures 'self' ✅
+  };
+}
+
+// Fix 2: Arrow function (Post-2015)
+greet: function() {
+  return () =&gt; {
+    console.log(this.name);    // Arrow fn has no this → uses greet's this ✅
+  };
+}
+
+// Fix 3: bind()
+greet: function() {
+  return function() {
+    console.log(this.name);
+  }.bind(this);                // Permanently bind this ✅
+}</pre>
+
+    <table>
+      <tr><th>Mechanism</th><th>Captured by Closure?</th><th>How It's Resolved</th></tr>
+      <tr><td>Regular variables (<code>let</code>, <code>const</code>, <code>var</code>)</td><td>✅ YES</td><td>Scope chain lookup (lexical)</td></tr>
+      <tr><td><code>this</code> keyword</td><td>❌ NO</td><td>Determined at call-time (runtime binding)</td></tr>
+      <tr><td><code>arguments</code> object</td><td>❌ NO (in regular fn)</td><td>Fresh one created per function call</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ===== SEC 11 ===== -->
+<div id="sec11">
+  <div class="section-header" onclick="toggleSection('c11')">
+    <h1 style="border:none;margin:0;padding:0;">11. Real-World Use Cases of Closures</h1>
+    <span class="toggle-icon" id="icon-c11">▼</span>
+  </div>
+  <div class="section-content" id="c11">
+    <h2>Use Case 1: Data Encapsulation / Privacy (Module Pattern)</h2>
+    <pre>function createBank() {
+  let balance = 1000;    // Private! Cannot be accessed directly.
+
+  return {
+    deposit(amount)   { balance += amount; },
+    withdraw(amount)  { balance -= amount; },
+    getBalance()      { return balance; }
+  };
+}
+
+const account = createBank();
+account.deposit(500);
+account.withdraw(200);
+console.log(account.getBalance());   // 1300
+console.log(account.balance);        // undefined — balance is PRIVATE!</pre>
+    <p>The <code>balance</code> variable is completely inaccessible from outside. Only the returned methods (which form closures over <code>balance</code>) can read or modify it.</p>
+
+    <h2>Use Case 2: Function Currying</h2>
+    <pre>function multiply(x) {
+  return function(y) {
+    return x * y;
+  };
+}
+
+const double = multiply(2);    // x = 2 is "remembered"
+const triple = multiply(3);    // x = 3 is "remembered"
+
+console.log(double(5));   // 10
+console.log(triple(5));   // 15</pre>
+
+    <h2>Use Case 3: Memoization (Caching)</h2>
+    <pre>function memoize(fn) {
+  const cache = {};                    // Persists via closure
+
+  return function(n) {
+    if (cache[n] !== undefined) {
+      console.log("From cache");
+      return cache[n];
+    }
+    const result = fn(n);
+    cache[n] = result;                 // Store in cache
+    return result;
+  };
+}
+
+const factorial = memoize(function(n) {
+  return n &lt;= 1 ? 1 : n * factorial(n - 1);
+});
+
+console.log(factorial(5));   // Computes: 120
+console.log(factorial(5));   // From cache: 120</pre>
+
+    <h2>Use Case 4: <code>once()</code> — Run Only Once</h2>
+    <pre>function once(fn) {
+  let called = false;
+  let result;
+
+  return function(...args) {
+    if (!called) {
+      called = true;
+      result = fn(...args);
+    }
+    return result;
+  };
+}
+
+const initialize = once(() =&gt; {
+  console.log("Initialized!");
+  return 42;
+});
+
+initialize();   // "Initialized!" → 42
+initialize();   // (nothing logged) → 42 (cached result)
+initialize();   // (nothing logged) → 42</pre>
+  </div>
+</div>
+
+<!-- ===== SEC 12 ===== -->
+<div id="sec12">
+  <div class="section-header" onclick="toggleSection('c12')">
+    <h1 style="border:none;margin:0;padding:0;">12. Closures &amp; Garbage Collection</h1>
+    <span class="toggle-icon" id="icon-c12">▼</span>
+  </div>
+  <div class="section-content" id="c12">
+    <p>Normally, when a function finishes executing, its EC is deleted and variables are garbage collected. But <strong>closures prevent this</strong> for variables that are still referenced.</p>
+
+    <h3>When IS the closed-over variable garbage collected?</h3>
+    <pre>function outer() {
+  let secret = "hidden";
+  return function() { console.log(secret); };
+}
+
+let fn = outer();    // secret persists — closure holds a reference
+fn();                // "hidden"
+fn = null;           // NOW secret can be garbage collected
+                     // Because no closure references it anymore</pre>
+
+    <h3>Smart Engines Optimize — V8's Closure Pruning:</h3>
+    <pre>function heavy() {
+  let bigArray = new Array(1000000).fill("data");   // 1 million items
+  let smallVar = "hello";
+
+  return function() {
+    console.log(smallVar);    // Only references smallVar, NOT bigArray
+  };
+}
+
+const fn = heavy();</pre>
+
+    <table>
+      <tr><th>Engine</th><th><code>bigArray</code> Garbage Collected?</th><th>Why</th></tr>
+      <tr><td><strong>V8 (Chrome/Node)</strong></td><td>✅ YES</td><td>V8 analyzes the closure and prunes unreferenced variables</td></tr>
+      <tr><td><strong>Older engines</strong></td><td>❌ Might persist</td><td>Some engines keep the entire lexical environment</td></tr>
+    </table>
+
+    <h3>⚠️ setInterval Does NOT Overflow the Call Stack:</h3>
+    <pre>function setup() {
+  let count = 0;
+
+  setInterval(function() {
+    count++;
+    console.log(count);   // 1, 2, 3, 4... forever
+  }, 1000);
+}
+
+setup();</pre>
+
+    <div class="warn-box">
+      <strong>Common misconception:</strong> "setInterval will overflow the call stack." <strong>WRONG.</strong><br><br>
+      Each callback <strong>runs, completes, and is popped off</strong> the stack before the next one arrives. They don't pile up. The stack never overflows.<br><br>
+      <strong>But</strong> <code>count</code> is never garbage collected because the setInterval callback holds a closure over it forever. To release it, call <code>clearInterval(intervalId)</code>.
+    </div>
+  </div>
+</div>
+
+<!-- ===== SEC 13 ===== -->
+<div id="sec13">
+  <div class="section-header" onclick="toggleSection('c13')">
+    <h1 style="border:none;margin:0;padding:0;">13. Common Gotchas &amp; Pitfalls</h1>
+    <span class="toggle-icon" id="icon-c13">▼</span>
+  </div>
+  <div class="section-content" id="c13">
+    <h2>Gotcha A: The <code>setTimeout</code> + <code>var</code> Loop (Most Famous Bug)</h2>
+    <p>Covered in detail in <a href="#sec9">Section 9</a>. Remember: <code>var</code> creates ONE shared variable → all callbacks see the final value. Fix with IIFE or <code>let</code>.</p>
+
+    <h2>Gotcha B: Closures Don't Capture <code>this</code></h2>
+    <p>Covered in <a href="#sec10">Section 10</a>. Regular functions get a fresh <code>this</code> every call. Use <code>self</code> trick, arrow functions, or <code>.bind()</code>.</p>
+
+    <h2>Gotcha C: Stale Closures in React (Preview)</h2>
+    <pre>// This is a common React bug — you'll encounter it in your React journey:
+function Counter() {
+  const [count, setCount] = useState(0);
+
+  useEffect(() =&gt; {
+    const id = setInterval(() =&gt; {
+      console.log(count);     // Always logs 0! Stale closure.
+    }, 1000);
+    return () =&gt; clearInterval(id);
+  }, []);   // Empty dependency array = closure captures count = 0 forever
+}</pre>
+    <p>The <code>setInterval</code> callback closes over the <strong>initial</strong> <code>count</code> (0). Even as <code>count</code> changes via state updates, the closure still references the old value. This is called a <strong>"stale closure"</strong>.</p>
+
+    <h2>Gotcha D: Closures in a Loop Without Proper Scoping</h2>
+    <pre>var funcs = [];
+for (var i = 0; i &lt; 3; i++) {
+  funcs.push(function() { console.log(i); });
+}
+
+funcs[0]();   // 3 (not 0!)
+funcs[1]();   // 3 (not 1!)
+funcs[2]();   // 3 (not 2!)</pre>
+    <p>Same bug as setTimeout — all three functions close over the SAME <code>var i</code>, which is 3 when the loop ends.</p>
+  </div>
+</div>
+
+<!-- ===== SEC 14 ===== -->
+<div id="sec14">
+  <div class="section-header" onclick="toggleSection('c14')">
+    <h1 style="border:none;margin:0;padding:0;">14. Master Cheat Sheet</h1>
+    <span class="toggle-icon" id="icon-c14">▼</span>
+  </div>
+  <div class="section-content" id="c14">
+    <table>
+      <tr><th>Concept</th><th>Key Point</th></tr>
+      <tr><td>Definition</td><td>A function bundled together with its lexical environment</td></tr>
+      <tr><td>Two conditions</td><td>1) Function defined inside another scope, 2) References that scope's variables</td></tr>
+      <tr><td>When formed?</td><td>At function <strong>creation</strong> (definition) time — NOT at return/call time</td></tr>
+      <tr><td>Needs <code>return</code>?</td><td>NO. Works with return, callbacks, event handlers, setTimeout, direct calls</td></tr>
+      <tr><td>What it captures</td><td><strong>References</strong> to variables (not snapshots of values)</td></tr>
+      <tr><td>What it doesn't capture</td><td><code>this</code> keyword and <code>arguments</code> object</td></tr>
+      <tr><td>Scope Chain vs Closure</td><td>Same mechanism. Closure = scope chain that <strong>survives parent's death</strong></td></tr>
+      <tr><td>Independent closures</td><td>Each factory call = new EC = separate variables</td></tr>
+      <tr><td>setTimeout + var loop</td><td>All callbacks share ONE var i → fix with IIFE or <code>let</code></td></tr>
+      <tr><td>GC</td><td>Closed-over vars persist until closure is released. V8 prunes unreferenced vars.</td></tr>
+      <tr><td>setInterval</td><td>Does NOT overflow stack. Each callback completes before next fires.</td></tr>
+      <tr><td>Use Cases</td><td>Data encapsulation, currying, memoization, once(), event handlers, callbacks</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ===== SEC 15 ===== -->
+<div id="sec15">
+  <div class="section-header" onclick="toggleSection('c15')">
+    <h1 style="border:none;margin:0;padding:0;">15. Interview Answer Templates</h1>
+    <span class="toggle-icon" id="icon-c15">▼</span>
+  </div>
+  <div class="section-content" id="c15">
+    <h3>Q: "What is a Closure in JavaScript?"</h3>
+    <div class="note-box" style="line-height:1.8;">
+      <em>"A closure is a function bundled together with its lexical scope. It allows an inner function to remember and access the variables of its outer function, even after the outer function has finished executing. Closures capture <strong>references</strong> to variables, not snapshots, meaning the inner function will see the updated value. They are formed at function definition time — not when the function is returned or called."</em>
+    </div>
+
+    <h3>Q: "Do closures only work with <code>return</code>?"</h3>
+    <div class="note-box" style="line-height:1.8;">
+      <em>"No. A closure is formed whenever a function is defined inside another scope and references that scope's variables. The function can be returned, passed as a callback to setTimeout, used as an event handler, or called directly. The <code>return</code> keyword doesn't create the closure — it just makes it visible to the outside world. The closure exists from the moment the function is born."</em>
+    </div>
+
+    <h3>Q: "How is the scope chain different from a closure?"</h3>
+    <div class="note-box" style="line-height:1.8;">
+      <em>"The scope chain is the mechanism — when a variable isn't found in the current scope, the engine walks up to the parent scope. A closure is what makes this mechanism work even after the parent function has finished executing. Normally, when a function's EC is destroyed, its variables are garbage collected. But if an inner function still references them, the closure preserves those variables so the scope chain still has something to walk up to. They're the same mechanism — closure just extends it beyond the parent's death."</em>
+    </div>
+
+    <h3>Q: "Explain the setTimeout + loop problem and how to fix it."</h3>
+    <div class="note-box" style="line-height:1.8;">
+      <em>"When you use <code>var</code> in a for loop with setTimeout, all callbacks share the same variable reference. By the time the callbacks fire, the loop has finished and the variable holds the final value. You can fix it two ways: using an IIFE to create a new scope per iteration, capturing the current value as a parameter, or simply using <code>let</code> which creates a new block-scoped binding per iteration."</em>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SEC 16: PRACTICE ===== -->
+<div class="page-break" id="sec16">
+  <div class="section-header" onclick="toggleSection('c16')">
+    <h1 style="border:none;margin:0;padding:0;">16. Practice Sheet — 10 Questions</h1>
+    <span class="toggle-icon" id="icon-c16">▼</span>
+  </div>
+  <div class="section-content" id="c16">
+    <p><strong>📝 Instructions:</strong> Predict exact output. State whether it's scope chain (parent alive) or closure (parent dead). Each question links to its answer.</p>
+
+<div class="question-block" id="q1"><h2>Q1 — Is This a Closure? <span class="tag tag-easy">Easy</span></h2>
+<pre>function greet() {
+  let name = "Parth";
+  function sayHi() {
+    let greeting = "Hello";
+    console.log(greeting);
+  }
+  sayHi();
+}
+greet();</pre>
+<p><strong>1)</strong> Output? <strong>2)</strong> Is sayHi forming a closure? Why or why not?</p>
+<a class="nav-link" href="#ans1">→ See Answer</a></div>
+
+<div class="question-block" id="q2"><h2>Q2 — Scope Chain or Closure? <span class="tag tag-easy">Easy</span></h2>
+<pre>function outer() {
+  let x = 10;
+  function inner() { console.log(x); }
+  inner();
+}
+outer();</pre>
+<p><strong>1)</strong> Output? <strong>2)</strong> Is outer() alive or dead when inner() accesses x?</p>
+<a class="nav-link" href="#ans2">→ See Answer</a></div>
+
+<div class="question-block" id="q3"><h2>Q3 — Now Make It a Real Closure <span class="tag tag-easy">Easy</span></h2>
+<pre>function outer() {
+  let x = 10;
+  function inner() { console.log(x); }
+  return inner;
+}
+const fn = outer();
+fn();</pre>
+<p><strong>1)</strong> Output? <strong>2)</strong> Is outer() alive when fn() runs? Where does x come from?</p>
+<a class="nav-link" href="#ans3">→ See Answer</a></div>
+
+<div class="question-block" id="q4"><h2>Q4 — Passed, Not Returned <span class="tag tag-medium">Medium</span></h2>
+<pre>function setup() {
+  let count = 0;
+  setInterval(function() {
+    count++;
+    console.log(count);
+  }, 1000);
+}
+setup();</pre>
+<p><strong>1)</strong> Output at 1s, 2s, 3s? <strong>2)</strong> How is count accessible? <strong>3)</strong> Will the stack overflow?</p>
+<a class="nav-link" href="#ans4">→ See Answer</a></div>
+
+<div class="question-block" id="q5"><h2>Q5 — Two Functions, One Variable <span class="tag tag-medium">Medium</span></h2>
+<pre>function createPair() {
+  let secret = "initial";
+  function writer(val) { secret = val; }
+  function reader() { console.log(secret); }
+  return { writer, reader };
+}
+const pair = createPair();
+pair.reader();
+pair.writer("updated");
+pair.reader();
+pair.writer("final");
+pair.reader();</pre>
+<a class="nav-link" href="#ans5">→ See Answer</a></div>
+
+<div class="question-block" id="q6"><h2>Q6 — Reference, Not Snapshot <span class="tag tag-medium">Medium</span></h2>
+<pre>function test() {
+  let a = 1;
+  setTimeout(function() { console.log(a); }, 2000);
+  a = 100;
+}
+test();</pre>
+<p><strong>1)</strong> Output after 2s? <strong>2)</strong> Is test() alive? <strong>3)</strong> Reference or snapshot?</p>
+<a class="nav-link" href="#ans6">→ See Answer</a></div>
+
+<div class="question-block" id="q7"><h2>Q7 — Closure + this Collision <span class="tag tag-hard">Hard</span></h2>
+<pre>const obj = {
+  value: 42,
+  createFn: function() {
+    const value = 99;
+    return function() {
+      console.log("A:", this.value);
+      console.log("B:", value);
+    };
+  }
+};
+const fn = obj.createFn();
+fn();   // non-strict mode</pre>
+<a class="nav-link" href="#ans7">→ See Answer</a></div>
+
+<div class="question-block" id="q8"><h2>Q8 — Event Handler Closure <span class="tag tag-hard">Hard</span></h2>
+<pre>function attachHandler() {
+  let clickCount = 0;
+  document.getElementById("btn").addEventListener("click", function() {
+    clickCount++;
+    console.log("Clicked " + clickCount + " times");
+  });
+}
+attachHandler();</pre>
+<p><strong>1)</strong> Is clickCount dead? <strong>2)</strong> Output after 3 clicks? <strong>3)</strong> Map the closure: outer, inner, variable.</p>
+<a class="nav-link" href="#ans8">→ See Answer</a></div>
+
+<div class="question-block" id="q9"><h2>Q9 — Everything Combined <span class="tag tag-expert">Expert</span></h2>
+<pre>function buildCounter(name) {
+  let count = 0;
+  setTimeout(function() { count++; console.log(name+": "+count); }, 1000);
+  setTimeout(function() { count++; console.log(name+": "+count); }, 2000);
+  return function() { count++; console.log(name+": "+count); };
+}
+const fn = buildCounter("Timer");
+fn();
+fn();</pre>
+<p><strong>1)</strong> All 4 outputs chronologically? <strong>2)</strong> Same count for all 3 functions?</p>
+<a class="nav-link" href="#ans9">→ See Answer</a></div>
+
+<div class="question-block" id="q10"><h2>Q10 — Nested Closure Chain <span class="tag tag-expert">Expert</span></h2>
+<pre>function createMultiplier(x) {
+  return function(y) {
+    return function(z) {
+      console.log(x * y * z);
+    };
+  };
+}
+const step1 = createMultiplier(2);
+const step2 = step1(3);
+step2(4);
+createMultiplier(5)(10)(2);</pre>
+<p><strong>1)</strong> Two outputs? <strong>2)</strong> Trace the closure chain.</p>
+<a class="nav-link" href="#ans10">→ See Answer</a></div>
+
+  </div>
+</div>
+
+<!-- ===== SEC 17: ANSWERS ===== -->
+<div class="page-break" id="sec17">
+  <div class="section-header" onclick="toggleSection('c17')">
+    <h1 style="border:none;margin:0;padding:0;">17. Answer Key</h1>
+    <span class="toggle-icon" id="icon-c17">▼</span>
+  </div>
+  <div class="section-content" id="c17">
+
+<h2 id="ans1">Q1</h2>
+<pre>"Hello"</pre>
+<p><strong>NOT a closure.</strong> <code>sayHi</code> is defined inside <code>greet</code> (condition 1 ✅), but it only uses its OWN variable <code>greeting</code> — it never references <code>name</code> from <code>greet</code> (condition 2 ❌). No closure formed.</p>
+<a class="nav-link back" href="#q1">← Back to Question 1</a><hr>
+
+<h2 id="ans2">Q2</h2>
+<pre>10</pre>
+<p><code>outer()</code> is <strong>still alive</strong> on the Call Stack when <code>inner()</code> runs. This is just <strong>normal scope chain lookup</strong> — the engine walks up and finds <code>x = 10</code> in the living parent. The closure reference exists but the parent is alive — nothing special needed.</p>
+<a class="nav-link back" href="#q2">← Back to Question 2</a><hr>
+
+<h2 id="ans3">Q3</h2>
+<pre>10</pre>
+<p><code>outer()</code> is <strong>dead</strong> when <code>fn()</code> runs — its EC was destroyed after returning. <code>x</code> comes from the <strong>closure</strong> — the preserved <code>[[Scope]]</code> reference that <code>inner</code> carries. This is the "scope chain surviving death" in action.</p>
+<a class="nav-link back" href="#q3">← Back to Question 3</a><hr>
+
+<h2 id="ans4">Q4</h2>
+<pre>1 (at 1s), 2 (at 2s), 3 (at 3s)... forever</pre>
+<p><code>setup()</code> finishes instantly. <code>count</code> survives via closure. Each callback runs, increments, logs, and <strong>completes</strong> before the next one fires. <strong>No stack overflow.</strong> To stop and allow GC: <code>clearInterval()</code>.</p>
+<a class="nav-link back" href="#q4">← Back to Question 4</a><hr>
+
+<h2 id="ans5">Q5</h2>
+<pre>"initial"
+"updated"
+"final"</pre>
+<p>Both <code>writer</code> and <code>reader</code> close over the <strong>same</strong> <code>secret</code> variable (same closure, same reference). <code>writer</code> modifies it, <code>reader</code> reads the updated value.</p>
+<a class="nav-link back" href="#q5">← Back to Question 5</a><hr>
+
+<h2 id="ans6">Q6</h2>
+<pre>100</pre>
+<p><code>test()</code> is <strong>dead</strong> when the callback fires after 2 seconds. The callback accesses <code>a</code> through its closure. Closures capture <strong>references</strong>, not snapshots. <code>a</code> was updated to 100 synchronously before <code>test()</code> even finished. The callback sees 100.</p>
+<a class="nav-link back" href="#q6">← Back to Question 6</a><hr>
+
+<h2 id="ans7">Q7</h2>
+<pre>A: undefined
+B: 99</pre>
+<p><code>this.value</code>: naked call → <code>this</code> = <code>window</code> → <code>window.value</code> doesn't exist → <code>undefined</code>. <code>value</code> (without <code>this</code>): closure captures the local variable <code>value = 99</code> from <code>createFn</code>'s scope. Closures capture variables, NOT <code>this</code>.</p>
+<a class="nav-link back" href="#q7">← Back to Question 7</a><hr>
+
+<h2 id="ans8">Q8</h2>
+<pre>"Clicked 1 times"
+"Clicked 2 times"
+"Clicked 3 times"</pre>
+<p><code>clickCount</code> is NOT dead — the event handler callback holds a closure over it. <strong>Outer scope:</strong> <code>attachHandler</code>. <strong>Inner fn:</strong> anonymous click handler. <strong>Variable closed over:</strong> <code>clickCount</code>.</p>
+<a class="nav-link back" href="#q8">← Back to Question 8</a><hr>
+
+<h2 id="ans9">Q9</h2>
+<pre>Timer: 1     ← fn() call 1 (immediate)
+Timer: 2     ← fn() call 2 (immediate)
+Timer: 3     ← setTimeout #1 (after 1s)
+Timer: 4     ← setTimeout #2 (after 2s)</pre>
+<p>All 3 functions (returned fn + 2 setTimeout callbacks) close over the <strong>same</strong> <code>count</code> and <code>name</code>. They share one variable and increment it sequentially.</p>
+<a class="nav-link back" href="#q9">← Back to Question 9</a><hr>
+
+<h2 id="ans10">Q10</h2>
+<pre>24
+100</pre>
+<p><code>createMultiplier(2)</code> → remembers <code>x = 2</code>. <code>step1(3)</code> → remembers <code>x = 2</code> AND <code>y = 3</code>. <code>step2(4)</code> → <code>2 × 3 × 4 = 24</code>. <code>createMultiplier(5)(10)(2)</code> → <code>5 × 10 × 2 = 100</code>. Each nested function forms a closure over all parent variables in its chain.</p>
+<a class="nav-link back" href="#q10">← Back to Question 10</a>
+
+<hr>
+<div style="text-align:center;margin-top:25px;padding:18px;background:#e3f2fd;border-radius:8px;">
+  <p style="font-size:1.15em;font-weight:bold;color:#0078D4;">Key Mental Models:</p>
+  <p style="font-weight:bold;">🔹 Two conditions: defined inside + references outer variable</p>
+  <p style="font-weight:bold;">🔹 Formed at birth. Delivery method (return/callback/setTimeout) is irrelevant.</p>
+  <p style="font-weight:bold;">🔹 Closure = Scope Chain that survives parent's death</p>
+  <p style="font-weight:bold;">🔹 Captures REFERENCES, not snapshots. Captures variables, NOT <code>this</code>.</p>
+</div>
+
+  </div>
+</div>
+
+</div><!-- end main -->
+
+<script>
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('collapsed');
+  document.getElementById('mainContent').classList.toggle('full');
+}
+function scrollTo(e, id) {
+  e.preventDefault();
+  const el = document.getElementById(id);
+  if (el) {
+    const cId = 'c' + id.replace('sec','');
+    const c = document.getElementById(cId);
+    if (c && c.classList.contains('collapsed')) toggleSection(cId);
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  if (window.innerWidth <= 768) {
+    document.getElementById('sidebar').classList.add('collapsed');
+    document.getElementById('mainContent').classList.add('full');
+  }
+}
+function toggleSection(id) {
+  const el = document.getElementById(id);
+  const icon = document.getElementById('icon-' + id);
+  if (el.classList.contains('collapsed')) {
+    el.classList.remove('collapsed');
+    el.style.maxHeight = el.scrollHeight + 10000 + 'px';
+    if (icon) icon.classList.remove('collapsed');
+  } else {
+    el.classList.add('collapsed');
+    el.style.maxHeight = '0px';
+    if (icon) icon.classList.add('collapsed');
+  }
+}
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.section-content').forEach(el => {
+    el.style.maxHeight = el.scrollHeight + 10000 + 'px';
+  });
+});
+function toggleDemo(id) {
+  const p = document.getElementById(id);
+  const icon = document.getElementById(id + '-icon');
+  p.classList.toggle('open');
+  if (icon) icon.textContent = p.classList.contains('open') ? '▼' : '▶';
+  const parent = p.closest('.section-content');
+  if (parent) parent.style.maxHeight = parent.scrollHeight + 10000 + 'px';
+}
+let morphStep = 1;
+function updateMorph() {
+  for (let i = 1; i <= 5; i++) document.getElementById('morph-'+i).classList.toggle('active', i === morphStep);
+  document.getElementById('morph-counter').textContent = 'Stage ' + morphStep + ' of 5';
+}
+function morphNext() { if (morphStep < 5) { morphStep++; updateMorph(); } }
+function morphPrev() { if (morphStep > 1) { morphStep--; updateMorph(); } }
+function morphReset() { morphStep = 1; updateMorph(); }
+function addLine(c, t, type) {
+  const con = document.getElementById(c);
+  const d = document.createElement('div');
+  d.className = 'console-line ' + (type||'');
+  d.textContent = '> ' + t;
+  con.appendChild(d);
+}
+function clearMC() { document.getElementById('morph-console').innerHTML = '<div class="console-line info">// Cleared</div>'; }
+function clearLC() { document.getElementById('loop-console').innerHTML = '<div class="console-line info">// Cleared</div>'; }
+function runP1() { addLine('morph-console','--- return pattern ---','info'); function o(){let s="Parth";return function(){addLine('morph-console','Closure: '+s);};} o()(); }
+function runP2() { addLine('morph-console','--- pass to fn ---','info'); function o(){let s="Parth";function x(cb){cb();}x(function(){addLine('morph-console','Closure: '+s);});} o(); }
+function runP3() { addLine('morph-console','--- setTimeout ---','info'); addLine('morph-console','Waiting 1s...','warn'); function o(){let s="Parth";setTimeout(function(){addLine('morph-console','Closure: '+s+' (after 1s!)');},1000);} o(); }
+function runVarLoop() { addLine('loop-console','--- var (BUG) ---','info'); for(var i=1;i<=3;i++){setTimeout(function(){addLine('loop-console','var: i='+i,'err');},i*500);} }
+function runLetLoop() { addLine('loop-console','--- let (FIX) ---','info'); for(let i=1;i<=3;i++){setTimeout(function(){addLine('loop-console','let: i='+i);},i*500);} }
+function runIIFELoop() { addLine('loop-console','--- IIFE (FIX) ---','info'); for(var i=1;i<=3;i++){(function(j){setTimeout(function(){addLine('loop-console','IIFE: j='+j);},j*500);})(i);} }
+</script>
+</body>
+</html>

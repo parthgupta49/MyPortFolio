@@ -1,0 +1,17 @@
+{
+  "subjects": [
+    {
+      "subject": "javascript",
+      "series": "The JavaScript Codex",
+      "short": "JavaScript",
+      "blurb": "Execution contexts, closures, prototypes, the event loop, and what V8 is doing while your code runs.",
+      "accent": "#e3b341",
+      "order": 1,
+      "chapters": 11,
+      "sections": 184,
+      "questions": 92,
+      "minutes": 228,
+      "tagsInferred": false
+    }
+  ]
+}

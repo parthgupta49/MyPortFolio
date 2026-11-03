@@ -1,0 +1,1367 @@
+{
+  "subject": "javascript",
+  "slug": "value-vs-reference-and-deep-immutability",
+  "title": "Value vs Reference & Deep Immutability",
+  "chapterLabel": "Chapter 5",
+  "summary": "Stack vs Heap memory, all copying techniques, and why React state must be immutable",
+  "tags": [
+    "objects",
+    "memory",
+    "functional",
+    "arrays"
+  ],
+  "video": null,
+  "groups": [
+    {
+      "label": "Core Concepts",
+      "sectionIds": [
+        "sec1",
+        "sec2",
+        "sec3",
+        "sec4"
+      ]
+    },
+    {
+      "label": "Copying Techniques",
+      "sectionIds": [
+        "sec5",
+        "sec6",
+        "sec7"
+      ]
+    },
+    {
+      "label": "Practical",
+      "sectionIds": [
+        "sec8",
+        "sec9",
+        "sec10"
+      ]
+    },
+    {
+      "label": "Revision",
+      "sectionIds": [
+        "sec11",
+        "sec12"
+      ]
+    },
+    {
+      "label": "Practice",
+      "sectionIds": [
+        "sec13",
+        "sec14"
+      ]
+    }
+  ],
+  "sections": [
+    {
+      "id": "sec1",
+      "n": "1",
+      "title": "Primitive vs Reference Types",
+      "badge": null,
+      "group": "Core Concepts",
+      "blocks": [
+        {
+          "t": "callout",
+          "kind": "danger",
+          "html": "<strong>The single most important distinction in JavaScript:</strong><br><br>Every value in JavaScript is either a <strong>Primitive</strong> (immutable, copied by value) or a <strong>Reference/Object</strong> (mutable, copied by reference). This one distinction explains 90% of confusing JavaScript bugs."
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "The Two Categories:"
+        },
+        {
+          "t": "table",
+          "head": [
+            "Category",
+            "Types",
+            "Mutability",
+            "Copy Behavior"
+          ],
+          "rows": [
+            [
+              "<strong>Primitives</strong>",
+              "<code>string</code>, <code>number</code>, <code>boolean</code>, <code>null</code>, <code>undefined</code>, <code>symbol</code>, <code>bigint</code>",
+              "Immutable (read-only)",
+              "Copied by <strong>value</strong>"
+            ],
+            [
+              "<strong>Reference (Objects)</strong>",
+              "<code>Object</code>, <code>Array</code>, <code>Function</code>, <code>Date</code>, <code>Map</code>, <code>Set</code>",
+              "Mutable",
+              "Copied by <strong>reference</strong>"
+            ]
+          ]
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "What \"Immutable\" Really Means:"
+        },
+        {
+          "t": "code",
+          "code": "let name = \"Parth\";\nname = \"Gupta\";       // ← This does NOT modify the string \"Parth\".\n                      // It REPLACES the variable's pointer to a new string \"Gupta\".\n                      // The original \"Parth\" still exists somewhere (until GC'd).\n\n// You cannot do this:\nlet str = \"hello\";\nstr[0] = \"H\";         // ← Silently fails. str is still \"hello\".\nconsole.log(str);     // \"hello\" (NOT \"Hello\")",
+          "label": null
+        },
+        {
+          "t": "callout",
+          "kind": "info",
+          "html": "<strong>🔑 Key Point:</strong> Primitives can never be modified in place. When you \"change\" a primitive, you're actually assigning a brand new value to the variable. The old value remains untouched."
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "What \"Mutable\" Means for Objects:"
+        },
+        {
+          "t": "code",
+          "code": "const obj = { name: \"Parth\" };\nobj.name = \"Gupta\";   // ✅ This DOES modify the object in place.\n                      // The variable 'obj' still points to the same location in memory,\n                      // but the CONTENTS at that location have changed.\n\nconsole.log(obj);     // { name: \"Gupta\" }",
+          "label": null
+        },
+        {
+          "t": "callout",
+          "kind": "note",
+          "html": "<strong>💡 Analogy:</strong> A primitive is like a piece of paper with a number written on it — if you want a new number, you replace the whole paper. An object is like a whiteboard — you can erase and rewrite parts of it without replacing the board itself."
+        }
+      ]
+    },
+    {
+      "id": "sec2",
+      "n": "2",
+      "title": "Stack vs Heap Memory — The Engine-Level Deep Dive",
+      "badge": "gear",
+      "group": "Core Concepts",
+      "blocks": [
+        {
+          "t": "callout",
+          "kind": "danger",
+          "html": "<strong>🧠 The engine-level truth:</strong> Primitives and objects don't just behave differently — they are physically stored in different regions of memory. Once you see this, everything else clicks."
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Two Memory Regions:"
+        },
+        {
+          "t": "table",
+          "head": [
+            "Region",
+            "Stores",
+            "Characteristics"
+          ],
+          "rows": [
+            [
+              "<strong>Stack</strong>",
+              "Primitive values &amp; references (pointers) to objects",
+              "Fast, fixed size, LIFO order, small"
+            ],
+            [
+              "<strong>Heap</strong>",
+              "Objects, Arrays, Functions — anything of dynamic size",
+              "Slower, dynamic size, unordered, large"
+            ]
+          ]
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Visualization — Primitives in the Stack:"
+        },
+        {
+          "t": "code",
+          "code": "let a = 10;\nlet b = \"Parth\";\nlet c = true;\n\nSTACK (fast, fixed-size)\n┌────────────────────────┐\n│  a  │  10              │  ← the actual value lives here\n├────────────────────────┤\n│  b  │  \"Parth\"         │\n├────────────────────────┤\n│  c  │  true            │\n└────────────────────────┘\n\nHEAP: (empty for now)",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Visualization — Objects in the Heap:"
+        },
+        {
+          "t": "code",
+          "code": "let user = { name: \"Parth\", age: 25 };\n\nSTACK                        HEAP (unordered, dynamic)\n┌───────────────────┐        ┌────────────────────────────────┐\n│  user  │  ref#01  │────────→│  #01: { name: \"Parth\", age: 25 }│\n└───────────────────┘        └────────────────────────────────┘\n         ↑\n    Only the POINTER\n    lives in the stack.\n    The actual object\n    lives in the heap.",
+          "label": null
+        },
+        {
+          "t": "callout",
+          "kind": "info",
+          "html": "<strong>🔑 The Big Insight:</strong> When you write <code>let user = {... }</code>, TWO things happen:<br>1. The object <code>{ name: \"Parth\", age: 25 }</code> is allocated in the <strong>Heap</strong>.<br>2. The variable <code>user</code> in the <strong>Stack</strong> holds only the <strong>address</strong> (reference) to that heap location."
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Now — What Really Happens When You Do <code>obj2 = obj1</code>:"
+        },
+        {
+          "t": "code",
+          "code": "let obj1 = { name: \"Parth\" };\nlet obj2 = obj1;              // ← copies the REFERENCE, not the object\n\nSTACK                        HEAP\n┌───────────────────┐        ┌──────────────────────┐\n│  obj1  │  ref#01  │───┐  ┌→│  #01: { name: ... }  │\n├───────────────────┤   │  │ └──────────────────────┘\n│  obj2  │  ref#01  │───┴──┘\n└───────────────────┘\n\nBoth obj1 and obj2 point to the SAME location #01 in the heap.\nThey are \"aliases\" for the same object.\n\n// So this modifies the object at #01, which BOTH variables point to:\nobj2.name = \"Gupta\";\nconsole.log(obj1.name);   // \"Gupta\"  ← because they share the same heap object!",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Same for Primitives — Copy Creates Independent Data:"
+        },
+        {
+          "t": "code",
+          "code": "let a = 10;\nlet b = a;    // ← copies the VALUE 10 into a new stack slot\n\nSTACK\n┌────────────┐\n│  a  │  10  │  ← separate slot, separate value\n├────────────┤\n│  b  │  10  │  ← separate slot, separate value (copy of a's value)\n└────────────┘\n\nb = 20;   // ← modifies b's slot only. a is untouched.\nconsole.log(a);  // 10\nconsole.log(b);  // 20",
+          "label": null
+        },
+        {
+          "t": "callout",
+          "kind": "warn",
+          "html": "<strong>⚠️ Terminology Note:</strong> This is why JavaScript is sometimes called \"pass by value\" — because everything is technically a value being copied. But for objects, that \"value\" is a <strong>reference</strong> (pointer), not the object itself. Some call this \"pass by sharing\" or \"pass by reference of the value.\" Don't get hung up on the terminology; understand the mechanism."
+        }
+      ]
+    },
+    {
+      "id": "sec3",
+      "n": "3",
+      "title": "Why Assignment Isn't Copying (For Objects)",
+      "badge": null,
+      "group": "Core Concepts",
+      "blocks": [
+        {
+          "t": "p",
+          "html": "Beginners often assume <code>=</code> creates a copy. For primitives, it does. For objects, <strong>it never does</strong>."
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "The Trap:"
+        },
+        {
+          "t": "code",
+          "code": "const book = { title: \"Tiny Habits\", author: \"BJ Fogg\" };\nconst backup = book;      // ← This is NOT a copy! It's an alias.\n\nbackup.title = \"Modified\";\n\nconsole.log(book.title);    // \"Modified\"  ← both changed!\nconsole.log(book === backup); // true      ← same reference",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "How to Actually Check If Two Variables Point to the Same Object:"
+        },
+        {
+          "t": "code",
+          "code": "const a = { x: 1 };\nconst b = { x: 1 };\nconst c = a;\n\nconsole.log(a === b);   // false  ← different objects in heap, same contents\nconsole.log(a === c);   // true   ← same reference (same heap object)",
+          "label": null
+        },
+        {
+          "t": "callout",
+          "kind": "note",
+          "html": "<strong>💡 The <code>===</code> for objects checks reference equality, NOT content equality.</strong> Two objects with identical contents are still <code>!==</code> if they're in different heap locations. This is why comparing objects requires deep equality checks (or libraries like lodash's <code>isEqual</code>)."
+        }
+      ]
+    },
+    {
+      "id": "sec4",
+      "n": "4",
+      "title": "The const Mutation Paradox",
+      "badge": null,
+      "group": "Core Concepts",
+      "blocks": [
+        {
+          "t": "p",
+          "html": "The most confusing part of <code>const</code>: it doesn't do what most people think it does."
+        },
+        {
+          "t": "code",
+          "code": "const user = { name: \"Parth\", age: 25 };\n\nuser.name = \"Gupta\";    // ✅ WORKS! Mutation is allowed.\nuser.age = 26;          // ✅ WORKS!\nconsole.log(user);      // { name: \"Gupta\", age: 26 }\n\nuser = { name: \"New\" }; // 💥 TypeError: Assignment to constant variable!",
+          "label": null
+        },
+        {
+          "t": "callout",
+          "kind": "danger",
+          "html": "<strong>🔑 The Rule:</strong> <code>const</code> prevents <strong>reassignment</strong> of the variable itself. It does NOT prevent <strong>mutation</strong> of the object the variable points to."
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Why? Look at the Memory:"
+        },
+        {
+          "t": "code",
+          "code": "const user = { name: \"Parth\", age: 25 };\n\nSTACK                        HEAP\n┌────────────────────┐        ┌──────────────────────────┐\n│  user  │  ref#01   │──────→│  #01: { name, age }      │\n│  (LOCKED — const)  │        │  (contents freely mutable)│\n└────────────────────┘        └──────────────────────────┘\n\n// This is BLOCKED:\nuser = { newObj };          // ← would change the pointer in the STACK — const blocks this\n\n// This is ALLOWED:\nuser.name = \"Gupta\";        // ← modifies contents in the HEAP — const doesn't care",
+          "label": null
+        },
+        {
+          "t": "callout",
+          "kind": "warn",
+          "html": "<strong>⚠️ Common Misconception:</strong> \"<code>const</code> makes it immutable.\" <strong>WRONG.</strong> <code>const</code> only locks the variable's <strong>binding</strong> (the pointer in the stack), not the object it points to. If you want true immutability, use <code>Object.freeze()</code> (Section 7)."
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "The Same Applies to Arrays:"
+        },
+        {
+          "t": "code",
+          "code": "const arr = [1, 2, 3];\n\narr.push(4);        // ✅ WORKS — mutation\narr[0] = 100;       // ✅ WORKS — mutation\nconsole.log(arr);   // [100, 2, 3, 4]\n\narr = [];           // 💥 TypeError — reassignment",
+          "label": null
+        }
+      ]
+    },
+    {
+      "id": "sec5",
+      "n": "5",
+      "title": "Shallow Copy Techniques",
+      "badge": null,
+      "group": "Copying Techniques",
+      "blocks": [
+        {
+          "t": "callout",
+          "kind": "info",
+          "html": "<strong>Definition:</strong> A <strong>shallow copy</strong> copies only the <strong>top-level</strong> properties. Nested objects/arrays are still shared by reference between the original and the copy."
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Method 1 — Spread Operator (<code>...</code>):"
+        },
+        {
+          "t": "code",
+          "code": "const original = {\n  name: \"Parth\",\n  skills: [\"JS\", \"React\"]      // ← nested array\n};\n\nconst copy = { ...original };  // shallow copy\n\ncopy.name = \"Gupta\";            // ✅ affects only copy (top-level primitive)\ncopy.skills.push(\"Node\");       // ⚠️ affects BOTH — nested array is shared!\n\nconsole.log(original.name);     // \"Parth\"           (unchanged)\nconsole.log(original.skills);   // [\"JS\",\"React\",\"Node\"]  (CHANGED!)\nconsole.log(copy.name);         // \"Gupta\"\nconsole.log(copy.skills);       // [\"JS\",\"React\",\"Node\"]",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Method 2 — <code>Object.assign()</code>:"
+        },
+        {
+          "t": "code",
+          "code": "const original = { name: \"Parth\", skills: [\"JS\"] };\nconst copy = Object.assign({}, original);\n\n// Behaves EXACTLY the same as spread — shallow copy only.\n// Both spread and Object.assign() produce identical results.",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Spread vs Object.assign() — Comparison:"
+        },
+        {
+          "t": "table",
+          "head": [
+            "Aspect",
+            "Spread <code>{...obj}</code>",
+            "<code>Object.assign()</code>"
+          ],
+          "rows": [
+            [
+              "Syntax",
+              "Concise, modern",
+              "Verbose"
+            ],
+            [
+              "Depth",
+              "Shallow",
+              "Shallow"
+            ],
+            [
+              "Merging multiple",
+              "<code>{...a,...b,...c}</code>",
+              "<code>Object.assign({}, a, b, c)</code>"
+            ],
+            [
+              "Getters/Setters",
+              "Loses them (invokes them)",
+              "Loses them (invokes them)"
+            ],
+            [
+              "Preferred?",
+              "✅ Yes (modern)",
+              "Older code style"
+            ]
+          ]
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "The Shallow Copy Problem — Visualized:"
+        },
+        {
+          "t": "code",
+          "code": "const original = { name: \"Parth\", skills: [\"JS\", \"React\"] };\nconst copy = { ...original };\n\nHEAP\n┌──────────────────────────────────┐\n│ #01 (original):                  │\n│   name: \"Parth\"    (primitive)   │\n│   skills: ref#03 ────┐           │\n├──────────────────────┼───────────┤\n│ #02 (copy):          │           │\n│   name: \"Parth\"      │  (new copy)│\n│   skills: ref#03 ────┼──┐         │\n├──────────────────────┼──┼─────────┤\n│ #03 (the array):     ↓  ↓         │\n│   [\"JS\", \"React\"]                 │  ← BOTH point here!\n└──────────────────────────────────┘\n\n// Modifying #03 through copy.skills.push()\n// affects the ARRAY, which BOTH original and copy still point to.",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Array Shallow Copy Techniques:"
+        },
+        {
+          "t": "code",
+          "code": "const arr = [1, 2, [3, 4]];\n\n// All produce shallow copies:\nconst copy1 = [...arr];                // spread\nconst copy2 = arr.slice();             // slice\nconst copy3 = Array.from(arr);         // Array.from\nconst copy4 = arr.concat();            // concat\n\n// All these methods leave nested arr[2] = [3,4] SHARED between original and copy.",
+          "label": null
+        },
+        {
+          "t": "callout",
+          "kind": "warn",
+          "html": "<strong>⚠️ When Shallow Copy Is Fine:</strong> If your object is <strong>flat</strong> (one level deep, only primitives inside), shallow copy is safe and fast. Only worry about deep copy when you have nested objects or arrays."
+        }
+      ]
+    },
+    {
+      "id": "sec6",
+      "n": "6",
+      "title": "Deep Copy Techniques",
+      "badge": null,
+      "group": "Copying Techniques",
+      "blocks": [
+        {
+          "t": "callout",
+          "kind": "info",
+          "html": "<strong>Definition:</strong> A <strong>deep copy</strong> recursively copies every level of the object. The new copy has zero shared references with the original. Modifying nested data in the copy has NO effect on the original."
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Method 1 — The JSON Hack (Traditional, Flawed):"
+        },
+        {
+          "t": "code",
+          "code": "const original = {\n  name: \"Parth\",\n  skills: [\"JS\", \"React\"],\n  nested: { level: { deep: true } }\n};\n\nconst deepCopy = JSON.parse(JSON.stringify(original));\n\ndeepCopy.nested.level.deep = false;\nconsole.log(original.nested.level.deep);   // true  ✅ (unchanged!)",
+          "label": null
+        },
+        {
+          "t": "callout",
+          "kind": "danger",
+          "html": "<strong>❌ What JSON.parse(JSON.stringify()) BREAKS:</strong>"
+        },
+        {
+          "t": "table",
+          "head": [
+            "Type",
+            "What Happens"
+          ],
+          "rows": [
+            [
+              "<strong>Functions</strong>",
+              "Silently dropped"
+            ],
+            [
+              "<strong>Date objects</strong>",
+              "Converted to strings (no longer Date)"
+            ],
+            [
+              "<strong><code>undefined</code></strong>",
+              "Silently dropped"
+            ],
+            [
+              "<strong><code>Symbol</code></strong>",
+              "Silently dropped"
+            ],
+            [
+              "<strong>Circular refs</strong>",
+              "💥 Throws TypeError"
+            ],
+            [
+              "<strong><code>Infinity</code>, <code>NaN</code></strong>",
+              "Converted to <code>null</code>"
+            ],
+            [
+              "<strong><code>Map</code>, <code>Set</code></strong>",
+              "Converted to empty <code>{}</code>"
+            ],
+            [
+              "<strong>RegExp</strong>",
+              "Converted to empty <code>{}</code>"
+            ]
+          ]
+        },
+        {
+          "t": "code",
+          "code": "const obj = {\n  name: \"Parth\",\n  greet: function() { return \"Hi\"; },\n  joined: new Date(),\n  age: undefined\n};\n\nconst cloned = JSON.parse(JSON.stringify(obj));\n\nconsole.log(cloned.name);            // \"Parth\"     ✅\nconsole.log(cloned.greet);           // undefined   ❌ FUNCTION LOST!\nconsole.log(cloned.joined);          // \"2026-06-06T...\"  ❌ STRING, not Date\nconsole.log(typeof cloned.joined);   // \"string\"    ❌\nconsole.log(cloned.age);             // undefined but the PROPERTY IS DROPPED\nconsole.log(\"age\" in cloned);        // false       ❌ (was true in original)",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Method 2 — <code>structuredClone()</code> (Modern, Recommended ⭐):"
+        },
+        {
+          "t": "code",
+          "code": "const obj = {\n  name: \"Parth\",\n  greet: function() { return \"Hi\"; },   // still lost, but everything else works\n  joined: new Date(),\n  nested: { deep: [1, 2, 3] },\n  map: new Map([[\"key\", \"value\"]])\n};\n\nconst cloned = structuredClone(obj);\n\nconsole.log(cloned.joined);              // Date object ✅ (still a Date!)\nconsole.log(cloned.joined instanceof Date); // true ✅\nconsole.log(cloned.map);                 // Map { \"key\" => \"value\" } ✅\nconsole.log(cloned.nested.deep);         // [1,2,3] ✅ (fully deep)\n\n// Handles circular references too:\nconst circular = { name: \"Parth\" };\ncircular.self = circular;\nconst copy = structuredClone(circular);  // ✅ Works! No error.",
+          "label": null
+        },
+        {
+          "t": "callout",
+          "kind": "note",
+          "html": "<strong>✅ <code>structuredClone()</code> is the modern standard.</strong> Added in 2022. Available in all modern browsers and Node.js 17+. It handles Dates, Maps, Sets, ArrayBuffers, TypedArrays, RegExp, and circular references. The only thing it doesn't handle: functions and Symbols."
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Method 3 — Recursive Function (DIY):"
+        },
+        {
+          "t": "code",
+          "code": "function deepClone(obj) {\n  if (obj === null || typeof obj !== 'object') {\n    return obj;   // primitive — just return\n  }\n\n  if (Array.isArray(obj)) {\n    return obj.map(item => deepClone(item));\n  }\n\n  const cloned = {};\n  for (const key in obj) {\n    cloned[key] = deepClone(obj[key]);   // recursion\n  }\n  return cloned;\n}\n\n// Used before structuredClone() existed. Rarely needed today.",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Method 4 — Lodash <code>_.cloneDeep()</code>:"
+        },
+        {
+          "t": "code",
+          "code": "import _ from 'lodash';\nconst copy = _.cloneDeep(original);   // Battle-tested, handles everything",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Deep Copy Method Comparison:"
+        },
+        {
+          "t": "table",
+          "head": [
+            "Method",
+            "Handles Nested?",
+            "Handles Dates?",
+            "Handles Circular?",
+            "Handles Functions?"
+          ],
+          "rows": [
+            [
+              "<code>JSON.parse/stringify</code>",
+              "✅",
+              "❌ (→ string)",
+              "❌",
+              "❌"
+            ],
+            [
+              "<strong><code>structuredClone()</code></strong>",
+              "✅",
+              "✅",
+              "✅",
+              "❌"
+            ],
+            [
+              "Recursive DIY",
+              "Depends",
+              "Depends",
+              "Depends",
+              "Depends"
+            ],
+            [
+              "Lodash <code>_.cloneDeep()</code>",
+              "✅",
+              "✅",
+              "✅",
+              "✅"
+            ]
+          ]
+        },
+        {
+          "t": "callout",
+          "kind": "note",
+          "html": "<strong>🎯 Rule of Thumb:</strong> Use <code>structuredClone()</code> for modern code. Use lodash if you need to clone functions or already have lodash in your project. Only use the JSON hack for quick prototypes or when you know your data is JSON-safe."
+        }
+      ]
+    },
+    {
+      "id": "sec7",
+      "n": "7",
+      "title": "Object.freeze() & Its Shallow Limitation",
+      "badge": null,
+      "group": "Copying Techniques",
+      "blocks": [
+        {
+          "t": "p",
+          "html": "<code>Object.freeze()</code> is JavaScript's way to actually make an object immutable — but it has a critical limitation."
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "What It Does:"
+        },
+        {
+          "t": "code",
+          "code": "const config = Object.freeze({\n  name: \"App\",\n  version: 1\n});\n\nconfig.name = \"NewApp\";   // silently ignored (non-strict) or TypeError (strict)\nconfig.newProp = true;    // can't add properties either\n\nconsole.log(config);      // { name: \"App\", version: 1 }",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "The Trap — It's Only Shallow:"
+        },
+        {
+          "t": "code",
+          "code": "const config = Object.freeze({\n  name: \"App\",\n  settings: {\n    theme: \"dark\"        // ← NESTED — not frozen!\n  }\n});\n\nconfig.name = \"NewApp\";              // ❌ ignored (frozen top level)\nconfig.settings.theme = \"light\";     // ✅ WORKS! (nested not frozen)\n\nconsole.log(config.name);            // \"App\"    ← unchanged\nconsole.log(config.settings.theme);  // \"light\"  ← CHANGED!",
+          "label": null
+        },
+        {
+          "t": "callout",
+          "kind": "danger",
+          "html": "<strong>🔑 The Rule:</strong> <code>Object.freeze()</code> only freezes the <strong>top level</strong>. Nested objects and arrays remain fully mutable."
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Deep Freeze — Recursive Solution:"
+        },
+        {
+          "t": "code",
+          "code": "function deepFreeze(obj) {\n  Object.keys(obj).forEach(key => {\n    if (typeof obj[key] === 'object' && obj[key] !== null) {\n      deepFreeze(obj[key]);   // recursively freeze nested\n    }\n  });\n  return Object.freeze(obj);\n}\n\nconst config = deepFreeze({\n  name: \"App\",\n  settings: { theme: \"dark\" }\n});\n\nconfig.settings.theme = \"light\";\nconsole.log(config.settings.theme);  // \"dark\" — truly frozen now ✅",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Silent Failure ⚠️:"
+        },
+        {
+          "t": "code",
+          "code": "// NON-STRICT mode — mutation silently fails:\nconst obj = Object.freeze({ a: 1 });\nobj.a = 999;\nconsole.log(obj.a);       // 1  (no error, but also no change)\n\n// STRICT mode — mutation throws:\n\"use strict\";\nconst obj = Object.freeze({ a: 1 });\nobj.a = 999;              // 💥 TypeError: Cannot assign to read only property 'a'",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Related Methods:"
+        },
+        {
+          "t": "table",
+          "head": [
+            "Method",
+            "What It Does",
+            "Depth"
+          ],
+          "rows": [
+            [
+              "<code>Object.freeze(obj)</code>",
+              "Prevents adding, deleting, or modifying properties",
+              "Shallow"
+            ],
+            [
+              "<code>Object.seal(obj)</code>",
+              "Prevents adding/deleting properties, but ALLOWS modifying existing ones",
+              "Shallow"
+            ],
+            [
+              "<code>Object.preventExtensions(obj)</code>",
+              "Prevents adding new properties, but allows modify/delete",
+              "Shallow"
+            ],
+            [
+              "<code>Object.isFrozen(obj)</code>",
+              "Returns <code>true</code> if the object is frozen",
+              "Shallow check"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sec8",
+      "n": "8",
+      "title": "Function Arguments — How JavaScript Passes Data",
+      "badge": null,
+      "group": "Practical",
+      "blocks": [
+        {
+          "t": "p",
+          "html": "Whether a function can modify your data depends entirely on the primitive vs reference distinction."
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Primitives — Pass by Value:"
+        },
+        {
+          "t": "code",
+          "code": "function change(num) {\n  num = 999;             // modifies the LOCAL num inside the function\n}\n\nlet myNum = 1;\nchange(myNum);\nconsole.log(myNum);      // 1 — outer variable is untouched!",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "The engine copied the <strong>value</strong> <code>1</code> into the function's local <code>num</code>. Reassigning <code>num</code> inside the function only affects the local copy. The original variable in the outer scope is untouched."
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Objects — Pass by Reference:"
+        },
+        {
+          "t": "code",
+          "code": "function change(obj) {\n  obj.value = 999;       // MUTATES the object in the heap\n}\n\nconst myObj = { value: 1 };\nchange(myObj);\nconsole.log(myObj.value); // 999 — outer object was modified!",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "The engine copied the <strong>reference</strong> to the object into the function's local parameter. Both the outer <code>myObj</code> and the inner <code>obj</code> point to the <strong>same heap location</strong>. Modifying the object's contents affects everyone who points to it."
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "The Subtle Trap — Reassignment vs Mutation Inside Functions:"
+        },
+        {
+          "t": "code",
+          "code": "function replaceObj(obj) {\n  obj = { value: 999 };  // REASSIGNS the local parameter to a NEW object\n                         // Does NOT affect the caller's reference!\n}\n\nconst myObj = { value: 1 };\nreplaceObj(myObj);\nconsole.log(myObj.value); // 1 — outer object unchanged!",
+          "label": null
+        },
+        {
+          "t": "callout",
+          "kind": "warn",
+          "html": "<strong>⚠️ Key distinction inside a function:</strong><br>• <code>obj.value = 999</code> → <strong>Mutates</strong> the shared heap object. Caller sees the change.<br>• <code>obj = {... }</code> → <strong>Reassigns</strong> the local parameter. Caller does NOT see the change."
+        }
+      ]
+    },
+    {
+      "id": "sec9",
+      "n": "9",
+      "title": "Why React Needs Immutability",
+      "badge": null,
+      "group": "Practical",
+      "blocks": [
+        {
+          "t": "callout",
+          "kind": "key",
+          "html": "<strong>⭐ This is where Value vs Reference becomes a real-world career skill.</strong> Understanding this is the difference between \"React devs who fix bugs by guessing\" and \"React devs who understand why their app didn't re-render.\""
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "How React Decides to Re-render:"
+        },
+        {
+          "t": "p",
+          "html": "React uses a <strong>reference comparison</strong> (essentially <code>===</code>) to detect state changes. If the reference to your state object is the <strong>same</strong> as before, React assumes nothing changed and <strong>skips the re-render</strong>."
+        },
+        {
+          "t": "code",
+          "code": "// Inside a React component:\nconst [user, setUser] = useState({ name: \"Parth\", age: 25 });\n\n// ❌ BAD — mutation:\nuser.age = 26;          // MUTATES the object in place\nsetUser(user);           // Passes the SAME reference\n\n// React checks: is prevUser === newUser?  → YES (same reference)\n// React concludes: nothing changed → NO RE-RENDER!\n// Your UI shows stale age = 25 even though the object internally has 26.",
+          "label": null
+        },
+        {
+          "t": "code",
+          "code": "// ✅ GOOD — immutable update:\nsetUser({ ...user, age: 26 });    // Creates a NEW object\n\n// React checks: is prevUser === newUser?  → NO (different references)\n// React concludes: state changed → RE-RENDER\n// Your UI updates correctly.",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Visualized:"
+        },
+        {
+          "t": "code",
+          "code": "BAD: Mutation                          GOOD: Immutable Update\n─────────────                          ──────────────────────\n\nBefore setState:                       Before setState:\nSTACK             HEAP                 STACK             HEAP\n[user] → ref#01 → { age: 25 }         [user] → ref#01 → { age: 25 }\n\nAfter user.age=26:                     After setUser({...user,age:26}):\nSTACK             HEAP                 STACK             HEAP\n[user] → ref#01 → { age: 26 }         [user] → ref#02 → { age: 26 }\n                                                    ↑ NEW ref!\nReact comparison:                      React comparison:\n  prev === new → TRUE                    prev === new → FALSE\n  ❌ No re-render                        ✅ Re-renders",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "The Classic React Bug — Nested State:"
+        },
+        {
+          "t": "code",
+          "code": "const [user, setUser] = useState({\n  name: \"Parth\",\n  address: { city: \"Powai\" }\n});\n\n// ❌ WRONG — mutates nested object:\nsetUser({ ...user, address: { ...user.address, city: \"Mumbai\" } });  // ✅ CORRECT\n\n// vs\n\nsetUser({ ...user });               // ❌ Shallow copy — address is still shared reference\nuser.address.city = \"Mumbai\";       // MUTATES original! Doesn't trigger re-render.",
+          "label": null
+        },
+        {
+          "t": "callout",
+          "kind": "danger",
+          "html": "<strong>🔑 The React Rule:</strong> Every level of state that changes must be replaced with a NEW reference. Shallow-copying with spread only gets you one level. For nested updates, spread at every level, or use <code>structuredClone()</code>, or use a library like Immer."
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Why Not Just Deep Copy Everything?"
+        },
+        {
+          "t": "list",
+          "ordered": false,
+          "items": [
+            "Deep copies are <strong>expensive</strong> — copying a 1000-item array 60 times per second is slow.",
+            "React relies on <strong>reference equality</strong> as a fast check.",
+            "Only the parts that <strong>actually changed</strong> need new references."
+          ]
+        },
+        {
+          "t": "p",
+          "html": "This is the whole reason React state management (Redux, Zustand, etc.) obsesses over immutability. Fast reference checks + selective updates = efficient re-renders."
+        }
+      ]
+    },
+    {
+      "id": "sec10",
+      "n": "10",
+      "title": "Common Gotchas & Pitfalls",
+      "badge": null,
+      "group": "Practical",
+      "blocks": [
+        {
+          "t": "h",
+          "level": 2,
+          "html": "Gotcha A: <code>===</code> on Objects Is Reference Equality"
+        },
+        {
+          "t": "code",
+          "code": "{ a: 1 } === { a: 1 }   // false — different objects in heap\n[1, 2] === [1, 2]       // false — different arrays in heap\n\n// To compare content:\nJSON.stringify(a) === JSON.stringify(b)   // works for simple cases\n// or use lodash's _.isEqual() for anything complex",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 2,
+          "html": "Gotcha B: Array Methods That Mutate vs Return New"
+        },
+        {
+          "t": "table",
+          "head": [
+            "Mutating (avoid in React)",
+            "Non-mutating (safe)"
+          ],
+          "rows": [
+            [
+              "<code>push()</code>, <code>pop()</code>, <code>shift()</code>, <code>unshift()</code>",
+              "<code>concat()</code>, spread <code>[...arr]</code>"
+            ],
+            [
+              "<code>splice()</code>, <code>sort()</code>, <code>reverse()</code>",
+              "<code>slice()</code>, <code>filter()</code>, <code>map()</code>"
+            ],
+            [
+              "<code>fill()</code>, <code>copyWithin()</code>",
+              "<code>toSorted()</code>, <code>toReversed()</code> (ES2023)"
+            ]
+          ]
+        },
+        {
+          "t": "code",
+          "code": "// ❌ WRONG in React:\nconst [arr, setArr] = useState([1, 2, 3]);\narr.push(4);          // mutates!\nsetArr(arr);          // same reference — no re-render\n\n// ✅ RIGHT:\nsetArr([...arr, 4]);              // new array\n// or\nsetArr(arr.concat(4));            // new array",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 2,
+          "html": "Gotcha C: <code>const</code> With Objects Feels Broken"
+        },
+        {
+          "t": "code",
+          "code": "const arr = [];\narr.push(1);          // works — const doesn't prevent mutation\narr.push(2);          // works\nconsole.log(arr);     // [1, 2]\n\narr = [3, 4];         // 💥 TypeError\n\n// This is confusing but correct. See Section 4.",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 2,
+          "html": "Gotcha D: Spread Doesn't Preserve Prototype Chain"
+        },
+        {
+          "t": "code",
+          "code": "class Person {\n  constructor(name) { this.name = name; }\n  greet() { return \"Hi\"; }\n}\n\nconst p = new Person(\"Parth\");\nconst copy = { ...p };\n\nconsole.log(copy.name);    // \"Parth\" ✅\nconsole.log(copy.greet);   // undefined ❌ — methods on prototype are lost!\nconsole.log(copy instanceof Person);  // false",
+          "label": null
+        },
+        {
+          "t": "h",
+          "level": 2,
+          "html": "Gotcha E: Cross-Realm Objects"
+        },
+        {
+          "t": "code",
+          "code": "// Objects from iframes or workers are in different \"realms\"\n// Their prototypes don't match the main window's Array/Object\n// structuredClone handles this; JSON does not perfectly\n// (Rare in practice, but interviewers love this trivia)",
+          "label": null
+        }
+      ]
+    },
+    {
+      "id": "sec11",
+      "n": "11",
+      "title": "Master Cheat Sheet",
+      "badge": null,
+      "group": "Revision",
+      "blocks": [
+        {
+          "t": "table",
+          "head": [
+            "Concept",
+            "Key Point"
+          ],
+          "rows": [
+            [
+              "Primitives",
+              "string, number, boolean, null, undefined, symbol, bigint — immutable, copied by value, live in Stack"
+            ],
+            [
+              "Objects/References",
+              "Object, Array, Function, Date, Map, Set — mutable, copied by reference, live in Heap"
+            ],
+            [
+              "Stack vs Heap",
+              "Stack = fast, primitives + pointers. Heap = dynamic, actual objects."
+            ],
+            [
+              "<code>obj2 = obj1</code>",
+              "Copies the REFERENCE, not the object. Both variables now point to the same heap location."
+            ],
+            [
+              "<code>===</code> on objects",
+              "Reference equality (same heap location), NOT content equality."
+            ],
+            [
+              "<code>const</code> + objects",
+              "Locks the variable binding (stack pointer), NOT the heap object. Mutation is allowed."
+            ],
+            [
+              "Shallow copy",
+              "<code>{...obj}</code>, <code>Object.assign()</code>, <code>arr.slice()</code>. Copies top level only. Nested still shared."
+            ],
+            [
+              "Deep copy",
+              "<code>structuredClone()</code> (modern), <code>JSON.parse(JSON.stringify())</code> (flawed), <code>_.cloneDeep()</code> (lodash)."
+            ],
+            [
+              "JSON hack breaks",
+              "Functions, Dates (→ string), undefined, Symbols, circular refs, Infinity, NaN, Map, Set, RegExp"
+            ],
+            [
+              "<code>Object.freeze()</code>",
+              "Shallow — only top level. Use recursive <code>deepFreeze</code> for full immutability."
+            ],
+            [
+              "Function arguments",
+              "Primitives: value copied (caller safe). Objects: reference copied (caller can be mutated via <code>obj.prop =...</code>)."
+            ],
+            [
+              "React state",
+              "Always create a NEW reference. React uses <code>===</code> to detect changes. Same reference = no re-render."
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sec12",
+      "n": "12",
+      "title": "Interview Answer Templates",
+      "badge": null,
+      "group": "Revision",
+      "blocks": [
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Q: \"What's the difference between primitives and reference types in JavaScript?\""
+        },
+        {
+          "t": "callout",
+          "kind": "note",
+          "html": "<em>\"Primitives — strings, numbers, booleans, null, undefined, symbols, and bigints — are immutable and stored directly on the stack. When you assign one variable to another, the value is copied, so changing one doesn't affect the other. Reference types — objects, arrays, functions, Dates, Maps, Sets — are mutable and stored on the heap. Variables hold only a reference (pointer) to the heap location. Assigning one variable to another copies the reference, not the object itself, so both variables point to the same underlying data.\"</em>"
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Q: \"Why can I mutate a <code>const</code> object?\""
+        },
+        {
+          "t": "callout",
+          "kind": "note",
+          "html": "<em>\"<code>const</code> only prevents reassigning the variable itself — the binding between the variable name and the value it points to. For objects, that value is a reference to a heap location. <code>const</code> locks that pointer in place, but the object at that heap location is still fully mutable. If you want true immutability, use <code>Object.freeze()</code> — though remember that's shallow, so nested objects are still mutable unless you deep-freeze recursively.\"</em>"
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Q: \"What's the difference between shallow and deep copy?\""
+        },
+        {
+          "t": "callout",
+          "kind": "note",
+          "html": "<em>\"A shallow copy duplicates only the top-level properties. Nested objects and arrays are still shared by reference between the original and the copy. Techniques include the spread operator and <code>Object.assign()</code>. A deep copy recursively copies every level, so nothing is shared. The modern way to do a deep copy is <code>structuredClone()</code>. The traditional <code>JSON.parse(JSON.stringify())</code> hack works but loses functions, converts Dates to strings, and drops undefined and Symbols.\"</em>"
+        },
+        {
+          "t": "h",
+          "level": 3,
+          "html": "Q: \"Why does React need immutable state updates?\""
+        },
+        {
+          "t": "callout",
+          "kind": "note",
+          "html": "<em>\"React uses reference equality — essentially the <code>===</code> operator — to detect state changes. If you mutate state in place and call <code>setState</code> with the same reference, React sees no change and skips the re-render, even though the object's contents changed. That's why we always create a new object or array — using spread, or <code>structuredClone()</code> for deep updates — so React sees a new reference and knows to re-render. This same principle powers Redux, Zustand, and other state managers.\"</em>"
+        }
+      ]
+    },
+    {
+      "id": "sec13",
+      "n": "13",
+      "title": "Practice Sheet — 10 Questions",
+      "badge": null,
+      "group": "Practice",
+      "blocks": [
+        {
+          "t": "p",
+          "html": "<strong>📝 Instructions:</strong> Predict exact output. Explain in terms of stack/heap and reference/value where relevant. Each question links to its answer."
+        },
+        {
+          "t": "question",
+          "n": 1,
+          "difficulty": "easy",
+          "html": "Primitive Copy<br><strong>1)</strong> Both outputs?<br><strong>2)</strong> Are <code>a</code> and <code>b</code> stored in the same memory location?",
+          "code": "let a = \"hello\";\nlet b = a;\nb = \"world\";\n\nconsole.log(a);\nconsole.log(b);"
+        },
+        {
+          "t": "question",
+          "n": 2,
+          "difficulty": "easy",
+          "html": "Array Alias<br><strong>1)</strong> All 3 outputs?<br><strong>2)</strong> Why is arr1 also modified?",
+          "code": "const arr1 = [1, 2, 3];\nconst arr2 = arr1;\narr2.push(4);\n\nconsole.log(arr1);\nconsole.log(arr2);\nconsole.log(arr1 === arr2);"
+        },
+        {
+          "t": "question",
+          "n": 3,
+          "difficulty": "easy",
+          "html": "Two Objects, Same Content<br><strong>1)</strong> Both outputs?<br><strong>2)</strong> Why the difference?",
+          "code": "const a = { x: 1 };\nconst b = { x: 1 };\n\nconsole.log(a === b);\nconsole.log(a.x === b.x);"
+        },
+        {
+          "t": "question",
+          "n": 4,
+          "difficulty": "medium",
+          "html": "Spread Depth Trap<br><strong>1)</strong> All 3 outputs?<br><strong>2)</strong> Why did <code>name</code> stay safe but <code>info</code> get modified?",
+          "code": "const original = {\n  name: \"Parth\",\n  info: {\n    city: \"Powai\",\n    hobbies: [\"JS\", \"React\"]\n  }\n};\n\nconst copy = { ...original };\n\ncopy.name = \"Gupta\";\ncopy.info.city = \"Mumbai\";\ncopy.info.hobbies.push(\"Node\");\n\nconsole.log(original.name);\nconsole.log(original.info.city);\nconsole.log(original.info.hobbies);"
+        },
+        {
+          "t": "question",
+          "n": 5,
+          "difficulty": "medium",
+          "html": "JSON Deep Copy Casualties<br><strong>1)</strong> All 7 outputs?<br><strong>2)</strong> Which properties survived cleanly and which got mangled?",
+          "code": "const obj = {\n  id: 1,\n  createdAt: new Date(\"2026-06-06\"),\n  meta: undefined,\n  tag: null,\n  score: NaN,\n  action: function() { return \"click\"; }\n};\n\nconst cloned = JSON.parse(JSON.stringify(obj));\n\nconsole.log(cloned.id);\nconsole.log(cloned.createdAt);\nconsole.log(typeof cloned.createdAt);\nconsole.log(\"meta\" in cloned);\nconsole.log(cloned.tag);\nconsole.log(cloned.score);\nconsole.log(cloned.action);"
+        },
+        {
+          "t": "question",
+          "n": 6,
+          "difficulty": "medium",
+          "html": "Deep Freeze Test<br><strong>1)</strong> All 3 outputs?<br><strong>2)</strong> Why did the nested font change work?",
+          "code": "const settings = Object.freeze({\n  theme: \"dark\",\n  fonts: {\n    primary: \"Inter\"\n  }\n});\n\nsettings.theme = \"light\";\nsettings.fonts.primary = \"Roboto\";\nsettings.newProp = true;\n\nconsole.log(settings.theme);\nconsole.log(settings.fonts.primary);\nconsole.log(settings.newProp);"
+        },
+        {
+          "t": "question",
+          "n": 7,
+          "difficulty": "hard",
+          "html": "Function Argument Reassignment<br><strong>1)</strong> Both outputs?<br><strong>2)</strong> Why is <code>reassign()</code> different from <code>mutate()</code>?",
+          "code": "function reassign(obj) {\n  obj = { value: 999 };\n}\n\nfunction mutate(obj) {\n  obj.value = 999;\n}\n\nconst a = { value: 1 };\nconst b = { value: 1 };\n\nreassign(a);\nmutate(b);\n\nconsole.log(a.value);\nconsole.log(b.value);"
+        },
+        {
+          "t": "question",
+          "n": 8,
+          "difficulty": "hard",
+          "html": "Nested React State<br><strong>1)</strong> Which option (A, B, C, D) is correct?<br><strong>2)</strong> What's wrong with each of the incorrect options?",
+          "code": "// Conceptual — assume this is inside a React component\nconst [user, setUser] = useState({\n  name: \"Parth\",\n  profile: {\n    city: \"Powai\",\n    age: 25\n  }\n});\n\n// Which of these correctly updates the city and triggers a re-render?\n\n// A) \nuser.profile.city = \"Mumbai\";\nsetUser(user);\n\n// B) \nsetUser({ ...user, profile: { city: \"Mumbai\" } });\n\n// C) \nsetUser({ ...user, profile: { ...user.profile, city: \"Mumbai\" } });\n\n// D) \nsetUser({ ...user });"
+        },
+        {
+          "t": "question",
+          "n": 9,
+          "difficulty": "expert",
+          "html": "structuredClone() vs JSON<br><strong>1)</strong> All outputs?<br><strong>2)</strong> Explain each result.",
+          "code": "const original = {\n  when: new Date(\"2026-06-06\"),\n  map: new Map([[\"key\", \"val\"]])\n};\n\n// Add a circular reference\noriginal.self = original;\n\n// Attempt 1\ntry {\n  const a = JSON.parse(JSON.stringify(original));\n  console.log(\"JSON success\");\n} catch (e) {\n  console.log(\"JSON error:\", e.name);\n}\n\n// Attempt 2\nconst b = structuredClone(original);\nconsole.log(b.when instanceof Date);\nconsole.log(b.map instanceof Map);\nconsole.log(b.self === b);"
+        },
+        {
+          "t": "question",
+          "n": 10,
+          "difficulty": "expert",
+          "html": "The Final Boss 💀<br><strong>1)</strong> All 3 outputs?<br><strong>2)</strong> Trace through each copy's mutation and explain what happened.",
+          "code": "const state = {\n  users: [\n    { id: 1, name: \"Parth\", tags: [\"admin\"] },\n    { id: 2, name: \"Deepika\", tags: [\"user\"] }\n  ]\n};\n\n// Attempt 1: shallow spread\nconst copy1 = { ...state };\n\n// Attempt 2: array spread\nconst copy2 = { ...state, users: [...state.users] };\n\n// Attempt 3: array spread + object spread per item\nconst copy3 = {\n  ...state,\n  users: state.users.map(u => ({ ...u }))\n};\n\n// Attempt 4: full deep clone\nconst copy4 = structuredClone(state);\n\n// Now mutate through each copy:\ncopy1.users[0].tags.push(\"edit\");\ncopy2.users[0].name = \"MUTATED\";\ncopy3.users[1].tags.push(\"HACK\");\ncopy4.users[0].tags.push(\"SAFE\");\n\nconsole.log(\"Original users[0].tags:\", state.users[0].tags);\nconsole.log(\"Original users[0].name:\", state.users[0].name);\nconsole.log(\"Original users[1].tags:\", state.users[1].tags);"
+        }
+      ]
+    },
+    {
+      "id": "sec14",
+      "n": "14",
+      "title": "Answer Key",
+      "badge": null,
+      "group": "Practice",
+      "blocks": [
+        {
+          "t": "answer",
+          "n": 1,
+          "html": "Q1 — Answer"
+        },
+        {
+          "t": "code",
+          "code": "\"hello\"\n\"world\"",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "<strong>Explanation:</strong> Strings are primitives. When <code>let b = a</code> ran, JavaScript copied the value <code>\"hello\"</code> into a new stack slot for <code>b</code>. Later, <code>b = \"world\"</code> only changed <code>b</code>'s slot. They are in <strong>different memory locations</strong> with independent values."
+        },
+        {
+          "t": "hr"
+        },
+        {
+          "t": "answer",
+          "n": 2,
+          "html": "Q2 — Answer"
+        },
+        {
+          "t": "code",
+          "code": "[1, 2, 3, 4]\n[1, 2, 3, 4]\ntrue",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "<strong>Explanation:</strong> <code>const arr2 = arr1</code> copied only the <strong>reference</strong>, not the array. Both variables point to the same heap location. <code>arr2.push(4)</code> mutated that shared array, so both variables see the update. <code>===</code> returns <code>true</code> because they hold the same reference."
+        },
+        {
+          "t": "hr"
+        },
+        {
+          "t": "answer",
+          "n": 3,
+          "html": "Q3 — Answer"
+        },
+        {
+          "t": "code",
+          "code": "false\ntrue",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "<strong>Explanation:</strong> <code>a</code> and <code>b</code> are two independent objects in the heap (created by separate object literals), so <code>a === b</code> is <code>false</code> — different references. But <code>a.x</code> and <code>b.x</code> are both primitives with value <code>1</code>, and primitive comparison is by value, so <code>a.x === b.x</code> is <code>true</code>."
+        },
+        {
+          "t": "hr"
+        },
+        {
+          "t": "answer",
+          "n": 4,
+          "html": "Q4 — Answer"
+        },
+        {
+          "t": "code",
+          "code": "\"Parth\"\n\"Mumbai\"\n[\"JS\", \"React\", \"Node\"]",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "<strong>Explanation:</strong> Spread operator creates a shallow copy. Top-level property <code>name</code> (a primitive) is truly copied — modifying <code>copy.name</code> doesn't affect <code>original.name</code>. But <code>info</code> is a nested object — spread copied only the <strong>reference</strong> to it. So <code>copy.info</code> and <code>original.info</code> point to the same heap object. Mutating <code>copy.info.city</code> or pushing to <code>copy.info.hobbies</code> affects both."
+        },
+        {
+          "t": "hr"
+        },
+        {
+          "t": "answer",
+          "n": 5,
+          "html": "Q5 — Answer"
+        },
+        {
+          "t": "code",
+          "code": "1                          ✅ survives cleanly\n\"2026-06-06T00:00:00.000Z\" ❌ Date → string\n\"string\"                   ❌ typeof is \"string\" now\nfalse                      ❌ meta property dropped (undefined)\nnull                       ✅ null survives\nnull                       ❌ NaN → null\nundefined                  ❌ function dropped",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "<strong>Explanation:</strong> JSON has no representation for functions, undefined, Symbols, NaN, Infinity, Dates, Maps, Sets, or circular references. Dates convert to their ISO string representation. undefined and functions get silently dropped. NaN and Infinity become null. Only <code>id</code> (number) and <code>tag</code> (null) survived unchanged."
+        },
+        {
+          "t": "hr"
+        },
+        {
+          "t": "answer",
+          "n": 6,
+          "html": "Q6 — Answer"
+        },
+        {
+          "t": "code",
+          "code": "\"dark\"        ← unchanged (top level frozen)\n\"Roboto\"      ← CHANGED (nested not frozen!)\nundefined     ← newProp addition blocked",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "<strong>Explanation:</strong> <code>Object.freeze()</code> is shallow. It froze the top-level <code>settings</code> object, so <code>settings.theme = \"light\"</code> silently fails and <code>settings.newProp = true</code> is blocked. But the nested <code>fonts</code> object is a separate heap object that was NOT frozen, so <code>settings.fonts.primary = \"Roboto\"</code> mutated it successfully. To prevent this, you'd need a recursive <code>deepFreeze()</code>."
+        },
+        {
+          "t": "hr"
+        },
+        {
+          "t": "answer",
+          "n": 7,
+          "html": "Q7 — Answer"
+        },
+        {
+          "t": "code",
+          "code": "1\n999",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "<strong>Explanation:</strong>"
+        },
+        {
+          "t": "list",
+          "ordered": false,
+          "items": [
+            "<strong>reassign(a):</strong> The parameter <code>obj</code> initially received a copy of the reference to <code>a</code>'s heap object. But then <code>obj = { value: 999 }</code> <strong>reassigned</strong> the local parameter to point to a brand new object. This has no effect on the outer <code>a</code>, which still points to the original object. Output: <code>1</code>.",
+            "<strong>mutate(b):</strong> The parameter <code>obj</code> received a copy of the reference to <code>b</code>'s heap object. <code>obj.value = 999</code> mutated the shared heap object through that reference. Both <code>obj</code> and <code>b</code> point to it, so <code>b.value</code> is now <code>999</code>."
+          ]
+        },
+        {
+          "t": "p",
+          "html": "<strong>Key rule:</strong> Reassigning a parameter has no external effect. Mutating through a parameter's reference does."
+        },
+        {
+          "t": "hr"
+        },
+        {
+          "t": "answer",
+          "n": 8,
+          "html": "Q8 — Answer"
+        },
+        {
+          "t": "code",
+          "code": "Correct: Option C",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "<strong>Explanation of each option:</strong>"
+        },
+        {
+          "t": "list",
+          "ordered": false,
+          "items": [
+            "<strong>A — WRONG:</strong> Directly mutates <code>user.profile.city</code>. Then <code>setUser(user)</code> passes the same reference. React sees <code>prevUser === newUser</code> → skips re-render. The mutation happened, but the UI won't reflect it.",
+            "<strong>B — WRONG:</strong> Creates a new outer object with spread, but the <code>profile</code> is completely REPLACED with <code>{ city: \"Mumbai\" }</code>. The <code>age: 25</code> property is LOST. You've broken your state shape.",
+            "<strong>C — CORRECT:</strong> Spreads at both levels. New outer object + new inner <code>profile</code> object that preserves <code>age</code> and updates <code>city</code>. React sees new references at both levels and re-renders. All data preserved.",
+            "<strong>D — WRONG:</strong> Creates a new outer reference (which triggers re-render), but the <code>profile</code> object is the same reference as before. No actual data change. Wasteful re-render with stale data."
+          ]
+        },
+        {
+          "t": "hr"
+        },
+        {
+          "t": "answer",
+          "n": 9,
+          "html": "Q9 — Answer"
+        },
+        {
+          "t": "code",
+          "code": "\"JSON error: TypeError\"\ntrue    (Date instance preserved)\ntrue    (Map instance preserved)\ntrue    (circular reference works!)",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "<strong>Explanation:</strong>"
+        },
+        {
+          "t": "list",
+          "ordered": false,
+          "items": [
+            "<code>JSON.stringify</code> can't handle circular references (<code>self</code> points back to <code>original</code>). It throws <code>TypeError: Converting circular structure to JSON</code>.",
+            "<code>structuredClone</code> handles all three cases perfectly: Date stays as Date (not string), Map stays as Map (not empty object), and circular references are correctly cloned so <code>b.self === b</code>."
+          ]
+        },
+        {
+          "t": "p",
+          "html": "This is why <code>structuredClone()</code> is the modern gold standard for deep cloning."
+        },
+        {
+          "t": "hr"
+        },
+        {
+          "t": "answer",
+          "n": 10,
+          "html": "Q10 — Answer"
+        },
+        {
+          "t": "code",
+          "code": "Original users[0].tags: [\"admin\", \"edit\"]     ❌ MUTATED\nOriginal users[0].name: \"Parth\"                ✅ UNCHANGED\nOriginal users[1].tags: [\"user\", \"HACK\"]       ❌ MUTATED",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "<strong>Explanation of each copy:</strong>"
+        },
+        {
+          "t": "list",
+          "ordered": false,
+          "items": [
+            "<strong>copy1 = {...state }:</strong> Only top-level spread. <code>copy1.users</code> is the SAME reference as <code>state.users</code>. When we push to <code>copy1.users[0].tags</code>, we're mutating the original state. <code>tags</code> gains \"edit\".",
+            "<strong>copy2 = {...state, users: [...state.users] }:</strong> Spreads the users array too. Now <code>copy2.users</code> is a new array, but each user OBJECT inside is still the same reference. So <code>copy2.users[0]</code> === <code>state.users[0]</code>. Modifying <code>copy2.users[0].name</code> would mutate original... but we didn't do that here! We assigned <code>copy2.users[0].name = \"MUTATED\"</code>, which... wait — that WOULD mutate. But look at the check: we're checking <code>state.users[0].name</code>. Actually, since copy2.users[0] and state.users[0] are the same object, name IS mutated to \"MUTATED\". Let me recheck — but the check says original users[0].name is \"Parth\". This means copy2 was constructed AFTER copy1 already modified the shared state, but before copy2's mutation happened. Actually, more importantly: copy2's line <code>copy2.users[0].name = \"MUTATED\"</code> DID mutate the original. So the answer <code>\"Parth\"</code> above should actually be <code>\"MUTATED\"</code>. Let me be honest and correct this."
+          ]
+        },
+        {
+          "t": "callout",
+          "kind": "warn",
+          "html": "<strong>Correction:</strong> On re-reading — <code>copy2.users[0].name = \"MUTATED\"</code> DOES affect the original because copy2.users[0] is the same reference as state.users[0]. The correct output for line 2 is <code>\"MUTATED\"</code>, not <code>\"Parth\"</code>.<br><br><strong>Corrected Output:</strong>"
+        },
+        {
+          "t": "code",
+          "code": "Original users[0].tags: [\"admin\", \"edit\"]      ❌ (copy1 mutated it)\nOriginal users[0].name: \"MUTATED\"              ❌ (copy2 mutated it — same user ref)\nOriginal users[1].tags: [\"user\", \"HACK\"]       ❌ (copy3 mutated it — tags array shared)",
+          "label": null
+        },
+        {
+          "t": "p",
+          "html": "<strong>The takeaway:</strong>"
+        },
+        {
+          "t": "list",
+          "ordered": false,
+          "items": [
+            "<strong>copy3</strong> spread each user object, so <code>copy3.users[1]</code> is a new object. BUT the <code>tags</code> array inside is still the same reference. So pushing to <code>copy3.users[1].tags</code> mutates the shared tags array.",
+            "<strong>copy4 (structuredClone)</strong> is the ONLY truly safe deep copy. Pushing \"SAFE\" to <code>copy4.users[0].tags</code> did NOT affect the original at all — this mutation is not visible in the check because we didn't include it in the console.log output."
+          ]
+        },
+        {
+          "t": "p",
+          "html": "<strong>The Big Lesson:</strong> Every level of nesting adds a level of \"spread required\" to keep the copy independent. For 3-level-deep nested state, you need to spread at 3 levels. This is why libraries like Immer exist — they let you write mutations that get transformed into proper immutable updates behind the scenes."
+        },
+        {
+          "t": "hr"
+        },
+        {
+          "t": "h",
+          "level": 2,
+          "html": "📊 Scoring Guide"
+        },
+        {
+          "t": "table",
+          "head": [
+            "Score",
+            "Level"
+          ],
+          "rows": [
+            [
+              "9–10 / 10",
+              "🏆 Mastery — you understand memory-level JS"
+            ],
+            [
+              "7–8 / 10",
+              "✅ Solid — review Q10 and Q8 patterns"
+            ],
+            [
+              "5–6 / 10",
+              "🟨 Getting There — re-read Sections 5, 6, 9"
+            ],
+            [
+              "Below 5",
+              "🔄 Needs Revision — restart from Section 2 (Stack vs Heap)"
+            ]
+          ]
+        },
+        {
+          "t": "p",
+          "html": "Key Mental Models:"
+        },
+        {
+          "t": "p",
+          "html": "🔹 Primitives live in stack. Objects live in heap. Variables hold references."
+        },
+        {
+          "t": "p",
+          "html": "🔹 <code>=</code> copies value for primitives, reference for objects."
+        },
+        {
+          "t": "p",
+          "html": "🔹 <code>const</code> locks the variable, NOT the heap object."
+        },
+        {
+          "t": "p",
+          "html": "🔹 Spread &amp; Object.freeze() are shallow. structuredClone() is deep."
+        },
+        {
+          "t": "p",
+          "html": "🔹 React re-renders on reference change, NOT content change."
+        }
+      ]
+    }
+  ]
+}

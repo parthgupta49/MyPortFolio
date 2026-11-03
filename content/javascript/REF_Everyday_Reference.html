@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📗 JS Everyday Reference</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Calibri, Arial, sans-serif; color: #1a1a1a; line-height: 1.65; background: #fff; }
+
+  /* SIDEBAR */
+  .sidebar-toggle { position: fixed; top: 12px; left: 12px; z-index: 1001; background: #2ea043; color: #fff; border: none; width: 40px; height: 40px; border-radius: 8px; font-size: 1.4em; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+  .sidebar-toggle:hover { background: #238636; }
+  .sidebar { position: fixed; top: 0; left: 0; width: 290px; height: 100vh; background: #f0fff4; border-right: 2px solid #2ea043; overflow-y: auto; z-index: 1000; transform: translateX(0); transition: transform 0.3s ease; padding: 60px 15px 20px 15px; }
+  .sidebar.collapsed { transform: translateX(-290px); }
+  .sidebar h3 { color: #2ea043; font-size: 1em; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 2px solid #2ea043; }
+  .sidebar a { display: block; padding: 5px 8px; color: #1a7f37; text-decoration: none; font-size: 0.85em; border-radius: 4px; margin-bottom: 2px; }
+  .sidebar a:hover { background: #d0f0d8; }
+  .sidebar .group-label { color: #555; font-weight: bold; font-size: 0.78em; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 12px; margin-bottom: 4px; padding-left: 8px; }
+
+  /* MAIN */
+  .main { margin-left: 290px; padding: 20px 30px 40px 30px; max-width: 990px; transition: margin-left 0.3s ease; }
+  .main.full { margin-left: 0; }
+
+  /* TITLE */
+  .title-block { text-align: center; padding: 25px 0; border-bottom: 4px solid #2ea043; margin-bottom: 25px; }
+  .title-block h1 { color: #2ea043; font-size: 2em; margin: 0; padding: 0; }
+  .title-block p { color: #555; font-size: 0.95em; margin: 3px 0; }
+
+  /* HEADINGS */
+  h1 { color: #2ea043; border-bottom: 3px solid #2ea043; padding-bottom: 8px; margin-top: 35px; font-size: 1.5em; }
+  h2 { color: #1a7f37; margin-top: 22px; font-size: 1.15em; }
+  h3 { color: #444; margin-top: 15px; font-size: 1em; }
+  p { margin: 6px 0; }
+  ul, ol { padding-left: 22px; margin: 6px 0; }
+  li { margin-bottom: 4px; }
+
+  /* COLLAPSIBLE */
+  .section-header { cursor: pointer; display: flex; align-items: center; justify-content: space-between; padding: 8px 0; user-select: none; }
+  .section-header:hover h1 { color: #238636; }
+  .section-header .toggle-icon { font-size: 1.1em; color: #2ea043; transition: transform 0.3s; min-width: 24px; text-align: center; }
+  .section-header .toggle-icon.collapsed { transform: rotate(-90deg); }
+  .section-content { overflow: hidden; transition: max-height 0.4s ease; }
+  .section-content.collapsed { max-height: 0 !important; overflow: hidden; }
+
+  /* CODE */
+  pre { background: #f6f8fa; border: 1px solid #d0d7de; border-left: 4px solid #2ea043; padding: 12px 16px; font-family: 'Consolas', 'Courier New', monospace; font-size: 0.88em; overflow-x: auto; border-radius: 4px; white-space: pre-wrap; margin: 8px 0; line-height: 1.55; }
+  code { font-family: 'Consolas', monospace; background: #eef1f4; padding: 2px 6px; border-radius: 3px; font-size: 0.85em; color: #24292f; }
+
+  /* TABLES */
+  table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+  th { background: #2ea043; color: #fff; padding: 8px 12px; text-align: left; font-size: 0.9em; }
+  td { border: 1px solid #d0d7de; padding: 7px 12px; font-size: 0.88em; vertical-align: top; }
+  tr:nth-child(even) { background: #f6f8fa; }
+
+  /* BOXES */
+  .note-box { background: #e8f4e8; border-left: 4px solid #2e7d32; padding: 10px 14px; margin: 10px 0; border-radius: 4px; font-size: 0.92em; }
+  .note-box strong { color: #2e7d32; }
+  .warn-box { background: #fff3e0; border-left: 4px solid #e65100; padding: 10px 14px; margin: 10px 0; border-radius: 4px; font-size: 0.92em; }
+  .warn-box strong { color: #e65100; }
+  .tip-box { background: #e3f2fd; border-left: 4px solid #1565c0; padding: 10px 14px; margin: 10px 0; border-radius: 4px; font-size: 0.92em; }
+  .tip-box strong { color: #1565c0; }
+
+  /* Snippet — small reusable block */
+  .snippet { background: #fafafa; border: 1px solid #e0e0e0; padding: 10px 14px; margin: 8px 0; border-radius: 6px; }
+  .snippet-label { color: #666; font-size: 0.78em; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; font-weight: bold; }
+
+  @media (max-width: 768px) {
+    .sidebar { width: 250px; }
+    .main { margin-left: 0; padding: 15px; }
+    .sidebar.collapsed { transform: translateX(-250px); }
+  }
+</style>
+</head>
+<body>
+
+<button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+
+<nav class="sidebar" id="sidebar">
+  <h3>📗 JS Everyday Reference</h3>
+
+  <div class="group-label">🧱 Objects</div>
+  <a href="#obj-check" onclick="scrollTo(event,'obj-check')">1. Property exists?</a>
+  <a href="#obj-iterate" onclick="scrollTo(event,'obj-iterate')">2. Iterate object</a>
+  <a href="#obj-immutable" onclick="scrollTo(event,'obj-immutable')">3. Immutable updates</a>
+  <a href="#obj-dynamic" onclick="scrollTo(event,'obj-dynamic')">4. Dynamic keys</a>
+  <a href="#obj-destructure" onclick="scrollTo(event,'obj-destructure')">5. Destructuring</a>
+
+  <div class="group-label">📚 Arrays</div>
+  <a href="#arr-hof" onclick="scrollTo(event,'arr-hof')">6. HOFs quick ref</a>
+  <a href="#arr-search" onclick="scrollTo(event,'arr-search')">7. Search array</a>
+  <a href="#arr-manipulate" onclick="scrollTo(event,'arr-manipulate')">8. Manipulate array</a>
+  <a href="#arr-immutable" onclick="scrollTo(event,'arr-immutable')">9. Immutable updates</a>
+  <a href="#arr-dedupe" onclick="scrollTo(event,'arr-dedupe')">10. Dedupe & Set</a>
+  <a href="#arr-sort" onclick="scrollTo(event,'arr-sort')">11. Sort recipes</a>
+
+  <div class="group-label">🔤 Strings</div>
+  <a href="#str-essentials" onclick="scrollTo(event,'str-essentials')">12. String essentials</a>
+  <a href="#str-splitjoin" onclick="scrollTo(event,'str-splitjoin')">13. Split &amp; join</a>
+  <a href="#str-replace" onclick="scrollTo(event,'str-replace')">14. Replace &amp; regex</a>
+  <a href="#str-template" onclick="scrollTo(event,'str-template')">15. Template literals</a>
+
+  <div class="group-label">❓ Null &amp; Truthy</div>
+  <a href="#null-patterns" onclick="scrollTo(event,'null-patterns')">16. ?? · || · ?.</a>
+  <a href="#falsy-table" onclick="scrollTo(event,'falsy-table')">17. Truthy / Falsy</a>
+
+  <div class="group-label">🔢 Numbers</div>
+  <a href="#num-parsing" onclick="scrollTo(event,'num-parsing')">18. Parse &amp; format</a>
+  <a href="#num-math" onclick="scrollTo(event,'num-math')">19. Math methods</a>
+
+  <div class="group-label">🎁 Patterns</div>
+  <a href="#pat-common" onclick="scrollTo(event,'pat-common')">20. Common patterns</a>
+  <a href="#pat-debug" onclick="scrollTo(event,'pat-debug')">21. Debugging</a>
+
+  <div class="group-label">🧠 Method</div>
+  <a href="#method-approach" onclick="scrollTo(event,'method-approach')">22. Problem-solving steps</a>
+</nav>
+
+<div class="main" id="mainContent">
+
+<div class="title-block">
+  <h1>📗 JS Everyday Reference</h1>
+  <p><strong>Your daily cheat sheet for real coding problems</strong></p>
+  <p>Objects · Arrays · Strings · Null-handling · Sort recipes · Common patterns</p>
+  <p><em>Keep this open in a tab. Ctrl+F to jump to anything.</em></p>
+</div>
+
+<!-- =================== OBJECTS =================== -->
+
+<!-- SEC obj-check -->
+<div id="obj-check">
+  <div class="section-header" onclick="toggleSection('c1')">
+    <h1 style="border:none;margin:0;padding:0;">1. Does a property exist on this object?</h1>
+    <span class="toggle-icon" id="icon-c1">▼</span>
+  </div>
+  <div class="section-content" id="c1">
+
+<p>Four ways — each with its own use case.</p>
+
+<div class="snippet">
+<div class="snippet-label">The <code>in</code> operator — walks the prototype chain</div>
+<pre>"name" in user;           // true if property exists, including inherited
+"toString" in {};         // true — inherited from Object.prototype</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label"><code>hasOwnProperty</code> — own properties only, ignores inherited</div>
+<pre>user.hasOwnProperty("name");   // true only if OWN property
+({}).hasOwnProperty("toString"); // false — inherited, not owned</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Modern &amp; safest — <code>Object.hasOwn()</code> (ES2022)</div>
+<pre>Object.hasOwn(user, "name");     // preferred over user.hasOwnProperty()
+// Safer because it works even if `user` was created with Object.create(null)</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Undefined check — quick &amp; dirty (but misleading)</div>
+<pre>if (user.name !== undefined) { ... }
+// ⚠️  fails if user.name = undefined was explicitly set
+// Use `in` or Object.hasOwn if you need to distinguish "missing" vs "set to undefined"</pre>
+</div>
+
+<div class="tip-box"><strong>💡 When to use which:</strong>
+Most code: <code>Object.hasOwn(obj, "key")</code>.
+Need inherited too: <code>"key" in obj</code>.
+Never: relying on <code>obj.key === undefined</code>.</div>
+
+  </div>
+</div>
+
+<!-- SEC obj-iterate -->
+<div id="obj-iterate">
+  <div class="section-header" onclick="toggleSection('c2')">
+    <h1 style="border:none;margin:0;padding:0;">2. Iterate over an object</h1>
+    <span class="toggle-icon" id="icon-c2">▼</span>
+  </div>
+  <div class="section-content" id="c2">
+
+<div class="snippet">
+<div class="snippet-label">Get keys / values / entries as arrays</div>
+<pre>const user = { name: "Parth", age: 25, city: "Hyderabad" };
+
+Object.keys(user);     // ["name", "age", "city"]
+Object.values(user);   // ["Parth", 25, "Hyderabad"]
+Object.entries(user);  // [["name","Parth"], ["age",25], ["city","Hyderabad"]]</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Loop over entries — the most common pattern</div>
+<pre>for (const [key, value] of Object.entries(user)) {
+  console.log(key, "=", value);
+}</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Use HOFs on entries (turn object → array → transform → object)</div>
+<pre>// Filter out age from a user object
+const filtered = Object.fromEntries(
+  Object.entries(user).filter(([key]) =&gt; key !== "age")
+);
+// { name: "Parth", city: "Hyderabad" }</pre>
+</div>
+
+<div class="warn-box"><strong>⚠️ Never use <code>for...in</code></strong> unless you know what you're doing. It walks the prototype chain and picks up inherited keys. <code>for...of Object.entries()</code> is safer.</div>
+
+  </div>
+</div>
+
+<!-- SEC obj-immutable -->
+<div id="obj-immutable">
+  <div class="section-header" onclick="toggleSection('c3')">
+    <h1 style="border:none;margin:0;padding:0;">3. Update an object immutably</h1>
+    <span class="toggle-icon" id="icon-c3">▼</span>
+  </div>
+  <div class="section-content" id="c3">
+
+<p>These are the patterns you'll use every day in React. Never mutate — always return a new object.</p>
+
+<div class="snippet">
+<div class="snippet-label">Change one key</div>
+<pre>const user = { name: "Parth", age: 25 };
+
+const updated = { ...user, age: 26 };
+// { name: "Parth", age: 26 }
+// Original `user` is untouched.</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Add a new key</div>
+<pre>const withCity = { ...user, city: "Hyderabad" };
+// { name: "Parth", age: 25, city: "Hyderabad" }</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Remove a key (using destructuring)</div>
+<pre>const { age, ...withoutAge } = user;
+// withoutAge = { name: "Parth" }</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Update a nested key (spread at every level)</div>
+<pre>const state = { user: { name: "Parth", age: 25 }, theme: "dark" };
+
+const newState = {
+  ...state,
+  user: { ...state.user, age: 26 }
+};
+// state is untouched; newState has age: 26</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Merge two objects (right side wins on conflicts)</div>
+<pre>const defaults = { theme: "light", notifications: true };
+const custom   = { theme: "dark" };
+
+const merged = { ...defaults, ...custom };
+// { theme: "dark", notifications: true }</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Deep clone (2022+)</div>
+<pre>const deepCopy = structuredClone(originalObj);
+// Handles Dates, Maps, Sets, circular refs. Not functions.</pre>
+</div>
+
+<div class="tip-box"><strong>💡 The mental model:</strong> "spread the object I'm keeping, then override what I'm changing." Once this clicks, all React state updates become one-liners.</div>
+
+  </div>
+</div>
+
+<!-- SEC obj-dynamic -->
+<div id="obj-dynamic">
+  <div class="section-header" onclick="toggleSection('c4')">
+    <h1 style="border:none;margin:0;padding:0;">4. Dynamic keys — accessing/setting properties from a variable</h1>
+    <span class="toggle-icon" id="icon-c4">▼</span>
+  </div>
+  <div class="section-content" id="c4">
+
+<div class="snippet">
+<div class="snippet-label">Read a property using a variable</div>
+<pre>const key = "name";
+user[key];        // "Parth"  ← same as user.name
+user["name"];     // "Parth"</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Set a property using a variable</div>
+<pre>const key = "email";
+user[key] = "parth@example.com";</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Create an object with a dynamic key (computed property)</div>
+<pre>const key = "role";
+const value = "engineer";
+
+const obj = { [key]: value };
+// { role: "engineer" }
+
+// Especially useful in reduce / grouping:
+acc[category] = (acc[category] || 0) + 1;</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">The "initialize if missing" idiom (very common in reduce)</div>
+<pre>acc[key] = acc[key] || [];      // if missing, use []
+acc[key] ??= [];                // modern equivalent (ES2021)
+acc[key].push(item);</pre>
+</div>
+
+  </div>
+</div>
+
+<!-- SEC obj-destructure -->
+<div id="obj-destructure">
+  <div class="section-header" onclick="toggleSection('c5')">
+    <h1 style="border:none;margin:0;padding:0;">5. Destructuring objects</h1>
+    <span class="toggle-icon" id="icon-c5">▼</span>
+  </div>
+  <div class="section-content" id="c5">
+
+<div class="snippet">
+<div class="snippet-label">Basic — extract properties into variables</div>
+<pre>const user = { name: "Parth", age: 25, city: "Hyderabad" };
+
+const { name, age } = user;
+// name = "Parth", age = 25</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Rename while destructuring</div>
+<pre>const { name: userName, age: userAge } = user;
+// userName = "Parth", userAge = 25</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Default values for missing keys</div>
+<pre>const { name, role = "guest" } = user;
+// role = "guest" because user.role doesn't exist</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Nested destructuring</div>
+<pre>const data = { user: { name: "Parth", address: { city: "Hyderabad" } } };
+
+const { user: { name, address: { city } } } = data;
+// name = "Parth", city = "Hyderabad"</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Destructure in function parameters (super common in React)</div>
+<pre>function UserCard({ name, age, city = "Unknown" }) {
+  return `${name}, ${age}, ${city}`;
+}
+
+UserCard({ name: "Parth", age: 25 });   // "Parth, 25, Unknown"</pre>
+</div>
+
+  </div>
+</div>
+
+<!-- =================== ARRAYS =================== -->
+
+<!-- SEC arr-hof -->
+<div id="arr-hof">
+  <div class="section-header" onclick="toggleSection('c6')">
+    <h1 style="border:none;margin:0;padding:0;">6. Array HOFs — one-line quick reference</h1>
+    <span class="toggle-icon" id="icon-c6">▼</span>
+  </div>
+  <div class="section-content" id="c6">
+
+<table>
+  <tr><th>Method</th><th>What it does</th><th>Returns</th></tr>
+  <tr><td><code>map</code></td><td>Transform each element</td><td>New array (same length)</td></tr>
+  <tr><td><code>filter</code></td><td>Keep elements matching predicate</td><td>New array (≤ length)</td></tr>
+  <tr><td><code>reduce</code></td><td>Collapse array into single value</td><td>Any single value</td></tr>
+  <tr><td><code>forEach</code></td><td>Iterate for side effects only</td><td><code>undefined</code></td></tr>
+  <tr><td><code>flatMap</code></td><td>map, then flatten one level</td><td>New flat array</td></tr>
+</table>
+
+<div class="snippet">
+<div class="snippet-label">All the shapes in one place</div>
+<pre>arr.map(x =&gt; x * 2);                          // [2,4,6]
+arr.filter(x =&gt; x &gt; 1);                       // [2,3]
+arr.reduce((sum, x) =&gt; sum + x, 0);           // 6
+arr.forEach(x =&gt; console.log(x));             // undefined (side effects)
+arr.flatMap(x =&gt; [x, x * 2]);                 // [1,2,2,4,3,6]</pre>
+</div>
+
+<div class="tip-box"><strong>💡 Decision tree:</strong>
+<br>Same length transformation? → <code>map</code>
+<br>Keep some, drop others? → <code>filter</code>
+<br>Boil down to one value? → <code>reduce</code>
+<br>Side effect only? → <code>forEach</code></div>
+
+  </div>
+</div>
+
+<!-- SEC arr-search -->
+<div id="arr-search">
+  <div class="section-header" onclick="toggleSection('c7')">
+    <h1 style="border:none;margin:0;padding:0;">7. Search an array</h1>
+    <span class="toggle-icon" id="icon-c7">▼</span>
+  </div>
+  <div class="section-content" id="c7">
+
+<table>
+  <tr><th>Method</th><th>Purpose</th><th>Returns</th></tr>
+  <tr><td><code>find</code></td><td>First element matching predicate</td><td>Element or <code>undefined</code></td></tr>
+  <tr><td><code>findIndex</code></td><td>Index of first match</td><td>Number or <code>-1</code></td></tr>
+  <tr><td><code>some</code></td><td>Does ANY element match?</td><td>Boolean</td></tr>
+  <tr><td><code>every</code></td><td>Do ALL elements match?</td><td>Boolean</td></tr>
+  <tr><td><code>includes</code></td><td>Contains this exact value?</td><td>Boolean</td></tr>
+  <tr><td><code>indexOf</code></td><td>Index of value (exact match)</td><td>Number or <code>-1</code></td></tr>
+</table>
+
+<div class="snippet">
+<div class="snippet-label">Find a specific object in an array</div>
+<pre>const user = users.find(u =&gt; u.id === 42);
+// user or undefined</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Check if any/all elements match</div>
+<pre>users.some(u =&gt; u.isAdmin);      // true if at least one admin
+users.every(u =&gt; u.age &gt;= 18);   // true only if ALL are 18+</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Check for a primitive value</div>
+<pre>[1, 2, 3].includes(2);         // true
+["a", "b"].indexOf("b");       // 1
+["a", "b"].indexOf("z");       // -1  (not found)</pre>
+</div>
+
+<div class="warn-box"><strong>⚠️ <code>includes</code> uses <code>===</code></strong> — it won't find objects by content, only by reference.
+<br><code>[{a:1}].includes({a:1})</code> → <strong>false</strong> (different reference).
+<br>Use <code>.some()</code> for object matching: <code>arr.some(o =&gt; o.a === 1)</code>.</div>
+
+  </div>
+</div>
+
+<!-- SEC arr-manipulate -->
+<div id="arr-manipulate">
+  <div class="section-header" onclick="toggleSection('c8')">
+    <h1 style="border:none;margin:0;padding:0;">8. Slice, splice, concat, flat</h1>
+    <span class="toggle-icon" id="icon-c8">▼</span>
+  </div>
+  <div class="section-content" id="c8">
+
+<div class="snippet">
+<div class="snippet-label"><code>slice</code> — extract a portion (does NOT mutate)</div>
+<pre>const arr = [1, 2, 3, 4, 5];
+
+arr.slice(1, 3);      // [2, 3]    (indices 1 to 2)
+arr.slice(2);         // [3, 4, 5] (from index 2 to end)
+arr.slice(-2);        // [4, 5]    (last 2 elements)
+arr.slice();          // [1,2,3,4,5]  (shallow copy)</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label"><code>splice</code> — insert/remove at index (MUTATES!)</div>
+<pre>const arr = [1, 2, 3, 4, 5];
+
+arr.splice(1, 2);           // removes 2 elements from index 1
+// arr = [1, 4, 5]
+
+arr.splice(1, 0, "x", "y"); // insert at index 1, remove 0
+// arr = [1, "x", "y", 4, 5]
+
+// ⚠️ splice MUTATES. Prefer slice + spread for immutability.</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label"><code>concat</code> — merge arrays (returns new)</div>
+<pre>[1, 2].concat([3, 4]);        // [1, 2, 3, 4]
+[1, 2].concat(3, 4, [5]);     // [1, 2, 3, 4, 5]
+
+// Modern equivalent (usually preferred):
+[...arr1, ...arr2];</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label"><code>flat</code> &amp; <code>flatMap</code> — flatten nested arrays</div>
+<pre>[[1, 2], [3, 4]].flat();          // [1, 2, 3, 4]
+[[1, [2, [3]]]].flat(2);          // [1, 2, [3]]  (depth = 2)
+[[1, [2, [3]]]].flat(Infinity);   // [1, 2, 3]    (all depths)
+
+// flatMap = map + flat(1)
+[1, 2, 3].flatMap(x =&gt; [x, x * 10]);
+// [1, 10, 2, 20, 3, 30]</pre>
+</div>
+
+  </div>
+</div>
+
+<!-- SEC arr-immutable -->
+<div id="arr-immutable">
+  <div class="section-header" onclick="toggleSection('c9')">
+    <h1 style="border:none;margin:0;padding:0;">9. Update an array immutably</h1>
+    <span class="toggle-icon" id="icon-c9">▼</span>
+  </div>
+  <div class="section-content" id="c9">
+
+<p>Same rule as objects — return a NEW array instead of mutating.</p>
+
+<div class="snippet">
+<div class="snippet-label">Add to end / start</div>
+<pre>const newArr = [...arr, newItem];        // add to end
+const newArr = [newItem, ...arr];        // add to start</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Insert at index</div>
+<pre>const newArr = [
+  ...arr.slice(0, index),
+  newItem,
+  ...arr.slice(index)
+];</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Remove by value</div>
+<pre>const newArr = arr.filter(item =&gt; item !== toRemove);</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Remove by index</div>
+<pre>const newArr = [
+  ...arr.slice(0, index),
+  ...arr.slice(index + 1)
+];
+
+// Or filter by index:
+const newArr = arr.filter((_, i) =&gt; i !== index);</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Update an object inside an array</div>
+<pre>const newArr = arr.map(item =&gt;
+  item.id === targetId
+    ? { ...item, name: "New name" }   // update this one
+    : item                             // keep others as-is
+);</pre>
+</div>
+
+<div class="warn-box"><strong>⚠️ These mutate — avoid in React:</strong>
+<code>push</code>, <code>pop</code>, <code>shift</code>, <code>unshift</code>, <code>splice</code>, <code>sort</code>, <code>reverse</code>, <code>fill</code>.
+<br><br><strong>These return new arrays:</strong>
+<code>map</code>, <code>filter</code>, <code>slice</code>, <code>concat</code>, <code>flat</code>, <code>flatMap</code>, spread.</div>
+
+  </div>
+</div>
+
+<!-- SEC arr-dedupe -->
+<div id="arr-dedupe">
+  <div class="section-header" onclick="toggleSection('c10')">
+    <h1 style="border:none;margin:0;padding:0;">10. Dedupe &amp; Set tricks</h1>
+    <span class="toggle-icon" id="icon-c10">▼</span>
+  </div>
+  <div class="section-content" id="c10">
+
+<div class="snippet">
+<div class="snippet-label">Remove duplicates from primitive array (one-liner)</div>
+<pre>const unique = [...new Set([1, 2, 2, 3, 3, 4])];
+// [1, 2, 3, 4]</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Dedupe array of objects by a key</div>
+<pre>const uniqueUsers = [...new Map(
+  users.map(u =&gt; [u.id, u])
+).values()];
+// Keeps last occurrence of each id.</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Get intersection of two arrays</div>
+<pre>const common = a.filter(x =&gt; b.includes(x));
+// For large arrays, convert `b` to a Set first for speed:
+const setB = new Set(b);
+const common = a.filter(x =&gt; setB.has(x));</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Get difference</div>
+<pre>const onlyInA = a.filter(x =&gt; !b.includes(x));</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Convert Set back to array</div>
+<pre>const arr = [...mySet];
+// or
+const arr = Array.from(mySet);</pre>
+</div>
+
+  </div>
+</div>
+
+<!-- SEC arr-sort -->
+<div id="arr-sort">
+  <div class="section-header" onclick="toggleSection('c11')">
+    <h1 style="border:none;margin:0;padding:0;">11. Sort recipes — memorize these 6</h1>
+    <span class="toggle-icon" id="icon-c11">▼</span>
+  </div>
+  <div class="section-content" id="c11">
+
+<p><strong>Rule:</strong> <code>sort()</code> takes a comparator <code>(a, b) =&gt; number</code>.
+<br>Return <strong>negative</strong> → a comes first. <strong>Positive</strong> → b comes first. <strong>0</strong> → equal.
+<br><strong>⚠️ It MUTATES.</strong> Copy first with <code>[...arr]</code> or <code>arr.slice()</code>.</p>
+
+<div class="snippet">
+<div class="snippet-label">1. Numbers — ascending</div>
+<pre>[3, 1, 5, 2].sort((a, b) =&gt; a - b);
+// [1, 2, 3, 5]</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">2. Numbers — descending</div>
+<pre>[3, 1, 5, 2].sort((a, b) =&gt; b - a);
+// [5, 3, 2, 1]</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">3. Strings — alphabetical</div>
+<pre>["banana", "apple", "cherry"].sort((a, b) =&gt; a.localeCompare(b));
+// ["apple", "banana", "cherry"]</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">4. Objects — by numeric field</div>
+<pre>users.sort((a, b) =&gt; a.age - b.age);        // ascending age
+users.sort((a, b) =&gt; b.totalSpent - a.totalSpent);  // descending spend</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">5. Objects — by string field</div>
+<pre>users.sort((a, b) =&gt; a.name.localeCompare(b.name));</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">6. Nulls go LAST (the pattern from Task 9)</div>
+<pre>items.sort((a, b) =&gt; {
+  if (a.rating === null) return 1;      // a goes after
+  if (b.rating === null) return -1;     // a goes before
+  return b.rating - a.rating;            // both non-null: descending
+});</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Bonus: multi-field sort (sort by dept, then by name)</div>
+<pre>users.sort((a, b) =&gt;
+  a.dept.localeCompare(b.dept) ||    // primary sort
+  a.name.localeCompare(b.name)       // tiebreaker
+);
+// Trick: || returns the first non-zero result.</pre>
+</div>
+
+<div class="tip-box"><strong>💡 Avoid mutation with:</strong> <code>[...users].sort(...)</code> or the modern <code>users.toSorted(...)</code> (ES2023).</div>
+
+  </div>
+</div>
+
+<!-- =================== STRINGS =================== -->
+
+<!-- SEC str-essentials -->
+<div id="str-essentials">
+  <div class="section-header" onclick="toggleSection('c12')">
+    <h1 style="border:none;margin:0;padding:0;">12. String essentials</h1>
+    <span class="toggle-icon" id="icon-c12">▼</span>
+  </div>
+  <div class="section-content" id="c12">
+
+<table>
+  <tr><th>Method</th><th>Example</th><th>Result</th></tr>
+  <tr><td><code>length</code></td><td><code>"Parth".length</code></td><td>5</td></tr>
+  <tr><td><code>toLowerCase</code></td><td><code>"PARTH".toLowerCase()</code></td><td><code>"parth"</code></td></tr>
+  <tr><td><code>toUpperCase</code></td><td><code>"parth".toUpperCase()</code></td><td><code>"PARTH"</code></td></tr>
+  <tr><td><code>trim</code></td><td><code>"  hi  ".trim()</code></td><td><code>"hi"</code></td></tr>
+  <tr><td><code>includes</code></td><td><code>"hello".includes("ell")</code></td><td><code>true</code></td></tr>
+  <tr><td><code>startsWith</code></td><td><code>"hello".startsWith("he")</code></td><td><code>true</code></td></tr>
+  <tr><td><code>endsWith</code></td><td><code>"hello".endsWith("lo")</code></td><td><code>true</code></td></tr>
+  <tr><td><code>slice</code></td><td><code>"hello".slice(1, 4)</code></td><td><code>"ell"</code></td></tr>
+  <tr><td><code>indexOf</code></td><td><code>"hello".indexOf("l")</code></td><td>2 (first occurrence)</td></tr>
+  <tr><td><code>repeat</code></td><td><code>"ab".repeat(3)</code></td><td><code>"ababab"</code></td></tr>
+  <tr><td><code>padStart</code></td><td><code>"5".padStart(3, "0")</code></td><td><code>"005"</code></td></tr>
+</table>
+
+<div class="snippet">
+<div class="snippet-label">Case-insensitive contains — the classic pattern</div>
+<pre>const q = query.toLowerCase();
+str.toLowerCase().includes(q);   // true if str contains q, ignoring case</pre>
+</div>
+
+<div class="warn-box"><strong>⚠️ Strings are immutable.</strong> All methods return NEW strings; the original is never changed.</div>
+
+  </div>
+</div>
+
+<!-- SEC str-splitjoin -->
+<div id="str-splitjoin">
+  <div class="section-header" onclick="toggleSection('c13')">
+    <h1 style="border:none;margin:0;padding:0;">13. Split &amp; join</h1>
+    <span class="toggle-icon" id="icon-c13">▼</span>
+  </div>
+  <div class="section-content" id="c13">
+
+<div class="snippet">
+<div class="snippet-label">Split a string into an array</div>
+<pre>"a,b,c".split(",");          // ["a", "b", "c"]
+"hello world".split(" ");    // ["hello", "world"]
+"abc".split("");             // ["a", "b", "c"]   ← split into characters
+"a,b,c".split(",", 2);       // ["a", "b"]        ← limit result</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Join an array into a string</div>
+<pre>["a", "b", "c"].join(",");     // "a,b,c"
+["a", "b", "c"].join(" - ");   // "a - b - c"
+["a", "b", "c"].join("");      // "abc"</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Reverse a string (classic trick)</div>
+<pre>"hello".split("").reverse().join("");    // "olleh"</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Count words</div>
+<pre>"hello world how are you".split(" ").length;   // 5
+
+// Handle multiple spaces:
+"hello   world".split(/\s+/).filter(Boolean).length;   // 2</pre>
+</div>
+
+  </div>
+</div>
+
+<!-- SEC str-replace -->
+<div id="str-replace">
+  <div class="section-header" onclick="toggleSection('c14')">
+    <h1 style="border:none;margin:0;padding:0;">14. Replace &amp; basic regex</h1>
+    <span class="toggle-icon" id="icon-c14">▼</span>
+  </div>
+  <div class="section-content" id="c14">
+
+<div class="snippet">
+<div class="snippet-label">Replace one occurrence</div>
+<pre>"hello world".replace("world", "there");
+// "hello there"</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Replace ALL occurrences — 3 ways</div>
+<pre>// Modern (ES2021):
+"a-b-c".replaceAll("-", "_");        // "a_b_c"
+
+// Regex with /g flag:
+"a-b-c".replace(/-/g, "_");          // "a_b_c"
+
+// Split + join trick (works everywhere):
+"a-b-c".split("-").join("_");        // "a_b_c"</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Common regex patterns (just enough to be useful)</div>
+<pre>/hello/         // literal
+/hello/i        // case-insensitive
+/hello/g        // global (find all)
+/\d+/           // one or more digits
+/\s+/           // one or more whitespace
+/^hi/           // starts with "hi"
+/end$/          // ends with "end"
+/[abc]/         // any one of a, b, c
+/[^abc]/        // NOT any of a, b, c
+/./             // any single char</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Useful regex examples</div>
+<pre>// Test if match exists:
+/\d/.test("abc123");                 // true
+
+// Extract all matches:
+"call 123 or 456".match(/\d+/g);     // ["123", "456"]
+
+// Replace with a function (dynamic):
+"a1 b2".replace(/\d/g, d =&gt; d * 2);  // "a2 b4"</pre>
+</div>
+
+  </div>
+</div>
+
+<!-- SEC str-template -->
+<div id="str-template">
+  <div class="section-header" onclick="toggleSection('c15')">
+    <h1 style="border:none;margin:0;padding:0;">15. Template literals</h1>
+    <span class="toggle-icon" id="icon-c15">▼</span>
+  </div>
+  <div class="section-content" id="c15">
+
+<div class="snippet">
+<div class="snippet-label">The basic backtick syntax</div>
+<pre>const name = "Parth";
+const age  = 25;
+
+// Old way:
+"Hello, my name is " + name + " and I am " + age + " years old.";
+
+// Template literal:
+`Hello, my name is ${name} and I am ${age} years old.`;</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Multi-line strings</div>
+<pre>const html = `
+  &lt;div&gt;
+    &lt;h1&gt;${title}&lt;/h1&gt;
+    &lt;p&gt;${content}&lt;/p&gt;
+  &lt;/div&gt;
+`;
+// No need for \n or string concatenation.</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Expressions inside <code>${...}</code></div>
+<pre>`2 + 2 = ${2 + 2}`;               // "2 + 2 = 4"
+`Total: ${items.length} items`;    // Total: 5 items
+`${age &gt;= 18 ? "adult" : "minor"}`; // ternary works</pre>
+</div>
+
+  </div>
+</div>
+
+<!-- =================== NULL & TRUTHY =================== -->
+
+<!-- SEC null-patterns -->
+<div id="null-patterns">
+  <div class="section-header" onclick="toggleSection('c16')">
+    <h1 style="border:none;margin:0;padding:0;">16. Nullish coalescing (??), Optional chaining (?.), Logical OR (||)</h1>
+    <span class="toggle-icon" id="icon-c16">▼</span>
+  </div>
+  <div class="section-content" id="c16">
+
+<div class="snippet">
+<div class="snippet-label"><code>||</code> — logical OR: falls back on ANY falsy value</div>
+<pre>const name = user.name || "Guest";
+// Falls back to "Guest" if user.name is: undefined, null, "", 0, false, NaN</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label"><code>??</code> — nullish coalescing: falls back ONLY on null/undefined</div>
+<pre>const count = user.count ?? 10;
+// Falls back to 10 ONLY if user.count is null or undefined
+// If user.count is 0, it STAYS 0 (unlike ||)</pre>
+</div>
+
+<div class="warn-box"><strong>⚠️ The classic <code>||</code> bug:</strong>
+<code>const qty = input.qty || 1;</code>
+<br>If user enters 0 as quantity, this becomes 1! Because <code>0 || 1</code> = <code>1</code>.
+<br>Fix: use <code>??</code>. <code>0 ?? 1</code> = <code>0</code>. ✅</div>
+
+<div class="snippet">
+<div class="snippet-label"><code>?.</code> — optional chaining: safely access nested properties</div>
+<pre>const city = user?.address?.city;
+// If user is null/undefined → returns undefined (no error)
+// If address is null/undefined → returns undefined
+// Otherwise → returns city</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Optional chaining with method calls &amp; arrays</div>
+<pre>user?.getFullName?.();       // safely call method if it exists
+users?.[0]?.name;            // safely access array item
+callback?.();                // call callback only if it's defined</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Combine <code>?.</code> and <code>??</code> — the "safe default" pattern</div>
+<pre>const city = user?.address?.city ?? "Unknown";
+// Safely walk the chain, fallback to "Unknown" if anything is null/undefined.</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label"><code>??=</code> — assign only if nullish (ES2021)</div>
+<pre>acc[key] ??= [];   // if acc[key] is null/undefined, set to []
+acc[key].push(item);
+
+// Equivalent to:
+if (acc[key] == null) acc[key] = [];</pre>
+</div>
+
+  </div>
+</div>
+
+<!-- SEC falsy-table -->
+<div id="falsy-table">
+  <div class="section-header" onclick="toggleSection('c17')">
+    <h1 style="border:none;margin:0;padding:0;">17. Truthy / Falsy values — memorize this</h1>
+    <span class="toggle-icon" id="icon-c17">▼</span>
+  </div>
+  <div class="section-content" id="c17">
+
+<div class="tip-box"><strong>Only 6 values are FALSY in JavaScript.</strong> Everything else is truthy — including <code>"0"</code>, <code>"false"</code>, <code>[]</code>, and <code>{}</code>.</div>
+
+<table>
+  <tr><th>Falsy value</th><th>Notes</th></tr>
+  <tr><td><code>false</code></td><td>The boolean itself</td></tr>
+  <tr><td><code>0</code>, <code>-0</code>, <code>0n</code></td><td>Numeric zero (and BigInt zero)</td></tr>
+  <tr><td><code>""</code> (empty string)</td><td>Also <code>''</code> and <code>``</code></td></tr>
+  <tr><td><code>null</code></td><td>Intentional absence of value</td></tr>
+  <tr><td><code>undefined</code></td><td>Variable exists but no value</td></tr>
+  <tr><td><code>NaN</code></td><td>"Not a Number" (from bad math)</td></tr>
+</table>
+
+<div class="snippet">
+<div class="snippet-label">Common surprises</div>
+<pre>Boolean([]);          // true   ← empty array is truthy!
+Boolean({});          // true   ← empty object is truthy!
+Boolean("0");         // true   ← string "0" is truthy!
+Boolean("false");     // true   ← string "false" is truthy!
+Boolean(null);        // false
+Boolean(0);           // false
+Boolean("");          // false</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">The <code>Boolean</code> filter trick — remove falsy values from array</div>
+<pre>[0, 1, "", "hi", null, "foo", undefined].filter(Boolean);
+// [1, "hi", "foo"]</pre>
+</div>
+
+  </div>
+</div>
+
+<!-- =================== NUMBERS =================== -->
+
+<!-- SEC num-parsing -->
+<div id="num-parsing">
+  <div class="section-header" onclick="toggleSection('c18')">
+    <h1 style="border:none;margin:0;padding:0;">18. Parse &amp; format numbers</h1>
+    <span class="toggle-icon" id="icon-c18">▼</span>
+  </div>
+  <div class="section-content" id="c18">
+
+<div class="snippet">
+<div class="snippet-label">String → Number</div>
+<pre>Number("42");          // 42
+Number("4.5");         // 4.5
+Number("");            // 0    ⚠️ surprise
+Number("abc");         // NaN
+
+parseInt("42");        // 42
+parseInt("4.9");       // 4    ⚠️ truncates decimals!
+parseInt("42px");      // 42   ← stops at non-numeric
+
+parseFloat("4.9px");   // 4.9
+parseFloat("abc");     // NaN
+
++"42";                 // 42   ← the unary + trick, shortest form
++"4.5";                // 4.5</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Number → String</div>
+<pre>String(42);           // "42"
+(42).toString();      // "42"
+`${42}`;              // "42"    ← template literal
+
+(3.14159).toFixed(2); // "3.14"   ⚠️ returns STRING, not number!
++(3.14159).toFixed(2); // 3.14    ← back to number
+parseFloat((3.14159).toFixed(2)); // 3.14</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Check for NaN</div>
+<pre>Number.isNaN(NaN);          // true  (safest)
+Number.isNaN("abc");        // false ← the string isn't NaN, it's a string
+
+isNaN("abc");               // true  ⚠️ coerces first, be careful
+</pre>
+</div>
+
+<div class="warn-box"><strong>⚠️ Common bugs:</strong>
+<br>• <code>parseInt(4.7)</code> = 4 (truncates)
+<br>• <code>Number("")</code> = 0 (not NaN)
+<br>• <code>.toFixed()</code> returns a string, not a number
+<br>• <code>0.1 + 0.2 === 0.3</code> → <strong>false</strong> (floating point). Use a tolerance: <code>Math.abs(sum - 0.3) &lt; 0.001</code></div>
+
+  </div>
+</div>
+
+<!-- SEC num-math -->
+<div id="num-math">
+  <div class="section-header" onclick="toggleSection('c19')">
+    <h1 style="border:none;margin:0;padding:0;">19. Math methods you'll actually use</h1>
+    <span class="toggle-icon" id="icon-c19">▼</span>
+  </div>
+  <div class="section-content" id="c19">
+
+<div class="snippet">
+<div class="snippet-label">Rounding</div>
+<pre>Math.round(4.4);     // 4     (nearest)
+Math.round(4.5);     // 5
+Math.floor(4.9);     // 4     (down)
+Math.ceil(4.1);      // 5     (up)
+Math.trunc(4.9);     // 4     (remove decimals, keep sign)
+Math.trunc(-4.9);    // -4</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Min / Max</div>
+<pre>Math.max(1, 5, 3);              // 5
+Math.min(1, 5, 3);              // 1
+
+// From an array:
+Math.max(...[1, 5, 3]);         // 5
+Math.min(...[1, 5, 3]);         // 1</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Random</div>
+<pre>Math.random();                       // 0 to less than 1
+Math.floor(Math.random() * 10);      // 0 to 9
+
+// Random integer in range [min, max]:
+const rand = (min, max) =&gt;
+  Math.floor(Math.random() * (max - min + 1)) + min;
+rand(1, 6);   // dice roll (1 to 6)</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Absolute value, power, sqrt</div>
+<pre>Math.abs(-5);       // 5
+Math.pow(2, 3);     // 8   (2^3)
+2 ** 3;             // 8   (modern equivalent)
+Math.sqrt(16);      // 4</pre>
+</div>
+
+  </div>
+</div>
+
+<!-- =================== PATTERNS =================== -->
+
+<!-- SEC pat-common -->
+<div id="pat-common">
+  <div class="section-header" onclick="toggleSection('c20')">
+    <h1 style="border:none;margin:0;padding:0;">20. Common patterns — steal these</h1>
+    <span class="toggle-icon" id="icon-c20">▼</span>
+  </div>
+  <div class="section-content" id="c20">
+
+<div class="snippet">
+<div class="snippet-label">Group by key</div>
+<pre>const grouped = arr.reduce((acc, item) =&gt; {
+  const key = item.category;
+  acc[key] ??= [];
+  acc[key].push(item);
+  return acc;
+}, {});</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Count occurrences</div>
+<pre>const count = arr.reduce((acc, item) =&gt; {
+  acc[item] = (acc[item] || 0) + 1;
+  return acc;
+}, {});
+// ["a","b","a","c","a"] → { a: 3, b: 1, c: 1 }</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Sum a numeric field</div>
+<pre>const total = items.reduce((sum, i) =&gt; sum + i.price, 0);</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Find max/min by field</div>
+<pre>const oldest = users.reduce(
+  (max, u) =&gt; u.age &gt; max.age ? u : max,
+  users[0]
+);</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Convert array of objects → object indexed by key</div>
+<pre>const byId = users.reduce((acc, u) =&gt; {
+  acc[u.id] = u;
+  return acc;
+}, {});
+// { u1: {...}, u2: {...}, ... }
+// Now you can look up any user in O(1) by id.</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Zip two arrays into pairs</div>
+<pre>const names = ["a", "b", "c"];
+const ages  = [25, 30, 35];
+
+const zipped = names.map((n, i) =&gt; [n, ages[i]]);
+// [["a",25], ["b",30], ["c",35]]</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Chunk an array into groups of N</div>
+<pre>function chunk(arr, size) {
+  const result = [];
+  for (let i = 0; i &lt; arr.length; i += size) {
+    result.push(arr.slice(i, i + size));
+  }
+  return result;
+}
+chunk([1,2,3,4,5,6,7], 3);   // [[1,2,3], [4,5,6], [7]]</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Range 0..n-1</div>
+<pre>Array.from({ length: 5 }, (_, i) =&gt; i);
+// [0, 1, 2, 3, 4]
+
+Array.from({ length: 5 }, (_, i) =&gt; i * 2);
+// [0, 2, 4, 6, 8]</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Merge multiple objects</div>
+<pre>const merged = Object.assign({}, obj1, obj2, obj3);
+// or
+const merged = { ...obj1, ...obj2, ...obj3 };
+// Later objects override earlier ones on conflicts.</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Pick specific keys from an object</div>
+<pre>function pick(obj, keys) {
+  return keys.reduce((acc, key) =&gt; {
+    if (key in obj) acc[key] = obj[key];
+    return acc;
+  }, {});
+}
+pick(user, ["name", "email"]);
+// { name: "Parth", email: "..." }</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Omit specific keys from an object</div>
+<pre>function omit(obj, keys) {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([k]) =&gt; !keys.includes(k))
+  );
+}
+omit(user, ["password"]);</pre>
+</div>
+
+  </div>
+</div>
+
+<!-- SEC pat-debug -->
+<div id="pat-debug">
+  <div class="section-header" onclick="toggleSection('c21')">
+    <h1 style="border:none;margin:0;padding:0;">21. Debugging shortcuts</h1>
+    <span class="toggle-icon" id="icon-c21">▼</span>
+  </div>
+  <div class="section-content" id="c21">
+
+<div class="snippet">
+<div class="snippet-label">Console tricks</div>
+<pre>console.log(x);            // basic
+console.log({ x, y, z });  // labels automatically!  { x: 1, y: 2, z: 3 }
+console.table(arr);        // pretty-print arrays/objects as a table
+console.error("Broken");   // red output
+console.warn("Careful");   // yellow output
+console.time("op");        // start timer
+// ... code ...
+console.timeEnd("op");     // "op: 42ms"</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">JSON printing (see the full structure)</div>
+<pre>console.log(JSON.stringify(deepObj, null, 2));
+// Pretty-prints with 2-space indent.</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Quick throwaway breakpoint</div>
+<pre>debugger;   // pauses execution when DevTools is open</pre>
+</div>
+
+<div class="snippet">
+<div class="snippet-label">Check the type quickly</div>
+<pre>typeof x;                        // "string", "number", etc.
+Array.isArray(x);                // true if array
+x instanceof Date;               // true if Date
+Object.prototype.toString.call(x);  // "[object Array]", "[object Null]", etc.</pre>
+</div>
+
+  </div>
+</div>
+
+<!-- SEC method-approach -->
+<div id="method-approach">
+  <div class="section-header" onclick="toggleSection('c22')">
+    <h1 style="border:none;margin:0;padding:0;">22. Problem-solving method — 5 steps before you code</h1>
+    <span class="toggle-icon" id="icon-c22">▼</span>
+  </div>
+  <div class="section-content" id="c22">
+
+<div class="tip-box"><strong>Don't touch the keyboard until Step 3 is done.</strong> This is the single biggest skill separating rushed hacky code from clean solutions.</div>
+
+<h3>Step 1 — Say the input and output in one sentence</h3>
+<p><em>"I have X, I need to return Y in the shape of Z."</em>
+<br>Doing this in English slows your brain enough to catch what you don't understand.</p>
+
+<h3>Step 2 — Draw the output shape</h3>
+<pre>// Output:
+// [
+//   { id, name, reviewCount, avgRating },  // avgRating null if no reviews
+//   ...
+// ]
+// Sorted by avgRating desc, nulls last</pre>
+
+<h3>Step 3 — Break into independent sub-problems</h3>
+<pre>// A: For each product, find its reviews.
+// B: Compute reviewCount + avgRating for each.
+// C: Handle "no reviews" case.
+// D: Sort with null-last.</pre>
+
+<h3>Step 4 — For each sub-problem, ask "which HOF fits?"</h3>
+<table>
+  <tr><th>Task</th><th>Tool</th></tr>
+  <tr><td>Same length transform</td><td><code>map</code></td></tr>
+  <tr><td>Keep some, drop others</td><td><code>filter</code></td></tr>
+  <tr><td>Collapse to one value</td><td><code>reduce</code></td></tr>
+  <tr><td>Side effect only</td><td><code>forEach</code></td></tr>
+  <tr><td>Find one</td><td><code>find</code></td></tr>
+  <tr><td>Any/all check</td><td><code>some</code>/<code>every</code></td></tr>
+</table>
+
+<h3>Step 5 — Now write code</h3>
+<p>The code becomes translation, not thinking-while-typing. Each sub-problem = one small block.</p>
+
+<div class="note-box"><strong>💡 The bridge trick:</strong> Write the sub-problems as <em>comments first</em>, then fill in the code under each. This way, "planning" and "typing" don't fight for your attention at the same time.</div>
+
+<h3>The bigger point</h3>
+<p>You'll feel dumb comparing your first draft to someone else's final draft. That's not a fair comparison. Every experienced dev writes messy code first, then refactors. The difference isn't intelligence — it's <strong>exposure</strong>. You've written this pattern 3 times; they've written it 300. Speed and elegance come with reps.</p>
+
+  </div>
+</div>
+
+</div><!-- end main -->
+
+<script>
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('collapsed');
+  document.getElementById('mainContent').classList.toggle('full');
+}
+function scrollTo(e, id) {
+  e.preventDefault();
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (window.innerWidth <= 768) {
+    document.getElementById('sidebar').classList.add('collapsed');
+    document.getElementById('mainContent').classList.add('full');
+  }
+}
+function toggleSection(id) {
+  const el = document.getElementById(id);
+  const icon = document.getElementById('icon-' + id);
+  if (el.classList.contains('collapsed')) {
+    el.classList.remove('collapsed');
+    el.style.maxHeight = el.scrollHeight + 10000 + 'px';
+    if (icon) icon.classList.remove('collapsed');
+  } else {
+    el.classList.add('collapsed');
+    el.style.maxHeight = '0px';
+    if (icon) icon.classList.add('collapsed');
+  }
+}
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.section-content').forEach(el => {
+    el.style.maxHeight = el.scrollHeight + 10000 + 'px';
+  });
+});
+</script>
+</body>
+</html>
