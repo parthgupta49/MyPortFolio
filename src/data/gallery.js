@@ -81,12 +81,14 @@ export const gallery = [
     alt: 'Holding the TechINNiZa intercollegiate rolling trophy',
     caption: 'TechINNiZa intercollegiate — champions.',
   },
+  /*
   {
     image: 'techinniza-team',
     tags: ['wins'],
     alt: 'A large team on stage holding a trophy together',
     caption: 'The whole squad, right after the result was announced.',
   },
+  */
   {
     image: 'archive-review-writing',
     tags: ['wins'],
@@ -98,7 +100,7 @@ export const gallery = [
     image: 'bitcoin-first-place',
     tags: ['wins'],
     alt: 'Receiving a certificate on stage, a Bitcoin presentation on the screen behind',
-    caption: 'Collecting first place for a presentation on Bitcoin and its impact on the economy.',
+    caption: 'collecting intercollegiate competition event prize',
   },
   {
     image: 'graph-theory-class',
@@ -123,6 +125,7 @@ export const gallery = [
     tags: ['sessions'],
     alt: 'Presenting at the front of a classroom alongside a faculty member',
   },
+  /*
   {
     image: 'newspaper-results',
     tags: ['wins'],
@@ -130,18 +133,21 @@ export const gallery = [
     caption:
       'The local paper covering our board results — my name is in the list of students who crossed 90%.',
   },
+  */
   {
     image: 'portrait-illustration',
     tags: ['casual'],
     alt: 'An art-deco style illustrated portrait',
-    caption: 'An illustrated portrait someone made of me. Still a favourite.',
+    caption: 'An illustrated portrait',
   },
+  /*
   {
     image: 'venuvan-rajgir',
     tags: ['casual'],
     alt: 'Standing in front of the Venuvan wall in Rajgir',
     caption: 'Venuvan, Rajgir.',
   },
+  */
   {
     image: 'campus-day',
     tags: ['casual'],
@@ -151,5 +157,6 @@ export const gallery = [
     image: 'rooftop-evening',
     tags: ['casual'],
     alt: 'Sitting with a friend on a rooftop in the evening',
+    caption: 'Met Kunal Kushwaha in an event hosted in Bangalore',
   },
 ]
